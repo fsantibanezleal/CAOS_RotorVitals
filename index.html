@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RotorVitals — Bearing Fault Diagnosis</title>
+    <meta
+      name="description"
+      content="Explainable rolling-element bearing fault diagnosis via envelope (demodulation) analysis — open, client-side, part of the Faena mining-analytics hub."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      (function () {
+        try {
+          var s = localStorage.getItem('rv-theme');
+          document.documentElement.dataset.theme = s
+            ? s
+            : matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
