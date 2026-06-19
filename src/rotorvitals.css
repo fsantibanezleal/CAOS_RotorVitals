@@ -1,0 +1,49 @@
+/* RotorVitals — app-specific styles on top of @fasl-work/caos-app-shell/styles.css (shell tokens). */
+
+.rv-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start; }
+@media (max-width: 900px) { .rv-layout { grid-template-columns: 1fr; } }
+.rv-side { display: flex; flex-direction: column; gap: 0.9rem; }
+.rv-main { min-width: 0; }
+
+.rv-scenarios { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip { background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-fg-subtle); border-radius: 999px; padding: 0.32rem 0.75rem; font-size: 0.82rem; cursor: pointer; }
+.chip:hover { color: var(--color-fg); border-color: var(--color-fg-faint); }
+.chip.on { background: var(--color-accent); color: var(--color-accent-fg); border-color: transparent; font-weight: 600; }
+
+.rv-ctl { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.82rem; color: var(--color-fg-subtle); }
+.rv-ctl .select, .rv-ctl .range { width: 100%; }
+
+.rv-diag { padding: 0.9rem 1rem; border-left: 4px solid var(--color-accent); }
+.rv-diag[data-fault="healthy"] { border-left-color: var(--color-good); }
+.rv-diag[data-fault="outer"] { border-left-color: #f59f00; }
+.rv-diag[data-fault="inner"] { border-left-color: #f06595; }
+.rv-diag[data-fault="ball"] { border-left-color: #7c5cff; }
+.rv-diag-top { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.rv-diag-top strong { font-size: 1.1rem; }
+.rv-bar { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 0.5rem; font-size: 0.8rem; margin: 0.25rem 0; }
+.rv-bar-t { background: var(--color-surface-2); border-radius: 5px; height: 9px; overflow: hidden; }
+.rv-bar-t i { display: block; height: 100%; background: var(--color-accent); }
+.rv-bar .mono { text-align: right; color: var(--color-fg-subtle); }
+.rv-freqs { line-height: 1.7; }
+
+.rv-vizstack { display: flex; flex-direction: column; gap: 1rem; }
+.rv-plot { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 0.6rem 0.75rem; }
+.rv-plot-t { font-size: 0.82rem; color: var(--color-fg-subtle); margin-bottom: 0.2rem; }
+.rv-rul-read { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: 0.9rem; }
+
+/* gauge */
+.gauge { margin-top: 0.2rem; }
+.gauge-title { font-size: 0.78rem; color: var(--color-fg-faint); margin-bottom: 0.35rem; }
+.gauge-track { position: relative; height: 14px; border-radius: 7px; background: var(--color-surface-2); overflow: hidden; }
+.gauge-zone { position: absolute; top: 0; height: 100%; opacity: 0.5; }
+.gauge-needle { position: absolute; top: -3px; width: 2px; height: 20px; background: var(--color-fg); transform: translateX(-1px); }
+.gauge-scale { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--color-fg-faint); margin-top: 0.2rem; }
+.gauge-scale .gauge-val { color: var(--color-fg); font-weight: 700; font-family: var(--font-mono); }
+.gauge-zones-legend { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.72rem; color: var(--color-fg-subtle); margin-top: 0.3rem; }
+.gauge-zones-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 0.25rem; }
+
+/* code block + comparison table (used in doc pages) */
+.codeblock { background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: 8px; padding: 0.85rem 1rem; overflow-x: auto; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.55; color: var(--color-fg); white-space: pre; }
+.cmp-table { border-collapse: collapse; width: 100%; font-size: 0.84rem; margin-top: 0.8rem; }
+.cmp-table th, .cmp-table td { padding: 0.4rem 0.55rem; text-align: center; border-bottom: 1px solid var(--color-border); }
+.cmp-table thead th { color: var(--color-fg-faint); font-weight: 600; font-size: 0.78rem; }
