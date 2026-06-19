@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type Kurtogram } from '../dsp/kurtogram';
 
 function css(name: string, fb: string) {
@@ -17,6 +17,7 @@ function ramp(t: number): string {
  * colored by envelope kurtosis. The maximal-kurtosis cell (optimal demodulation band) is outlined. */
 export function Kurtogram({ kg, fs, height = 220, onPick }: { kg: Kurtogram; fs: number; height?: number; onPick?: (band: [number, number]) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const [hov, setHov] = useState<{ x: number; y: number; level: number; f1: number; f2: number; kurt: number } | null>(null);
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
     const padLc = 64, padTc = 8, padBc = 24;
@@ -64,5 +65,22 @@ export function Kurtogram({ kg, fs, height = 220, onPick }: { kg: Kurtogram; fs:
     g.fillStyle = fg; g.fillText('frequency (Hz)', padL + pw - 80, padT + ph + 14);
     return () => { if (onClick) cv.removeEventListener('click', onClick); };
   }, [kg, fs, height, onPick]);
-  return <canvas ref={ref} style={{ width: '100%', height, display: 'block' }} />;
+
+  const onMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const cv = ref.current; if (!cv) return;
+    const rect = cv.getBoundingClientRect(); const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const padL = 64, padT = 8, padB = 24, pw = rect.width - padL - 12, ph = rect.height - padT - padB;
+    if (x < padL || y < padT || y > padT + ph || x > padL + pw) { setHov(null); return; }
+    const row = Math.min(kg.cells.length - 1, Math.max(0, Math.floor(((y - padT) / ph) * kg.cells.length)));
+    const cells = kg.cells[row]; const f = ((x - padL) / pw) * (fs / 2);
+    const cell = cells.find((c) => f >= c.f1 && f < c.f2) ?? cells[cells.length - 1];
+    setHov({ x, y, level: cell.level, f1: cell.f1, f2: cell.f2, kurt: cell.kurt });
+  };
+
+  return (
+    <div className="kg-wrap" style={{ position: 'relative' }}>
+      <canvas ref={ref} style={{ width: '100%', height, display: 'block' }} onMouseMove={onMove} onMouseLeave={() => setHov(null)} />
+      {hov && <div className="heatmap-readout" style={{ left: Math.min(hov.x + 8, 220), top: Math.max(2, hov.y - 4) }}>L{hov.level} · {(hov.f1 / 1000).toFixed(2)}–{(hov.f2 / 1000).toFixed(2)} kHz · K={hov.kurt.toFixed(2)}</div>}
+    </div>
+  );
 }
