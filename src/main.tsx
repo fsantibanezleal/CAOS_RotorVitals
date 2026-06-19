@@ -24,7 +24,7 @@ const config: ShellConfig = {
     { path: '/experiments', en: 'Experiments', es: 'Experimentos' },
   ],
   links: { github: 'https://github.com/fsantibanezleal/CAOS_RotorVitals' },
-  version: '0.13.000',
+  version: '0.14.000',
 };
 
 createRoot(document.getElementById('root')!).render(

@@ -54,10 +54,22 @@
 .u-cursor-x, .u-cursor-y { border-right: 1px dashed var(--color-fg-faint); border-bottom: 1px dashed var(--color-fg-faint); }
 .u-cursor-pt { border-color: var(--color-accent); }
 .u-select { background: color-mix(in oklab, var(--color-accent) 16%, transparent); }
-.u-legend { font-size: 0.78rem; color: var(--color-fg-subtle); }
+/* live legend = value readout at the cursor (x + series) */
+.u-legend { font-size: 0.76rem; color: var(--color-fg-subtle); margin-top: 0.15rem; }
+.u-legend .u-series { display: inline-flex; align-items: center; gap: 0.3rem; margin-right: 0.9rem; }
+.u-legend .u-series th { font-weight: 500; }
+.u-legend .u-value { font-family: var(--font-mono); color: var(--color-fg); }
+.u-legend .u-marker { width: 0.7rem; height: 0.7rem; }
 
 /* heatmap hover readout + peak table */
 .heatmap-readout { position: absolute; pointer-events: none; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px; padding: 0.2rem 0.45rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-fg); white-space: nowrap; }
 .peaktable { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 0.6rem 0.75rem; }
 .peaktable-t td, .peaktable-t th { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
 .peaktable-t tr.matched { background: color-mix(in oklab, var(--color-good) 14%, transparent); }
+
+/* 3D waterfall overlays: live hover readout + axis legend */
+.wf3d-wrap { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; }
+.wf3d-readout { position: absolute; top: 0.5rem; left: 0.5rem; pointer-events: none; background: color-mix(in oklab, var(--color-surface) 88%, transparent); border: 1px solid var(--color-border); border-radius: 6px; padding: 0.2rem 0.45rem; font-family: var(--font-mono); font-size: 0.74rem; color: var(--color-fg); white-space: nowrap; }
+.wf3d-axes { position: absolute; bottom: 0.45rem; left: 0.55rem; right: 0.55rem; display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; font-size: 0.72rem; color: var(--color-fg-subtle); pointer-events: none; }
+.wf3d-axes b { color: var(--color-fg); font-weight: 600; }
+.wf3d-ridge { color: #f59f00; }
