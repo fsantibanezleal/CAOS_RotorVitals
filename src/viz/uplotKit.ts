@@ -16,7 +16,7 @@ function vars() {
  * (BPFO, fr, …) tells you the exact frequency/amplitude — not just a bare crosshair. */
 export function lineOpts(
   width: number, height: number,
-  opts: { label: string; color?: string; xUnit?: string; yUnit?: string; xPrec?: number; yPrec?: number; yRange?: [number, number] },
+  opts: { label: string; color?: string; xUnit?: string; yUnit?: string; xPrec?: number; yPrec?: number; yRange?: [number, number]; dragSetScale?: boolean },
 ): uPlot.Options {
   const v = vars();
   const c = opts.color || v.accent;
@@ -36,7 +36,7 @@ export function lineOpts(
   return {
     width, height,
     scales: { x: { time: false }, y: opts.yRange ? { range: opts.yRange } : {} },
-    cursor: { drag: { x: true, y: false }, points: { show: true }, focus: { prox: 24 } },
+    cursor: { drag: { x: true, y: false, setScale: opts.dragSetScale !== false }, points: { show: true }, focus: { prox: 24 } },
     legend: { show: true, live: true },
     series: [
       { label: xu || 'x', value: (_u, val) => fmtX(val as number | null) },
@@ -86,6 +86,21 @@ export function regionsPlugin(regions: [number, number][], color: string): uPlot
           ctx.fillRect(x1, top, Math.max(1, x2 - x1), height);
         }
         ctx.restore();
+      },
+    },
+  };
+}
+
+/** Band-brush: when the chart is in select mode (dragSetScale:false), a drag emits the selected
+ * x-range [lo,hi] (data units) and clears the selection — used to re-pick the demod band → live SES. */
+export function selectPlugin(onSelect: (lo: number, hi: number) => void): uPlot.Plugin {
+  return {
+    hooks: {
+      setSelect: (u: uPlot) => {
+        if (u.select.width <= 2) return;
+        const a = u.posToVal(u.select.left, 'x'), b = u.posToVal(u.select.left + u.select.width, 'x');
+        onSelect(Math.max(0, Math.min(a, b)), Math.max(a, b));
+        u.setSelect({ left: 0, top: 0, width: 0, height: 0 }, false);
       },
     },
   };
