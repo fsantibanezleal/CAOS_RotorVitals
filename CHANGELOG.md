@@ -3,7 +3,27 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
-## [0.14.000] — 2026-06-19
+## [0.15.000] — 2026-06-19
+
+### Added
+- **Campbell / order map** tab: a synthetic run-up (600–3600 rpm) of the envelope spectrum. The bearing
+  defect frequency climbs linearly with shaft speed (a ray in Hz); an Hz↔order toggle resamples each
+  column onto `order = f/(rpm/60)`, straightening the defect line to a constant order (BPFO 3.58×,
+  BPFI 5.42×, 2·BSF 4.71×) — the order-tracking idea made visible. Operating-speed band; hover gives
+  the conjugate (order in Hz mode, Hz in order mode). Reacts to bearing/fault/severity/rpm.
+
+### Changed
+- **Deep documentation rewrite** (Introduction, Methodology, Implementation, Experiments). Each page
+  now carries rigorous bilingual narrative, term-by-term equations, the specific definitions this
+  build uses, and quality theme-aware SVG diagrams: the end-to-end pipeline (Introduction), the
+  envelope/SES signal flow, the kurtogram plane, the cyclostationary bi-frequency plane, the
+  decomposition/deconvolution chain, the RUL projection and ISO zone bar (Methodology), the
+  offline→artifact→live compute-tier architecture (Implementation), and the leakage-safe experiment
+  protocol (Experiments). 16 DOI-verified references; ISO severity zones framed honestly by machine
+  class (ISO 20816-3 for the ≥15 kW mining machines targeted; ISO 10816-1 Class I for the sub-15 kW
+  calibration rig behind the synthetic signal).
+
+
 
 ### Fixed
 - **Spectrogram tab crashed the whole app** (white screen, `Cannot read properties of undefined`).
