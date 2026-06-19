@@ -11,7 +11,7 @@ import { SCENARIOS } from '../data/scenarios';
 import { runToFailure } from '../data/runtofailure';
 import { projectRUL } from '../dsp/health';
 import { UPlotChart } from '../viz/UPlotChart';
-import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, type Comb } from '../viz/uplotKit';
+import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
 import { minMaxDecimate } from '../viz/decimate';
 import { Kurtogram } from '../viz/Kurtogram';
 import { Gauge } from '../viz/Gauge';
@@ -68,6 +68,7 @@ export default function Tool() {
   const [lifePos, setLifePos] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [bandBrush, setBandBrush] = useState(false); // spectrum drag selects the demod band → live SES
 
   const seed = useMemo(() => SCENARIOS.find((s) => s.fault === fault)?.spec.seed ?? 202, [fault]);
   const fr = rpm / 60;
@@ -126,14 +127,18 @@ export default function Tool() {
 
   // ---- builds (stable) ----
   const buildWave = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'accel', color: C.band, xUnit: 's', yUnit: 'g' }), []);
-  const buildSpec = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'level', color: '#8b949e', xUnit: 'Hz', yUnit: 'dB', yPrec: 1 }), []);
+  const buildSpec = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'level', color: '#8b949e', xUnit: 'Hz', yUnit: 'dB', yPrec: 1, dragSetScale: !bandBrush }), [bandBrush]);
   const buildSes = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'SES', color: C.shaft, xUnit: 'Hz', yUnit: 'g²' }), []);
   const buildCep = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'cepstrum', color: '#3fb1c8', xUnit: 's' }), []);
 
   // ---- plugins (memoized) ----
   const wavePlugins = useMemo(() => [regionsPlugin(waveMarks.windows, C.window), vmarksPlugin(waveMarks.outliers, C.outlier)], [waveMarks]);
   const specCombs = useMemo<Comb[]>(() => { const a: Comb[] = [{ base: fr, harmonics: 6, color: C.shaft, label: `fr ${fr.toFixed(1)} Hz` }]; if (fund) a.push({ base: fund, harmonics: 5, color: C.band, label: `${fund.toFixed(0)} Hz` }); return a; }, [fr, fund]);
-  const specPlugins = useMemo(() => [regionsPlugin([effBand], C.band), combsPlugin(specCombs)], [effBand, specCombs]);
+  const specPlugins = useMemo(() => {
+    const p = [regionsPlugin([effBand], C.band), combsPlugin(specCombs)];
+    if (bandBrush) p.push(selectPlugin((lo, hi) => setBand([Math.max(lo, 0.02 * FS), hi])));
+    return p;
+  }, [effBand, specCombs, bandBrush]);
   const sesCombs = useMemo<Comb[]>(() => [
     { base: base.f.bpfo, harmonics: 6, color: C.outer, label: `BPFO ${base.f.bpfo.toFixed(1)} Hz` },
     { base: base.f.bpfi, harmonics: 5, color: C.inner, label: `BPFI ${base.f.bpfi.toFixed(1)} Hz` },
@@ -190,7 +195,7 @@ export default function Tool() {
     { id: 'sig', label: t.tSig, content: (
       <div className="rv-vizstack">
         <div className="rv-plot"><div className="rv-plot-t">{t.waveform}</div><UPlotChart data={waveData} build={buildWave} plugins={wavePlugins} height={170} /></div>
-        <div className="rv-plot"><div className="rv-plot-t">{t.spectrum}</div><UPlotChart data={specData} build={buildSpec} plugins={specPlugins} height={185} onClickX={onClickSpec} /></div>
+        <div className="rv-plot"><div className="rv-plot-t rv-plot-th"><span>{t.spectrum}</span><button className={`chip ${bandBrush ? 'on' : ''}`} onClick={() => setBandBrush((v) => !v)}>{lang === 'es' ? 'pincel banda → SES' : 'brush band → SES'}</button></div><UPlotChart data={specData} build={buildSpec} plugins={specPlugins} height={185} onClickX={bandBrush ? undefined : onClickSpec} /></div>
       </div>) },
     { id: 'env', label: t.tEnv, content: (
       <div className="rv-vizstack">
