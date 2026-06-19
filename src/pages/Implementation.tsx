@@ -25,8 +25,7 @@ export default function Implementation() {
           <li><b>{es ? 'Precalculado (offline → artefacto):' : 'Precomputed (offline → artifact):'}</b> {es ? 'modelos DL entrenados (ONNX para inferencia en navegador), barridos grandes de kurtograma/coherencia cíclica sobre datasets completos, tablas de benchmark método-vs-método, posteriors de RUL.' : 'trained DL models (ONNX for in-browser inference), large kurtogram / cyclic-coherence sweeps over full datasets, method-vs-method benchmark tables, RUL posteriors.'}</li>
         </ul>
         <h2>{es ? 'Despliegue' : 'Deploy'}</h2>
-        <p>{es ? 'Sitio estático en GitHub Pages (ADR-0055 Pages-first); shell compartido @fasl-work/caos-app-shell (ADR-0016). El runtime solo sirve archivos: sin servidor, sin base de datos.' : 'Static site on GitHub Pages (ADR-0055 Pages-first); shared shell @fasl-work/caos-app-shell (ADR-0016). The runtime only serves files: no server, no database.'}</p>
-        <p className="muted small">{es ? 'El detalle completo de pipelines y contrato de artefactos vive en la investigación profunda del producto (wip).' : 'The full pipeline detail and artifact contract live in the product’s deep-research docs (wip).'}</p>
+        <p>{es ? 'Se publica como sitio estático servido desde un host con CDN (sin servidor ni base de datos): el runtime solo entrega archivos, por lo que escala y cachea trivialmente. La interfaz, el theming claro/oscuro y el bilingüe provienen de un design-system compartido por toda la suite, de modo que cada app es independiente pero consistente.' : 'It ships as a static site served from a CDN-backed host (no server, no database): the runtime only delivers files, so it scales and caches trivially. The UI shell, light/dark theming and bilingual content come from a design system shared across the suite, so each app is independent yet consistent.'}</p>
       </section>
     </div>
   );
