@@ -32,6 +32,18 @@
 .rv-plot-th { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .rv-seg { display: inline-flex; gap: 0.25rem; }
 .rv-seg .chip { padding: 0.1rem 0.5rem; font-size: 0.74rem; }
+
+/* degradation replay scrubber bar */
+.rv-replay-bar { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+.rv-replay { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 280px; }
+.rv-play { width: 1.9rem; height: 1.9rem; border-radius: 50%; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-fg); cursor: pointer; font-size: 0.8rem; }
+.rv-play:disabled { opacity: 0.4; cursor: not-allowed; }
+.rv-replay-track { position: relative; flex: 1; min-width: 160px; display: flex; align-items: center; }
+.rv-replay-track .rv-life { width: 100%; }
+.rv-tick { position: absolute; top: -2px; width: 2px; height: 10px; transform: translateX(-1px); pointer-events: none; }
+.rv-tick.onset { background: var(--color-warn, #d29922); }
+.rv-tick.fail { background: var(--color-bad, #f85149); }
+.rv-replay-read { font-size: 0.76rem; color: var(--color-fg-subtle); white-space: nowrap; }
 .rv-rul-read { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: 0.9rem; }
 
 /* gauge */

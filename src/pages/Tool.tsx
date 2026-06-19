@@ -20,6 +20,8 @@ import { Heatmap2D } from '../viz/Heatmap2D';
 import { CampbellPanel } from '../viz/CampbellPanel';
 import { IsoTrendPanel } from '../viz/IsoTrendPanel';
 import { FeatureSpacePanel } from '../viz/FeatureSpacePanel';
+import { DegradationReplayController } from '../viz/DegradationReplayController';
+import { buildLifeSnapshots, interpHI } from '../dsp/replay';
 import { PeakTable } from '../viz/PeakTable';
 import { realCepstrum } from '../dsp/cepstrum';
 import { spectrogram } from '../dsp/spectrogram';
@@ -40,7 +42,7 @@ const T = {
     waveform: 'Vibration waveform — drag to zoom, hover to read; ▼=outliers, shaded=BPFO windows', spectrum: 'Raw spectrum (dB) — drag to zoom; click to set a harmonic comb; shaded=demod band',
     ses: 'Squared-envelope spectrum — defect-frequency combs (BPFO/BPFI/2·BSF/fr)', watNote: 'Run-to-failure spectral waterfall (synthetic): each row is a life snapshot, height is amplitude. Watch the BPFO ridge emerge and grow. Drag to rotate.',
     rulNote: 'Health-indicator trend with onset, failure threshold and the RUL projection fan (±2σ).',
-    onset: 'Onset', rul: 'RUL', fail: 'Proj. failure', h: 'h', freqs: 'Kinematic frequencies' },
+    onset: 'Onset', rul: 'RUL', fail: 'Proj. failure', h: 'h', freqs: 'Kinematic frequencies', replay: 'Replay degradation' },
   es: { bearing: 'Rodamiento', fault: 'Falla plantada', severity: 'Severidad', rpm: 'Velocidad eje (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnóstico', conf: 'confianza', sev: 'Índice de severidad', band: 'Banda demod', clickKg: 'Clic en una celda del kurtograma para fijar la banda → el SES se actualiza en vivo.',
     f_healthy: 'Sano', f_outer: 'Pista externa (BPFO)', f_inner: 'Pista interna (BPFI)', f_ball: 'Bola (2·BSF)',
@@ -48,7 +50,7 @@ const T = {
     waveform: 'Forma de onda — arrastra para zoom, hover para leer; ▼=outliers, sombreado=ventanas BPFO', spectrum: 'Espectro crudo (dB) — arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
     ses: 'Espectro de envolvente al cuadrado — peines de frecuencias de falla (BPFO/BPFI/2·BSF/fr)', watNote: 'Waterfall espectral run-to-failure (sintético): cada fila es una instantánea de vida, la altura es amplitud. Observa la cresta BPFO emerger y crecer. Arrastra para rotar.',
     rulNote: 'Tendencia del indicador de salud con onset, umbral de falla y el abanico de proyección de RUL (±2σ).',
-    onset: 'Onset', rul: 'RUL', fail: 'Falla proy.', h: 'h', freqs: 'Frecuencias cinemáticas' },
+    onset: 'Onset', rul: 'RUL', fail: 'Falla proy.', h: 'h', freqs: 'Frecuencias cinemáticas', replay: 'Reproducir degradación' },
 };
 
 export default function Tool() {
@@ -61,6 +63,11 @@ export default function Tool() {
   const [snr, setSnr] = useState(2);
   const [band, setBand] = useState<[number, number] | null>(null);
   const [fund, setFund] = useState<number | null>(null);
+  // degradation replay (life-position scrubber)
+  const [replayOn, setReplayOn] = useState(false);
+  const [lifePos, setLifePos] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
 
   const seed = useMemo(() => SCENARIOS.find((s) => s.fault === fault)?.spec.seed ?? 202, [fault]);
   const fr = rpm / 60;
@@ -91,11 +98,15 @@ export default function Tool() {
     return [xs, ys];
   }, [base]);
   const sesXmax = Math.min(700, 10 * base.f.bpfo);
-  const sesData = useMemo<uPlot.AlignedData>(() => {
+  const liveSesData = useMemo<uPlot.AlignedData>(() => {
     const f = ses.freq, m = ses.mag; const xs: number[] = [], ys: number[] = [];
     for (let i = 0; i < f.length; i++) { if (f[i] > sesXmax) break; xs.push(f[i]); ys.push(m[i]); }
     return [xs, ys];
   }, [ses, sesXmax]);
+  // degradation replay snapshots — built only while replay is engaged (zero cost when off)
+  const replaySnaps = useMemo(() => (replayOn ? buildLifeSnapshots({ bearing: bearingById(bearingId), fault, severityEnd: severity, rpm, snrDb: snr, sesXmax }) : null), [replayOn, bearingId, fault, severity, rpm, snr, sesXmax]);
+  const curSnap = replaySnaps ? replaySnaps[Math.round(lifePos * (replaySnaps.length - 1))] : null;
+  const sesData = curSnap ? (curSnap.sesData as uPlot.AlignedData) : liveSesData;
   const spectro = useMemo(() => spectrogram(base.sig.x, FS, 512, 0.75), [base]);
   const cep = useMemo(() => realCepstrum(base.sig.x, FS), [base]);
   const cepData = useMemo<uPlot.AlignedData>(() => { const q = cep.quef, a = cep.amp; const xs: number[] = [], ys: number[] = []; for (let i = 1; i < q.length; i++) { if (q[i] > 0.05) break; xs.push(q[i]); ys.push(a[i]); } return [xs, ys]; }, [cep]);
@@ -145,6 +156,10 @@ export default function Tool() {
   const bearingHash = useMemo(() => bearingId.split('').reduce((a, ch) => a + ch.charCodeAt(0), 0), [bearingId]);
   const rtf = useMemo(() => runToFailure({ seed: seed + bearingHash, fault, severity }), [seed, bearingHash, fault, severity]);
   const rul = useMemo(() => projectRUL(rtf.points, rtf.threshold), [rtf]);
+  // replay-derived 'now' position fed to the RUL chart + 3D waterfall while replay is engaged
+  const replayLifeH = isFinite(rtf.trueFail) ? rtf.trueFail : 60;
+  const nowT = replayOn ? lifePos * replayLifeH : undefined;
+  const nowHi = nowT != null ? interpHI(rtf.points, nowT) : undefined;
   // the run-to-failure waterfall demodulates the SAME fault/bearing/rpm/severity as the live case,
   // so the emerging ridge sits at the active defect frequency and the surface scales with severity.
   const WAT_FMAX = 600;
@@ -193,9 +208,9 @@ export default function Tool() {
     { id: 'cam', label: t.tCam, content: (
       <CampbellPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} seed={seed} rpm={rpm} lang={lang} />) },
     { id: 'wat', label: t.tWat, content: (
-      <div className="rv-vizstack"><Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} /></Suspense><p className="hint">{t.watNote}</p></div>) },
+      <div className="rv-vizstack"><Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} lifeRow={replayOn ? lifePos : null} /></Suspense><p className="hint">{t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
-      <div className="rv-vizstack"><RulChart points={rtf.points} rul={rul} /><p className="hint">{t.rulNote}</p>
+      <div className="rv-vizstack"><RulChart points={rtf.points} rul={rul} nowT={nowT} nowHi={nowHi} /><p className="hint">{t.rulNote}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rul.onset != null ? `${rul.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rul.rul != null ? `${rul.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rul.failTime != null ? `${rul.failTime.toFixed(0)} ${t.h}` : '—'}</b></span></div>
       </div>) },
     { id: 'iso', label: t.tIso, content: (
@@ -222,7 +237,13 @@ export default function Tool() {
         <Gauge title={t.sev} value={sev} max={12} unit="×" zones={[{ upTo: 3, color: '#3fb950', label: 'Healthy' }, { upTo: 6, color: '#58a6ff', label: 'Watch' }, { upTo: 9, color: '#d29922', label: 'Alarm' }, { upTo: 12, color: '#f85149', label: 'Trip' }]} />
         <div className="rv-freqs small"><div className="muted">{t.freqs} · fr = {fr.toFixed(1)} Hz</div><span style={{ color: C.outer }}>BPFO {base.f.bpfo.toFixed(1)}</span> · <span style={{ color: C.inner }}>BPFI {base.f.bpfi.toFixed(1)}</span> · <span style={{ color: C.ball }}>2·BSF {(2 * base.f.bsf).toFixed(1)}</span> · FTF {base.f.ftf.toFixed(1)} Hz</div>
       </aside>
-      <div className="rv-main"><Tabs tabs={tabs} ariaLabel="analysis" /></div>
+      <div className="rv-main">
+        <div className="rv-replay-bar">
+          <button className={`chip ${replayOn ? 'on' : ''}`} onClick={() => { setReplayOn((v) => !v); setPlaying(false); }}>{t.replay}</button>
+          {replayOn && <DegradationReplayController lifePos={lifePos} setLifePos={setLifePos} lifeH={replayLifeH} onsetH={rul.onset} failH={rul.failTime ?? (isFinite(rtf.trueFail) ? rtf.trueFail : null)} curSev={curSnap?.sev ?? 0} curHi={nowHi ?? 0} playing={playing} setPlaying={setPlaying} speed={speed} setSpeed={setSpeed} lang={lang} />}
+        </div>
+        <Tabs tabs={tabs} ariaLabel="analysis" />
+      </div>
     </div>
   );
 }
