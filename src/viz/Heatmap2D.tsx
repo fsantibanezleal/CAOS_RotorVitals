@@ -19,13 +19,13 @@ export interface Curve { pts: [number, number][]; color: string; label?: string 
  * order lines + resonance) and a vertical x-band (operating-speed window). Perceptually-uniform viridis. */
 export function Heatmap2D({
   cols, times, freqs, fmax, dbFloor = 60, height = 230, band, vlines = [],
-  segments = [], curves = [], xBand, hoverExtra,
+  segments = [], curves = [], xBand, hoverExtra, maskBelow,
   norm = 'db', unit = 'dB', xunit = 's', xlabel = 't (s)', ylabel = 'Hz', yunit = 'Hz',
 }: {
   cols: Float64Array[]; times: Float64Array; freqs: Float64Array; fmax?: number; dbFloor?: number;
   height?: number; band?: [number, number] | null; vlines?: VLine[];
   segments?: Segment[]; curves?: Curve[]; xBand?: [number, number] | null;
-  hoverExtra?: (x: number, y: number) => string;
+  hoverExtra?: (x: number, y: number) => string; maskBelow?: number | null;
   norm?: 'db' | 'lin'; unit?: string; xunit?: string; xlabel?: string; ylabel?: string; yunit?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -56,7 +56,8 @@ export function Heatmap2D({
       const col = cols[Math.min(cols.length - 1, Math.floor((px / iw) * cols.length))];
       for (let py = 0; py < ih; py++) {
         const fr = Math.min(rowMax, Math.round((1 - py / ih) * rowMax));
-        const [r, gg, b] = viridis((col[fr] - vmin) / span);
+        const v = col[fr];
+        const [r, gg, b] = viridis(maskBelow != null && v < maskBelow ? 0 : (v - vmin) / span);
         const o = (py * iw + px) * 4; img.data[o] = r; img.data[o + 1] = gg; img.data[o + 2] = b; img.data[o + 3] = 255;
       }
     }
@@ -98,7 +99,7 @@ export function Heatmap2D({
     for (let k = 0; k <= 4; k++) { const tt = x0 + (x1 - x0) * (k / 4); g.fillText(tt >= 1000 ? (tt / 1000).toFixed(1) + 'k' : tt.toFixed(tt < 5 ? 2 : 0), padL + (pw * k) / 4 - 8, padT + ph + 13); }
     for (let k = 0; k <= 4; k++) { const ff = (fM * k) / 4; g.fillText(ff >= 1000 ? (ff / 1000).toFixed(1) + 'k' : ff.toFixed(0), 2, padT + ph - (ph * k) / 4 + 3); }
     g.fillText(xlabel, padL + pw - 44, padT + ph + 13); g.save(); g.translate(10, padT + 10); g.fillText(ylabel, 0, 0); g.restore();
-  }, [cols, times, freqs, fmax, dbFloor, height, band, vlines, segments, curves, xBand, norm, xlabel, ylabel]);
+  }, [cols, times, freqs, fmax, dbFloor, height, band, vlines, segments, curves, xBand, maskBelow, norm, xlabel, ylabel]);
 
   const onMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const cv = ref.current; if (!cv || !cols.length) return;
