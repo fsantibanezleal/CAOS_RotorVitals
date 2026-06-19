@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-function viridis(t: number): [number, number, number] {
+export function viridis(t: number): [number, number, number] {
   const s = [[68, 1, 84], [59, 82, 139], [33, 145, 140], [94, 201, 98], [253, 231, 37]];
   t = Math.max(0, Math.min(1, t));
   const x = t * 4, i = Math.min(3, Math.floor(x)), f = x - i;
