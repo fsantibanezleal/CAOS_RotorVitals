@@ -18,6 +18,7 @@ import { Gauge } from '../viz/Gauge';
 import { RulChart } from '../viz/RulChart';
 import { Heatmap2D } from '../viz/Heatmap2D';
 import { CampbellPanel } from '../viz/CampbellPanel';
+import { GramPanel } from '../viz/GramPanel';
 import { IsoTrendPanel } from '../viz/IsoTrendPanel';
 import { FeatureSpacePanel } from '../viz/FeatureSpacePanel';
 import { DegradationReplayController } from '../viz/DegradationReplayController';
@@ -38,7 +39,7 @@ const T = {
   en: { bearing: 'Bearing', fault: 'Planted fault', severity: 'Severity', rpm: 'Shaft speed (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnosis', conf: 'confidence', sev: 'Fault severity index', band: 'Demod band', clickKg: 'Click a kurtogram cell to set the band → SES updates live.',
     f_healthy: 'Healthy', f_outer: 'Outer race (BPFO)', f_inner: 'Inner race (BPFI)', f_ball: 'Ball (2·BSF)',
-    tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tCam: 'Campbell / order', tRul: 'Prognostics · RUL', tIso: 'ISO trend', tFeat: 'Feature space', tWat: '3D waterfall', tSpec: 'Spectrogram', cep: 'Cepstrum (1/fr · 1/BPFO rahmonics marked)', spectroT: 'STFT spectrogram (dB) — hover reads (t,f,dB); box = demod band', spectroNote: 'Time-frequency: WHEN and in which band the impulsive fault energy appears (confirms stationarity).', tCsc: 'Cyclostationary', cscT: 'Cyclic spectral coherence (CMS) — vertical α-ridges at the fault frequencies', cscNote: 'Carrier f × cyclic frequency α. A real bearing fault is cyclostationary: it forms a vertical α-ridge family at BPFO/BPFI/2·BSF (independent of carrier), separating it from coincidental peaks. Fast CMS estimator (not full Fast-SC).',
+    tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tGram: 'Infogram', tCam: 'Campbell / order', tRul: 'Prognostics · RUL', tIso: 'ISO trend', tFeat: 'Feature space', tWat: '3D waterfall', tSpec: 'Spectrogram', cep: 'Cepstrum (1/fr · 1/BPFO rahmonics marked)', spectroT: 'STFT spectrogram (dB) — hover reads (t,f,dB); box = demod band', spectroNote: 'Time-frequency: WHEN and in which band the impulsive fault energy appears (confirms stationarity).', tCsc: 'Cyclostationary', cscT: 'Cyclic spectral coherence (CMS) — vertical α-ridges at the fault frequencies', cscNote: 'Carrier f × cyclic frequency α. A real bearing fault is cyclostationary: it forms a vertical α-ridge family at BPFO/BPFI/2·BSF (independent of carrier), separating it from coincidental peaks. Fast CMS estimator (not full Fast-SC).',
     waveform: 'Vibration waveform — drag to zoom, hover to read; ▼=outliers, shaded=BPFO windows', spectrum: 'Raw spectrum (dB) — drag to zoom; click to set a harmonic comb; shaded=demod band',
     ses: 'Squared-envelope spectrum — defect-frequency combs (BPFO/BPFI/2·BSF/fr)', watNote: 'Run-to-failure spectral waterfall (synthetic): each row is a life snapshot, height is amplitude. Watch the BPFO ridge emerge and grow. Drag to rotate.',
     rulNote: 'Health-indicator trend with onset, failure threshold and the RUL projection fan (±2σ).',
@@ -46,7 +47,7 @@ const T = {
   es: { bearing: 'Rodamiento', fault: 'Falla plantada', severity: 'Severidad', rpm: 'Velocidad eje (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnóstico', conf: 'confianza', sev: 'Índice de severidad', band: 'Banda demod', clickKg: 'Clic en una celda del kurtograma para fijar la banda → el SES se actualiza en vivo.',
     f_healthy: 'Sano', f_outer: 'Pista externa (BPFO)', f_inner: 'Pista interna (BPFI)', f_ball: 'Bola (2·BSF)',
-    tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tCam: 'Campbell / orden', tRul: 'Prognóstico · RUL', tIso: 'Tendencia ISO', tFeat: 'Espacio features', tWat: 'Waterfall 3D', tSpec: 'Espectrograma', cep: 'Cepstrum (rahmónicos 1/fr · 1/BPFO marcados)', spectroT: 'Espectrograma STFT (dB) — hover lee (t,f,dB); caja = banda demod', spectroNote: 'Tiempo-frecuencia: CUÁNDO y en qué banda aparece la energía impulsiva de falla (confirma estacionariedad).', tCsc: 'Cicloestacionario', cscT: 'Coherencia espectral cíclica (CMS) — crestas α verticales en las frecuencias de falla', cscNote: 'Portadora f × frecuencia cíclica α. Una falla real es cicloestacionaria: forma una familia de crestas α verticales en BPFO/BPFI/2·BSF (independiente de la portadora), separándola de picos casuales. Estimador CMS rápido (no Fast-SC completo).',
+    tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tGram: 'Infograma', tCam: 'Campbell / orden', tRul: 'Prognóstico · RUL', tIso: 'Tendencia ISO', tFeat: 'Espacio features', tWat: 'Waterfall 3D', tSpec: 'Espectrograma', cep: 'Cepstrum (rahmónicos 1/fr · 1/BPFO marcados)', spectroT: 'Espectrograma STFT (dB) — hover lee (t,f,dB); caja = banda demod', spectroNote: 'Tiempo-frecuencia: CUÁNDO y en qué banda aparece la energía impulsiva de falla (confirma estacionariedad).', tCsc: 'Cicloestacionario', cscT: 'Coherencia espectral cíclica (CMS) — crestas α verticales en las frecuencias de falla', cscNote: 'Portadora f × frecuencia cíclica α. Una falla real es cicloestacionaria: forma una familia de crestas α verticales en BPFO/BPFI/2·BSF (independiente de la portadora), separándola de picos casuales. Estimador CMS rápido (no Fast-SC completo).',
     waveform: 'Forma de onda — arrastra para zoom, hover para leer; ▼=outliers, sombreado=ventanas BPFO', spectrum: 'Espectro crudo (dB) — arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
     ses: 'Espectro de envolvente al cuadrado — peines de frecuencias de falla (BPFO/BPFI/2·BSF/fr)', watNote: 'Waterfall espectral run-to-failure (sintético): cada fila es una instantánea de vida, la altura es amplitud. Observa la cresta BPFO emerger y crecer. Arrastra para rotar.',
     rulNote: 'Tendencia del indicador de salud con onset, umbral de falla y el abanico de proyección de RUL (±2σ).',
@@ -210,6 +211,8 @@ export default function Tool() {
       <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{t.cscT}</div><Heatmap2D cols={csc.cols} times={csc.alpha} freqs={csc.carriers} fmax={6000} norm="lin" unit="coh" xunit="Hz" xlabel="α (Hz)" ylabel="carrier (Hz)" vlines={cscVlines} height={260} /></div><p className="hint">{t.cscNote}</p></div>) },
     { id: 'kur', label: t.tKur, content: (
       <div className="rv-vizstack"><Kurtogram kg={base.kg} fs={FS} onPick={onPickBand} /><p className="hint">{t.clickKg}</p></div>) },
+    { id: 'gram', label: t.tGram, content: (
+      <GramPanel x={base.sig.x} fs={FS} onPick={onPickBand} lang={lang} />) },
     { id: 'cam', label: t.tCam, content: (
       <CampbellPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} seed={seed} rpm={rpm} lang={lang} />) },
     { id: 'wat', label: t.tWat, content: (

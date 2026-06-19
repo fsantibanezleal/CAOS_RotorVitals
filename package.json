@@ -1,6 +1,6 @@
 {
   "name": "caos-rotorvitals",
-  "version": "0.19.000",
+  "version": "0.20.000",
   "private": true,
   "type": "module",
   "description": "RotorVitals — rotating-machinery condition-monitoring & prognostics suite (envelope/SES, spectral kurtosis & kurtogram, diagnosis, ISO severity, RUL).",
