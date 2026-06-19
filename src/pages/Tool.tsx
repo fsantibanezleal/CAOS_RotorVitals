@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import type uPlot from 'uplot';
 import { Tabs, useShellLang } from '@fasl-work/caos-app-shell';
 import { synth, type SignalSpec } from '../dsp/signal';
@@ -16,7 +16,13 @@ import { minMaxDecimate } from '../viz/decimate';
 import { Kurtogram } from '../viz/Kurtogram';
 import { Gauge } from '../viz/Gauge';
 import { RulChart } from '../viz/RulChart';
-import { Waterfall3D } from '../viz/Waterfall3D';
+import { Heatmap2D } from '../viz/Heatmap2D';
+import { PeakTable } from '../viz/PeakTable';
+import { realCepstrum } from '../dsp/cepstrum';
+import { spectrogram } from '../dsp/spectrogram';
+
+// lazy-load three.js (the 3D waterfall) so it ships in its own chunk, off the main bundle
+const Waterfall3D = lazy(() => import('../viz/Waterfall3D').then((m) => ({ default: m.Waterfall3D })));
 
 const FAULTS: FaultKind[] = ['healthy', 'outer', 'inner', 'ball'];
 const C = { outer: '#f59f00', inner: '#f06595', ball: '#7c5cff', shaft: '#3fb950', band: '#58a6ff', outlier: '#f85149', window: '#d29922' };
@@ -26,7 +32,7 @@ const T = {
   en: { bearing: 'Bearing', fault: 'Planted fault', severity: 'Severity', rpm: 'Shaft speed (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnosis', conf: 'confidence', sev: 'Fault severity index', band: 'Demod band', clickKg: 'Click a kurtogram cell to set the band → SES updates live.',
     f_healthy: 'Healthy', f_outer: 'Outer race (BPFO)', f_inner: 'Inner race (BPFI)', f_ball: 'Ball (2·BSF)',
-    tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tRul: 'Prognostics · RUL', tWat: '3D waterfall',
+    tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tRul: 'Prognostics · RUL', tWat: '3D waterfall', tSpec: 'Spectrogram', cep: 'Cepstrum (1/fr · 1/BPFO rahmonics marked)', spectroT: 'STFT spectrogram (dB) — hover reads (t,f,dB); box = demod band', spectroNote: 'Time-frequency: WHEN and in which band the impulsive fault energy appears (confirms stationarity).',
     waveform: 'Vibration waveform — drag to zoom, hover to read; ▼=outliers, shaded=BPFO windows', spectrum: 'Raw spectrum (dB) — drag to zoom; click to set a harmonic comb; shaded=demod band',
     ses: 'Squared-envelope spectrum — defect-frequency combs (BPFO/BPFI/2·BSF/fr)', watNote: 'Run-to-failure spectral waterfall (synthetic): each row is a life snapshot, height is amplitude. Watch the BPFO ridge emerge and grow. Drag to rotate.',
     rulNote: 'Health-indicator trend with onset, failure threshold and the RUL projection fan (±2σ).',
@@ -34,7 +40,7 @@ const T = {
   es: { bearing: 'Rodamiento', fault: 'Falla plantada', severity: 'Severidad', rpm: 'Velocidad eje (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnóstico', conf: 'confianza', sev: 'Índice de severidad', band: 'Banda demod', clickKg: 'Clic en una celda del kurtograma para fijar la banda → el SES se actualiza en vivo.',
     f_healthy: 'Sano', f_outer: 'Pista externa (BPFO)', f_inner: 'Pista interna (BPFI)', f_ball: 'Bola (2·BSF)',
-    tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tRul: 'Prognóstico · RUL', tWat: 'Waterfall 3D',
+    tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tRul: 'Prognóstico · RUL', tWat: 'Waterfall 3D', tSpec: 'Espectrograma', cep: 'Cepstrum (rahmónicos 1/fr · 1/BPFO marcados)', spectroT: 'Espectrograma STFT (dB) — hover lee (t,f,dB); caja = banda demod', spectroNote: 'Tiempo-frecuencia: CUÁNDO y en qué banda aparece la energía impulsiva de falla (confirma estacionariedad).',
     waveform: 'Forma de onda — arrastra para zoom, hover para leer; ▼=outliers, sombreado=ventanas BPFO', spectrum: 'Espectro crudo (dB) — arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
     ses: 'Espectro de envolvente al cuadrado — peines de frecuencias de falla (BPFO/BPFI/2·BSF/fr)', watNote: 'Waterfall espectral run-to-failure (sintético): cada fila es una instantánea de vida, la altura es amplitud. Observa la cresta BPFO emerger y crecer. Arrastra para rotar.',
     rulNote: 'Tendencia del indicador de salud con onset, umbral de falla y el abanico de proyección de RUL (±2σ).',
@@ -86,6 +92,9 @@ export default function Tool() {
     for (let i = 0; i < f.length; i++) { if (f[i] > sesXmax) break; xs.push(f[i]); ys.push(m[i]); }
     return [xs, ys];
   }, [ses, sesXmax]);
+  const spectro = useMemo(() => spectrogram(base.sig.x, FS, 512, 0.75), [base]);
+  const cep = useMemo(() => realCepstrum(base.sig.x, FS), [base]);
+  const cepData = useMemo<uPlot.AlignedData>(() => { const q = cep.quef, a = cep.amp; const xs: number[] = [], ys: number[] = []; for (let i = 1; i < q.length; i++) { if (q[i] > 0.05) break; xs.push(q[i]); ys.push(a[i]); } return [xs, ys]; }, [cep]);
 
   // outliers + BPFO detection windows on the waveform (first 0.08 s)
   const waveMarks = useMemo(() => {
@@ -102,6 +111,7 @@ export default function Tool() {
   const buildWave = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'g', color: C.band, xUnit: 's' }), []);
   const buildSpec = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'dB', color: '#8b949e', xUnit: 'Hz' }), []);
   const buildSes = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'SES', color: C.shaft, xUnit: 'Hz' }), []);
+  const buildCep = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'cepstrum', color: '#3fb1c8', xUnit: 's' }), []);
 
   // ---- plugins (memoized) ----
   const wavePlugins = useMemo(() => [regionsPlugin(waveMarks.windows, C.window), vmarksPlugin(waveMarks.outliers, C.outlier)], [waveMarks]);
@@ -114,6 +124,8 @@ export default function Tool() {
     { base: fr, harmonics: 3, color: C.shaft, label: 'fr' },
   ], [base, fr]);
   const sesPlugins = useMemo(() => [combsPlugin(sesCombs)], [sesCombs]);
+  const cepCombs = useMemo<Comb[]>(() => ([{ base: 1 / fr, harmonics: 4, color: C.shaft, label: '1/fr' }, ...(base.f.bpfo > 0 ? [{ base: 1 / base.f.bpfo, harmonics: 3, color: C.outer, label: '1/BPFO' }] : [])]), [fr, base]);
+  const cepPlugins = useMemo(() => [combsPlugin(cepCombs)], [cepCombs]);
 
   const onClickSpec = useCallback((x: number) => {
     const f = base.raw.freq, m = base.raw.mag; const tol = Math.max(20, 0.02 * x); let bestI = -1, bestV = -1;
@@ -152,11 +164,15 @@ export default function Tool() {
       <div className="rv-vizstack">
         <p className="hint">{t.band}: <b>{(effBand[0] / 1000).toFixed(2)}–{(effBand[1] / 1000).toFixed(2)} kHz</b> · {t.clickKg}</p>
         <div className="rv-plot"><div className="rv-plot-t">{t.ses}</div><UPlotChart data={sesData} build={buildSes} plugins={sesPlugins} height={200} /></div>
+        <PeakTable ses={ses} f={base.f} lang={lang} />
+        <div className="rv-plot"><div className="rv-plot-t">{t.cep}</div><UPlotChart data={cepData} build={buildCep} plugins={cepPlugins} height={150} /></div>
       </div>) },
+    { id: 'spec', label: t.tSpec, content: (
+      <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{t.spectroT}</div><Heatmap2D cols={spectro.cols} times={spectro.times} freqs={spectro.freqs} fmax={6000} band={effBand} /></div><p className="hint">{t.spectroNote}</p></div>) },
     { id: 'kur', label: t.tKur, content: (
       <div className="rv-vizstack"><Kurtogram kg={base.kg} fs={FS} onPick={onPickBand} /><p className="hint">{t.clickKg}</p></div>) },
     { id: 'wat', label: t.tWat, content: (
-      <div className="rv-vizstack"><Waterfall3D grid={waterfall} /><p className="hint">{t.watNote}</p></div>) },
+      <div className="rv-vizstack"><Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} /></Suspense><p className="hint">{t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
       <div className="rv-vizstack"><RulChart points={rtf.points} rul={rul} /><p className="hint">{t.rulNote}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rul.onset != null ? `${rul.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rul.rul != null ? `${rul.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rul.failTime != null ? `${rul.failTime.toFixed(0)} ${t.h}` : '—'}</b></span></div>
