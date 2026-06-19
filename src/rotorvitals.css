@@ -55,3 +55,9 @@
 .u-cursor-pt { border-color: var(--color-accent); }
 .u-select { background: color-mix(in oklab, var(--color-accent) 16%, transparent); }
 .u-legend { font-size: 0.78rem; color: var(--color-fg-subtle); }
+
+/* heatmap hover readout + peak table */
+.heatmap-readout { position: absolute; pointer-events: none; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px; padding: 0.2rem 0.45rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-fg); white-space: nowrap; }
+.peaktable { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 10px; padding: 0.6rem 0.75rem; }
+.peaktable-t td, .peaktable-t th { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+.peaktable-t tr.matched { background: color-mix(in oklab, var(--color-good) 14%, transparent); }
