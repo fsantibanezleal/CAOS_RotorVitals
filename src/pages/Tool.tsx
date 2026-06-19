@@ -19,6 +19,7 @@ import { RulChart } from '../viz/RulChart';
 import { Heatmap2D } from '../viz/Heatmap2D';
 import { CampbellPanel } from '../viz/CampbellPanel';
 import { GramPanel } from '../viz/GramPanel';
+import { CscPanel } from '../viz/CscPanel';
 import { IsoTrendPanel } from '../viz/IsoTrendPanel';
 import { FeatureSpacePanel } from '../viz/FeatureSpacePanel';
 import { PrognosticEvalPanel } from '../viz/PrognosticEvalPanel';
@@ -27,7 +28,6 @@ import { buildLifeSnapshots, interpHI } from '../dsp/replay';
 import { PeakTable } from '../viz/PeakTable';
 import { realCepstrum } from '../dsp/cepstrum';
 import { spectrogram } from '../dsp/spectrogram';
-import { cyclicModulationSpectrum } from '../dsp/csc';
 
 // lazy-load three.js (the 3D waterfall) so it ships in its own chunk, off the main bundle
 const Waterfall3D = lazy(() => import('../viz/Waterfall3D').then((m) => ({ default: m.Waterfall3D })));
@@ -113,8 +113,6 @@ export default function Tool() {
   const spectro = useMemo(() => spectrogram(base.sig.x, FS, 512, 0.75), [base]);
   const cep = useMemo(() => realCepstrum(base.sig.x, FS), [base]);
   const cepData = useMemo<uPlot.AlignedData>(() => { const q = cep.quef, a = cep.amp; const xs: number[] = [], ys: number[] = []; for (let i = 1; i < q.length; i++) { if (q[i] > 0.05) break; xs.push(q[i]); ys.push(a[i]); } return [xs, ys]; }, [cep]);
-  const csc = useMemo(() => cyclicModulationSpectrum(base.sig.x, FS, 128, 8, 800), [base]);
-  const cscVlines = useMemo(() => [{ x: base.f.bpfo, color: C.outer, label: 'BPFO' }, { x: base.f.bpfi, color: C.inner, label: 'BPFI' }, { x: 2 * base.f.bsf, color: C.ball, label: '2·BSF' }, { x: base.f.ftf, color: '#3fb1c8', label: 'FTF' }], [base]);
 
   // outliers + BPFO detection windows on the waveform (first 0.08 s)
   const waveMarks = useMemo(() => {
@@ -209,7 +207,7 @@ export default function Tool() {
     { id: 'spec', label: t.tSpec, content: (
       <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{t.spectroT}</div><Heatmap2D cols={spectro.cols} times={spectro.times} freqs={spectro.freqs} fmax={6000} band={effBand} /></div><p className="hint">{t.spectroNote}</p></div>) },
     { id: 'csc', label: t.tCsc, content: (
-      <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{t.cscT}</div><Heatmap2D cols={csc.cols} times={csc.alpha} freqs={csc.carriers} fmax={6000} norm="lin" unit="coh" xunit="Hz" xlabel="α (Hz)" ylabel="carrier (Hz)" vlines={cscVlines} height={260} /></div><p className="hint">{t.cscNote}</p></div>) },
+      <CscPanel x={base.sig.x} fs={FS} f={base.f} lang={lang} />) },
     { id: 'kur', label: t.tKur, content: (
       <div className="rv-vizstack"><Kurtogram kg={base.kg} fs={FS} onPick={onPickBand} /><p className="hint">{t.clickKg}</p></div>) },
     { id: 'gram', label: t.tGram, content: (
