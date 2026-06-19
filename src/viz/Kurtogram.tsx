@@ -15,10 +15,26 @@ function ramp(t: number): string {
 
 /** The kurtogram heatmap: rows = decomposition levels, each split into 2^level frequency cells,
  * colored by envelope kurtosis. The maximal-kurtosis cell (optimal demodulation band) is outlined. */
-export function Kurtogram({ kg, fs, height = 220 }: { kg: Kurtogram; fs: number; height?: number }) {
+export function Kurtogram({ kg, fs, height = 220, onPick }: { kg: Kurtogram; fs: number; height?: number; onPick?: (band: [number, number]) => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
+    const padLc = 64, padTc = 8, padBc = 24;
+    const onClick = onPick
+      ? (e: MouseEvent) => {
+          const rect = cv.getBoundingClientRect();
+          const x = e.clientX - rect.left, y = e.clientY - rect.top;
+          const pw = rect.width - padLc - 12, ph = rect.height - padTc - padBc;
+          if (x < padLc || y < padTc || y > padTc + ph) return;
+          const row = Math.min(kg.cells.length - 1, Math.max(0, Math.floor(((y - padTc) / ph) * kg.cells.length)));
+          const level = kg.cells[row][0].level;
+          const nb = 2 ** level, bw = fs / 2 / nb;
+          const f = ((x - padLc) / pw) * (fs / 2);
+          const bi = Math.min(nb - 1, Math.max(0, Math.floor(f / bw)));
+          onPick([Math.max(bi * bw, 0.02 * fs), (bi + 1) * bw]);
+        }
+      : null;
+    if (onClick) { cv.style.cursor = 'crosshair'; cv.addEventListener('click', onClick); }
     const dpr = window.devicePixelRatio || 1; const W = cv.clientWidth || 600, H = height;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     const g = cv.getContext('2d'); if (!g) return; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
@@ -46,6 +62,7 @@ export function Kurtogram({ kg, fs, height = 220 }: { kg: Kurtogram; fs: number;
     g.strokeStyle = dim; g.beginPath(); g.moveTo(padL, padT + ph); g.lineTo(padL + pw, padT + ph); g.stroke();
     g.fillStyle = dim; for (let k = 0; k <= 5; k++) { const f = (nyq * k) / 5; g.fillText((f / 1000).toFixed(1) + 'k', padL + (f / nyq) * pw - 8, padT + ph + 14); }
     g.fillStyle = fg; g.fillText('frequency (Hz)', padL + pw - 80, padT + ph + 14);
-  });
+    return () => { if (onClick) cv.removeEventListener('click', onClick); };
+  }, [kg, fs, height, onPick]);
   return <canvas ref={ref} style={{ width: '100%', height, display: 'block' }} />;
 }
