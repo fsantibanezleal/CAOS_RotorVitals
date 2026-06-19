@@ -1,0 +1,254 @@
+{
+  "dataset": "CWRU 12 kHz Drive-End (0.007 in faults) + Normal baseline",
+  "source": "https://engineering.case.edu/bearingdatacenter",
+  "redistribution": "link-only; raw .mat NOT re-hosted",
+  "bearing": "SKF 6205-2RS JEM",
+  "multipliers": {
+    "BPFO": 3.5848,
+    "BPFI": 5.4152,
+    "2BSF": 4.7136,
+    "FTF": 0.3983
+  },
+  "protocol": "Unsupervised envelope/SES comb-scoring (no training -> leakage-immune by construction); 1 s windows from independent recordings; per-class row-normalized confusion. The three methods differ ONLY in the demodulation band: a fixed fault-resonance band, the auto kurtogram pick, or no demodulation (raw spectrum) \u2014 so the table isolates how decisive band selection is.",
+  "classes": [
+    "normal",
+    "outer",
+    "inner",
+    "ball"
+  ],
+  "files": [
+    {
+      "file": 97,
+      "class": "normal",
+      "loadHP": 0,
+      "rpm": 1797,
+      "fs": 48000
+    },
+    {
+      "file": 98,
+      "class": "normal",
+      "loadHP": 1,
+      "rpm": 1772,
+      "fs": 48000
+    },
+    {
+      "file": 99,
+      "class": "normal",
+      "loadHP": 2,
+      "rpm": 1750,
+      "fs": 48000
+    },
+    {
+      "file": 100,
+      "class": "normal",
+      "loadHP": 3,
+      "rpm": 1730,
+      "fs": 48000
+    },
+    {
+      "file": 105,
+      "class": "inner",
+      "loadHP": 0,
+      "rpm": 1797,
+      "fs": 12000
+    },
+    {
+      "file": 106,
+      "class": "inner",
+      "loadHP": 1,
+      "rpm": 1772,
+      "fs": 12000
+    },
+    {
+      "file": 107,
+      "class": "inner",
+      "loadHP": 2,
+      "rpm": 1750,
+      "fs": 12000
+    },
+    {
+      "file": 108,
+      "class": "inner",
+      "loadHP": 3,
+      "rpm": 1730,
+      "fs": 12000
+    },
+    {
+      "file": 118,
+      "class": "ball",
+      "loadHP": 0,
+      "rpm": 1797,
+      "fs": 12000
+    },
+    {
+      "file": 119,
+      "class": "ball",
+      "loadHP": 1,
+      "rpm": 1772,
+      "fs": 12000
+    },
+    {
+      "file": 120,
+      "class": "ball",
+      "loadHP": 2,
+      "rpm": 1750,
+      "fs": 12000
+    },
+    {
+      "file": 121,
+      "class": "ball",
+      "loadHP": 3,
+      "rpm": 1730,
+      "fs": 12000
+    },
+    {
+      "file": 130,
+      "class": "outer",
+      "loadHP": 0,
+      "rpm": 1797,
+      "fs": 12000
+    },
+    {
+      "file": 131,
+      "class": "outer",
+      "loadHP": 1,
+      "rpm": 1772,
+      "fs": 12000
+    },
+    {
+      "file": 132,
+      "class": "outer",
+      "loadHP": 2,
+      "rpm": 1750,
+      "fs": 12000
+    },
+    {
+      "file": 133,
+      "class": "outer",
+      "loadHP": 3,
+      "rpm": 1730,
+      "fs": 12000
+    }
+  ],
+  "methods": {
+    "Envelope-SES (resonance band 2\u20134 kHz)": {
+      "confusion": [
+        [
+          23,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          24,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          23,
+          0
+        ],
+        [
+          24,
+          0,
+          0,
+          0
+        ]
+      ],
+      "rowRecall": [
+        1.0,
+        1.0,
+        0.9583333333333334,
+        0.0
+      ],
+      "accuracy": 0.7368421052631579,
+      "n": 95
+    },
+    "Envelope-SES (auto kurtogram band)": {
+      "confusion": [
+        [
+          23,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          23,
+          0,
+          0
+        ],
+        [
+          24,
+          0,
+          0,
+          0
+        ],
+        [
+          24,
+          0,
+          0,
+          0
+        ]
+      ],
+      "rowRecall": [
+        1.0,
+        0.9583333333333334,
+        0.0,
+        0.0
+      ],
+      "accuracy": 0.4842105263157895,
+      "n": 95
+    },
+    "Raw-spectrum comb (no demodulation)": {
+      "confusion": [
+        [
+          0,
+          0,
+          23,
+          0
+        ],
+        [
+          23,
+          0,
+          1,
+          0
+        ],
+        [
+          6,
+          0,
+          18,
+          0
+        ],
+        [
+          0,
+          0,
+          24,
+          0
+        ]
+      ],
+      "rowRecall": [
+        0.0,
+        0.0,
+        0.75,
+        0.0
+      ],
+      "accuracy": 0.18947368421052632,
+      "n": 95
+    }
+  },
+  "caveat": "Honest reading: band selection dominates \u2014 envelope analysis in the documented resonance band recovers normal/inner/outer reliably, the auto kurtogram pick underperforms on this data, and the raw spectrum is near chance. Rolling-element (ball) faults stay the hard case (their 2*BSF line is weak and modulated) \u2014 a well-known CWRU difficulty, not a bug. The 0.007 in faults are also large/largely separable (Smith & Randall 2015), so this is not field-grade difficulty.",
+  "refs": [
+    {
+      "label": "CWRU Bearing Data Center",
+      "url": "https://engineering.case.edu/bearingdatacenter"
+    },
+    {
+      "label": "Smith & Randall 2015",
+      "doi": "10.1016/j.ymssp.2015.04.021"
+    }
+  ]
+}
