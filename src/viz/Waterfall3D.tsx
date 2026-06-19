@@ -18,9 +18,9 @@ const Y_SCALE = 0.9;
  * `grid[time][freq]`, normalized 0..1. Orbit to rotate; hover reads (freq, life, amplitude); the
  * active defect frequency is marked with a translucent ridge plane. */
 export function Waterfall3D({
-  grid, height = 320, fmax = 600, ridgeHz = 0, ridgeLabel = '', lifeH = 100,
+  grid, height = 320, fmax = 600, ridgeHz = 0, ridgeLabel = '', lifeH = 100, lifeRow = null,
 }: {
-  grid: number[][]; height?: number; fmax?: number; ridgeHz?: number; ridgeLabel?: string; lifeH?: number;
+  grid: number[][]; height?: number; fmax?: number; ridgeHz?: number; ridgeLabel?: string; lifeH?: number; lifeRow?: number | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const readRef = useRef<HTMLDivElement>(null);
@@ -86,6 +86,16 @@ export function Waterfall3D({
       scene.add(plane);
     }
 
+    // replay 'now' plane at the current life position (z = life), across the whole frequency axis
+    if (lifeRow != null) {
+      const np = new THREE.Mesh(
+        new THREE.PlaneGeometry(2, Y_SCALE),
+        new THREE.MeshBasicMaterial({ color: 0xc9d1d9, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }),
+      );
+      np.position.set(0, Y_SCALE / 2, lifeRow * 2 - 1);
+      scene.add(np);
+    }
+
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; controls.autoRotate = true; controls.autoRotateSpeed = 0.6;
 
@@ -126,7 +136,7 @@ export function Waterfall3D({
       controls.dispose(); geom.dispose(); (mesh.material as THREE.Material).dispose(); renderer.dispose();
       if (renderer.domElement.parentNode === el) el.removeChild(renderer.domElement);
     };
-  }, [grid, height, fmax, ridgeHz, ridgeLabel, lifeH]);
+  }, [grid, height, fmax, ridgeHz, ridgeLabel, lifeH, lifeRow]);
 
   return (
     <div className="wf3d-wrap" style={{ position: 'relative', width: '100%', height }}>

@@ -10,7 +10,7 @@ const PAD = { L: 42, R: 12, T: 12, B: 24 };
 /** Health-indicator trend with the failure threshold, the detected onset, and the forward RUL
  * projection fan (±2σ band + median). The honest way to show RUL: a credible interval, not a point.
  * Hover reads (time, HI) on the observed trend and the projected median on the fan. */
-export function RulChart({ points, rul, height = 220 }: { points: HIPoint[]; rul: RulResult; height?: number }) {
+export function RulChart({ points, rul, height = 220, nowT, nowHi }: { points: HIPoint[]; rul: RulResult; height?: number; nowT?: number; nowHi?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [hov, setHov] = useState<{ x: number; y: number; t: number; hi: number; kind: 'obs' | 'proj' } | null>(null);
 
@@ -57,12 +57,18 @@ export function RulChart({ points, rul, height = 220 }: { points: HIPoint[]; rul
     g.strokeStyle = acc; g.lineWidth = 1.4; g.beginPath();
     points.forEach((p, i) => { const x = sx(p.t), y = sy(p.hi); i === 0 ? g.moveTo(x, y) : g.lineTo(x, y); }); g.stroke();
     g.fillStyle = acc; for (const p of points) { g.beginPath(); g.arc(sx(p.t), sy(p.hi), 1.7, 0, 7); g.fill(); }
+    // replay 'now' marker (life-position scrubber)
+    if (nowT != null) {
+      g.strokeStyle = fg; g.lineWidth = 1.6; g.beginPath(); g.moveTo(sx(nowT), PAD.T); g.lineTo(sx(nowT), PAD.T + ph); g.stroke();
+      g.fillStyle = fg; g.font = '10px ui-monospace, monospace'; g.fillText('now', sx(nowT) + 3, PAD.T + 9);
+      if (nowHi != null) { g.fillStyle = acc; g.beginPath(); g.arc(sx(nowT), sy(nowHi), 4, 0, 7); g.fill(); }
+    }
     // hover crosshair + marker
     if (hov) {
       g.strokeStyle = fg; g.globalAlpha = 0.5; g.setLineDash([2, 2]); g.beginPath(); g.moveTo(sx(hov.t), PAD.T); g.lineTo(sx(hov.t), PAD.T + ph); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
       g.fillStyle = hov.kind === 'proj' ? mag : acc; g.beginPath(); g.arc(sx(hov.t), sy(hov.hi), 3.2, 0, 7); g.fill();
     }
-  }, [points, rul, height, hov]);
+  }, [points, rul, height, hov, nowT, nowHi]);
 
   const onMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const cv = ref.current; if (!cv) return;
