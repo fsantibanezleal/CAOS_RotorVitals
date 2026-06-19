@@ -32,23 +32,28 @@ export function Heatmap2D({
     const dim = css.getPropertyValue('--color-fg-faint').trim() || '#6c7785';
     const acc = css.getPropertyValue('--color-accent').trim() || '#58a6ff';
     const padL = 46, padR = 10, padT = 8, padB = 22, pw = W - padL - padR, ph = H - padT - padB;
-    const nf = freqs.length; const fM = fmax ?? freqs[nf - 1];
-    const rowMax = Math.max(1, Math.round((fM / freqs[nf - 1]) * (nf - 1)));
+    const nf = freqs.length; const fM = Math.min(fmax ?? freqs[nf - 1], freqs[nf - 1]);
+    const rowMax = Math.min(nf - 1, Math.max(1, Math.round((fM / freqs[nf - 1]) * (nf - 1))));
     let vmax = -Infinity, vmin = Infinity;
     for (const c of cols) for (let f = 0; f <= rowMax; f++) { if (c[f] > vmax) vmax = c[f]; if (c[f] < vmin) vmin = c[f]; }
     if (norm === 'db') vmin = vmax - dbFloor;
     const span = vmax - vmin || 1;
-    const img = g.createImageData(Math.max(1, Math.round(pw)), Math.max(1, Math.round(ph)));
-    const iw = img.width, ih = img.height;
+    // render the heatmap to an offscreen canvas (CSS px) then drawImage — putImageData ignores the
+    // dpr transform and would paint only a corner on hi-DPI screens.
+    const iw = Math.max(1, Math.round(pw)), ih = Math.max(1, Math.round(ph));
+    const off = document.createElement('canvas'); off.width = iw; off.height = ih;
+    const og = off.getContext('2d'); if (!og) return;
+    const img = og.createImageData(iw, ih);
     for (let px = 0; px < iw; px++) {
       const col = cols[Math.min(cols.length - 1, Math.floor((px / iw) * cols.length))];
       for (let py = 0; py < ih; py++) {
-        const fr = Math.round((1 - py / ih) * rowMax);
+        const fr = Math.min(rowMax, Math.round((1 - py / ih) * rowMax));
         const [r, gg, b] = viridis((col[fr] - vmin) / span);
         const o = (py * iw + px) * 4; img.data[o] = r; img.data[o + 1] = gg; img.data[o + 2] = b; img.data[o + 3] = 255;
       }
     }
-    g.putImageData(img, Math.round(padL), Math.round(padT));
+    og.putImageData(img, 0, 0);
+    g.drawImage(off, padL, padT, pw, ph);
     const x0 = times[0], x1 = times[times.length - 1];
     const xpos = (xv: number) => padL + ((xv - x0) / (x1 - x0 || 1)) * pw;
     if (band) {

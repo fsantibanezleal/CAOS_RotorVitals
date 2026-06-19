@@ -11,18 +11,36 @@ function vars() {
   };
 }
 
-/** Base uPlot options for a themed line chart (zoom/pan/crosshair built in). */
-export function lineOpts(width: number, height: number, opts: { label: string; color?: string; xUnit?: string }): uPlot.Options {
+/** Base uPlot options for a themed line chart (zoom/pan/crosshair built in).
+ * The legend is LIVE: it reads out the (x, y) values at the cursor with units, so hovering a comb
+ * (BPFO, fr, …) tells you the exact frequency/amplitude — not just a bare crosshair. */
+export function lineOpts(
+  width: number, height: number,
+  opts: { label: string; color?: string; xUnit?: string; yUnit?: string; xPrec?: number; yPrec?: number },
+): uPlot.Options {
   const v = vars();
   const c = opts.color || v.accent;
+  const xu = opts.xUnit ?? '', yu = opts.yUnit ?? '';
+  const fmtX = (val: number | null) => {
+    if (val == null) return '--';
+    const a = Math.abs(val);
+    const s = a >= 1000 ? (val / 1000).toFixed(2) + 'k' : val.toFixed(opts.xPrec ?? (a < 5 ? 4 : 1));
+    return xu ? `${s} ${xu}` : s;
+  };
+  const fmtY = (val: number | null) => {
+    if (val == null) return '--';
+    const a = Math.abs(val);
+    const s = a !== 0 && (a >= 1e4 || a < 1e-2) ? val.toExponential(2) : val.toFixed(opts.yPrec ?? 2);
+    return yu ? `${s} ${yu}` : s;
+  };
   return {
     width, height,
     scales: { x: { time: false }, y: {} },
-    cursor: { drag: { x: true, y: false }, points: { show: true } },
-    legend: { show: false },
+    cursor: { drag: { x: true, y: false }, points: { show: true }, focus: { prox: 24 } },
+    legend: { show: true, live: true },
     series: [
-      { label: opts.xUnit || 'x' },
-      { label: opts.label, stroke: c, width: 1.4, points: { show: false } },
+      { label: xu || 'x', value: (_u, val) => fmtX(val as number | null) },
+      { label: opts.label, stroke: c, width: 1.4, points: { show: false }, value: (_u, val) => fmtY(val as number | null) },
     ],
     axes: [
       { stroke: v.dim, grid: { stroke: v.grid, width: 0.5 }, ticks: { stroke: v.grid }, font: '10px ui-monospace, monospace' },

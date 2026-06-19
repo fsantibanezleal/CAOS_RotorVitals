@@ -111,20 +111,20 @@ export default function Tool() {
   }, [base, fault]);
 
   // ---- builds (stable) ----
-  const buildWave = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'g', color: C.band, xUnit: 's' }), []);
-  const buildSpec = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'dB', color: '#8b949e', xUnit: 'Hz' }), []);
-  const buildSes = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'SES', color: C.shaft, xUnit: 'Hz' }), []);
+  const buildWave = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'accel', color: C.band, xUnit: 's', yUnit: 'g' }), []);
+  const buildSpec = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'level', color: '#8b949e', xUnit: 'Hz', yUnit: 'dB', yPrec: 1 }), []);
+  const buildSes = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'SES', color: C.shaft, xUnit: 'Hz', yUnit: 'g²' }), []);
   const buildCep = useCallback((w: number, h: number) => lineOpts(w, h, { label: 'cepstrum', color: '#3fb1c8', xUnit: 's' }), []);
 
   // ---- plugins (memoized) ----
   const wavePlugins = useMemo(() => [regionsPlugin(waveMarks.windows, C.window), vmarksPlugin(waveMarks.outliers, C.outlier)], [waveMarks]);
-  const specCombs = useMemo<Comb[]>(() => { const a: Comb[] = [{ base: fr, harmonics: 6, color: C.shaft, label: 'fr' }]; if (fund) a.push({ base: fund, harmonics: 5, color: C.band, label: `${fund.toFixed(0)} Hz` }); return a; }, [fr, fund]);
+  const specCombs = useMemo<Comb[]>(() => { const a: Comb[] = [{ base: fr, harmonics: 6, color: C.shaft, label: `fr ${fr.toFixed(1)} Hz` }]; if (fund) a.push({ base: fund, harmonics: 5, color: C.band, label: `${fund.toFixed(0)} Hz` }); return a; }, [fr, fund]);
   const specPlugins = useMemo(() => [regionsPlugin([effBand], C.band), combsPlugin(specCombs)], [effBand, specCombs]);
   const sesCombs = useMemo<Comb[]>(() => [
-    { base: base.f.bpfo, harmonics: 6, color: C.outer, label: 'BPFO' },
-    { base: base.f.bpfi, harmonics: 5, color: C.inner, label: 'BPFI' },
-    { base: 2 * base.f.bsf, harmonics: 4, color: C.ball, label: '2·BSF' },
-    { base: fr, harmonics: 3, color: C.shaft, label: 'fr' },
+    { base: base.f.bpfo, harmonics: 6, color: C.outer, label: `BPFO ${base.f.bpfo.toFixed(1)} Hz` },
+    { base: base.f.bpfi, harmonics: 5, color: C.inner, label: `BPFI ${base.f.bpfi.toFixed(1)} Hz` },
+    { base: 2 * base.f.bsf, harmonics: 4, color: C.ball, label: `2·BSF ${(2 * base.f.bsf).toFixed(1)} Hz` },
+    { base: fr, harmonics: 3, color: C.shaft, label: `fr ${fr.toFixed(1)} Hz` },
   ], [base, fr]);
   const sesPlugins = useMemo(() => [combsPlugin(sesCombs)], [sesCombs]);
   const cepCombs = useMemo<Comb[]>(() => ([{ base: 1 / fr, harmonics: 4, color: C.shaft, label: '1/fr' }, ...(base.f.bpfo > 0 ? [{ base: 1 / base.f.bpfo, harmonics: 3, color: C.outer, label: '1/BPFO' }] : [])]), [fr, base]);
@@ -138,22 +138,33 @@ export default function Tool() {
 
   const onPickBand = useCallback((b: [number, number]) => setBand(b), []);
 
-  // ---- run-to-failure (RUL + 3D waterfall) ----
-  const rtf = useMemo(() => runToFailure(), []);
+  // ---- run-to-failure (RUL + 3D waterfall) — REACT to the selected scenario ----
+  const bearingHash = useMemo(() => bearingId.split('').reduce((a, ch) => a + ch.charCodeAt(0), 0), [bearingId]);
+  const rtf = useMemo(() => runToFailure({ seed: seed + bearingHash, fault, severity }), [seed, bearingHash, fault, severity]);
   const rul = useMemo(() => projectRUL(rtf.points, rtf.threshold), [rtf]);
+  // the run-to-failure waterfall demodulates the SAME fault/bearing/rpm/severity as the live case,
+  // so the emerging ridge sits at the active defect frequency and the surface scales with severity.
+  const WAT_FMAX = 600;
   const waterfall = useMemo(() => {
-    const rows = 26, fmax = 600, cols = 110; const grid: number[][] = []; let gmax = 1e-9;
-    const bearing = bearingById('skf6205');
+    const rows = 26, fmax = WAT_FMAX, cols = 110; const grid: number[][] = []; let gmax = 1e-9;
+    const bearing = bearingById(bearingId);
+    const sevEnd = fault === 'healthy' ? 0 : Math.max(0.25, severity) * 1.2;
     for (let r = 0; r < rows; r++) {
-      const sev2 = Math.max(0, (r - 6) / (rows - 7)) * 1.2;
-      const sig = synth({ fs: FS, dur: 0.5, rpm: 1772, bearing, fault: 'outer', severity: sev2, resonance: 3400, zeta: 0.04, snrDb: 3, seed: 100 + r });
+      const sev2 = Math.max(0, (r - 6) / (rows - 7)) * sevEnd;
+      const sig = synth({ fs: FS, dur: 0.5, rpm, bearing, fault, severity: sev2, resonance: 3400, zeta: 0.04, snrDb: 3, seed: 100 + r });
       const s = envelopeSpectrum(sig.x, FS, [2200, 4600]);
       const rowv: number[] = [];
       for (let c = 0; c < cols; c++) { const f = (c / (cols - 1)) * fmax; let i = Math.round((f / (FS / 2)) * (s.freq.length - 1)); i = Math.max(0, Math.min(s.mag.length - 1, i)); const v = s.mag[i]; rowv.push(v); if (v > gmax) gmax = v; }
       grid.push(rowv);
     }
     return grid.map((row) => row.map((v) => v / gmax));
-  }, []);
+  }, [bearingId, fault, rpm, severity]);
+  // defect frequency of the active fault → labels the emerging ridge in the 3D waterfall
+  const ridge = useMemo(() => {
+    const hz = fault === 'outer' ? base.f.bpfo : fault === 'inner' ? base.f.bpfi : fault === 'ball' ? 2 * base.f.bsf : 0;
+    const label = fault === 'outer' ? 'BPFO' : fault === 'inner' ? 'BPFI' : fault === 'ball' ? '2·BSF' : '';
+    return { hz, label };
+  }, [fault, base]);
 
   const faultLabel = (k: string) => (t as Record<string, string>)[`f_${k}`] ?? k;
 
@@ -177,7 +188,7 @@ export default function Tool() {
     { id: 'kur', label: t.tKur, content: (
       <div className="rv-vizstack"><Kurtogram kg={base.kg} fs={FS} onPick={onPickBand} /><p className="hint">{t.clickKg}</p></div>) },
     { id: 'wat', label: t.tWat, content: (
-      <div className="rv-vizstack"><Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} /></Suspense><p className="hint">{t.watNote}</p></div>) },
+      <div className="rv-vizstack"><Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} /></Suspense><p className="hint">{t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
       <div className="rv-vizstack"><RulChart points={rtf.points} rul={rul} /><p className="hint">{t.rulNote}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rul.onset != null ? `${rul.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rul.rul != null ? `${rul.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rul.failTime != null ? `${rul.failTime.toFixed(0)} ${t.h}` : '—'}</b></span></div>
