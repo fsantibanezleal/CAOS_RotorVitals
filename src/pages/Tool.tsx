@@ -20,6 +20,7 @@ import { Heatmap2D } from '../viz/Heatmap2D';
 import { PeakTable } from '../viz/PeakTable';
 import { realCepstrum } from '../dsp/cepstrum';
 import { spectrogram } from '../dsp/spectrogram';
+import { cyclicModulationSpectrum } from '../dsp/csc';
 
 // lazy-load three.js (the 3D waterfall) so it ships in its own chunk, off the main bundle
 const Waterfall3D = lazy(() => import('../viz/Waterfall3D').then((m) => ({ default: m.Waterfall3D })));
@@ -32,7 +33,7 @@ const T = {
   en: { bearing: 'Bearing', fault: 'Planted fault', severity: 'Severity', rpm: 'Shaft speed (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnosis', conf: 'confidence', sev: 'Fault severity index', band: 'Demod band', clickKg: 'Click a kurtogram cell to set the band → SES updates live.',
     f_healthy: 'Healthy', f_outer: 'Outer race (BPFO)', f_inner: 'Inner race (BPFI)', f_ball: 'Ball (2·BSF)',
-    tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tRul: 'Prognostics · RUL', tWat: '3D waterfall', tSpec: 'Spectrogram', cep: 'Cepstrum (1/fr · 1/BPFO rahmonics marked)', spectroT: 'STFT spectrogram (dB) — hover reads (t,f,dB); box = demod band', spectroNote: 'Time-frequency: WHEN and in which band the impulsive fault energy appears (confirms stationarity).',
+    tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tRul: 'Prognostics · RUL', tWat: '3D waterfall', tSpec: 'Spectrogram', cep: 'Cepstrum (1/fr · 1/BPFO rahmonics marked)', spectroT: 'STFT spectrogram (dB) — hover reads (t,f,dB); box = demod band', spectroNote: 'Time-frequency: WHEN and in which band the impulsive fault energy appears (confirms stationarity).', tCsc: 'Cyclostationary', cscT: 'Cyclic spectral coherence (CMS) — vertical α-ridges at the fault frequencies', cscNote: 'Carrier f × cyclic frequency α. A real bearing fault is cyclostationary: it forms a vertical α-ridge family at BPFO/BPFI/2·BSF (independent of carrier), separating it from coincidental peaks. Fast CMS estimator (not full Fast-SC).',
     waveform: 'Vibration waveform — drag to zoom, hover to read; ▼=outliers, shaded=BPFO windows', spectrum: 'Raw spectrum (dB) — drag to zoom; click to set a harmonic comb; shaded=demod band',
     ses: 'Squared-envelope spectrum — defect-frequency combs (BPFO/BPFI/2·BSF/fr)', watNote: 'Run-to-failure spectral waterfall (synthetic): each row is a life snapshot, height is amplitude. Watch the BPFO ridge emerge and grow. Drag to rotate.',
     rulNote: 'Health-indicator trend with onset, failure threshold and the RUL projection fan (±2σ).',
@@ -40,7 +41,7 @@ const T = {
   es: { bearing: 'Rodamiento', fault: 'Falla plantada', severity: 'Severidad', rpm: 'Velocidad eje (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnóstico', conf: 'confianza', sev: 'Índice de severidad', band: 'Banda demod', clickKg: 'Clic en una celda del kurtograma para fijar la banda → el SES se actualiza en vivo.',
     f_healthy: 'Sano', f_outer: 'Pista externa (BPFO)', f_inner: 'Pista interna (BPFI)', f_ball: 'Bola (2·BSF)',
-    tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tRul: 'Prognóstico · RUL', tWat: 'Waterfall 3D', tSpec: 'Espectrograma', cep: 'Cepstrum (rahmónicos 1/fr · 1/BPFO marcados)', spectroT: 'Espectrograma STFT (dB) — hover lee (t,f,dB); caja = banda demod', spectroNote: 'Tiempo-frecuencia: CUÁNDO y en qué banda aparece la energía impulsiva de falla (confirma estacionariedad).',
+    tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tRul: 'Prognóstico · RUL', tWat: 'Waterfall 3D', tSpec: 'Espectrograma', cep: 'Cepstrum (rahmónicos 1/fr · 1/BPFO marcados)', spectroT: 'Espectrograma STFT (dB) — hover lee (t,f,dB); caja = banda demod', spectroNote: 'Tiempo-frecuencia: CUÁNDO y en qué banda aparece la energía impulsiva de falla (confirma estacionariedad).', tCsc: 'Cicloestacionario', cscT: 'Coherencia espectral cíclica (CMS) — crestas α verticales en las frecuencias de falla', cscNote: 'Portadora f × frecuencia cíclica α. Una falla real es cicloestacionaria: forma una familia de crestas α verticales en BPFO/BPFI/2·BSF (independiente de la portadora), separándola de picos casuales. Estimador CMS rápido (no Fast-SC completo).',
     waveform: 'Forma de onda — arrastra para zoom, hover para leer; ▼=outliers, sombreado=ventanas BPFO', spectrum: 'Espectro crudo (dB) — arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
     ses: 'Espectro de envolvente al cuadrado — peines de frecuencias de falla (BPFO/BPFI/2·BSF/fr)', watNote: 'Waterfall espectral run-to-failure (sintético): cada fila es una instantánea de vida, la altura es amplitud. Observa la cresta BPFO emerger y crecer. Arrastra para rotar.',
     rulNote: 'Tendencia del indicador de salud con onset, umbral de falla y el abanico de proyección de RUL (±2σ).',
@@ -95,6 +96,8 @@ export default function Tool() {
   const spectro = useMemo(() => spectrogram(base.sig.x, FS, 512, 0.75), [base]);
   const cep = useMemo(() => realCepstrum(base.sig.x, FS), [base]);
   const cepData = useMemo<uPlot.AlignedData>(() => { const q = cep.quef, a = cep.amp; const xs: number[] = [], ys: number[] = []; for (let i = 1; i < q.length; i++) { if (q[i] > 0.05) break; xs.push(q[i]); ys.push(a[i]); } return [xs, ys]; }, [cep]);
+  const csc = useMemo(() => cyclicModulationSpectrum(base.sig.x, FS, 128, 8, 800), [base]);
+  const cscVlines = useMemo(() => [{ x: base.f.bpfo, color: C.outer, label: 'BPFO' }, { x: base.f.bpfi, color: C.inner, label: 'BPFI' }, { x: 2 * base.f.bsf, color: C.ball, label: '2·BSF' }, { x: base.f.ftf, color: '#3fb1c8', label: 'FTF' }], [base]);
 
   // outliers + BPFO detection windows on the waveform (first 0.08 s)
   const waveMarks = useMemo(() => {
@@ -169,6 +172,8 @@ export default function Tool() {
       </div>) },
     { id: 'spec', label: t.tSpec, content: (
       <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{t.spectroT}</div><Heatmap2D cols={spectro.cols} times={spectro.times} freqs={spectro.freqs} fmax={6000} band={effBand} /></div><p className="hint">{t.spectroNote}</p></div>) },
+    { id: 'csc', label: t.tCsc, content: (
+      <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{t.cscT}</div><Heatmap2D cols={csc.cols} times={csc.alpha} freqs={csc.carriers} fmax={6000} norm="lin" unit="coh" xunit="Hz" xlabel="α (Hz)" ylabel="carrier (Hz)" vlines={cscVlines} height={260} /></div><p className="hint">{t.cscNote}</p></div>) },
     { id: 'kur', label: t.tKur, content: (
       <div className="rv-vizstack"><Kurtogram kg={base.kg} fs={FS} onPick={onPickBand} /><p className="hint">{t.clickKg}</p></div>) },
     { id: 'wat', label: t.tWat, content: (

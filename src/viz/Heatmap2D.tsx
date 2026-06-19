@@ -8,13 +8,17 @@ function viridis(t: number): [number, number, number] {
   return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
 }
 
-/** Interactive 2D heatmap (time×frequency×dB). Hover → (t, f, value) readout; optional horizontal
- * band overlay (e.g. the demod band). Perceptually-uniform viridis; dB floor adjustable upstream. */
+export interface VLine { x: number; color: string; label?: string }
+
+/** Interactive 2D heatmap (x×y×value). Hover → readout; optional horizontal band overlay and vertical
+ * marker lines (e.g. fault α-ridges on a CSC map). Perceptually-uniform viridis. */
 export function Heatmap2D({
-  cols, times, freqs, fmax, dbFloor = 60, height = 230, band, xlabel = 't (s)', ylabel = 'Hz',
+  cols, times, freqs, fmax, dbFloor = 60, height = 230, band, vlines = [],
+  norm = 'db', unit = 'dB', xunit = 's', xlabel = 't (s)', ylabel = 'Hz',
 }: {
   cols: Float64Array[]; times: Float64Array; freqs: Float64Array; fmax?: number; dbFloor?: number;
-  height?: number; band?: [number, number] | null; xlabel?: string; ylabel?: string;
+  height?: number; band?: [number, number] | null; vlines?: VLine[];
+  norm?: 'db' | 'lin'; unit?: string; xunit?: string; xlabel?: string; ylabel?: string;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [hov, setHov] = useState<{ x: number; y: number; t: number; f: number; v: number } | null>(null);
@@ -27,41 +31,45 @@ export function Heatmap2D({
     const css = getComputedStyle(document.documentElement);
     const dim = css.getPropertyValue('--color-fg-faint').trim() || '#6c7785';
     const acc = css.getPropertyValue('--color-accent').trim() || '#58a6ff';
-    const padL = 44, padR = 10, padT = 8, padB = 22, pw = W - padL - padR, ph = H - padT - padB;
+    const padL = 46, padR = 10, padT = 8, padB = 22, pw = W - padL - padR, ph = H - padT - padB;
     const nf = freqs.length; const fM = fmax ?? freqs[nf - 1];
     const rowMax = Math.max(1, Math.round((fM / freqs[nf - 1]) * (nf - 1)));
-    // global max dB for normalization
-    let vmax = -Infinity; for (const c of cols) for (let f = 0; f <= rowMax; f++) if (c[f] > vmax) vmax = c[f];
-    const vmin = vmax - dbFloor;
+    let vmax = -Infinity, vmin = Infinity;
+    for (const c of cols) for (let f = 0; f <= rowMax; f++) { if (c[f] > vmax) vmax = c[f]; if (c[f] < vmin) vmin = c[f]; }
+    if (norm === 'db') vmin = vmax - dbFloor;
+    const span = vmax - vmin || 1;
     const img = g.createImageData(Math.max(1, Math.round(pw)), Math.max(1, Math.round(ph)));
     const iw = img.width, ih = img.height;
     for (let px = 0; px < iw; px++) {
-      const ci = Math.min(cols.length - 1, Math.floor((px / iw) * cols.length));
-      const col = cols[ci];
+      const col = cols[Math.min(cols.length - 1, Math.floor((px / iw) * cols.length))];
       for (let py = 0; py < ih; py++) {
         const fr = Math.round((1 - py / ih) * rowMax);
-        const v = (col[fr] - vmin) / (vmax - vmin);
-        const [r, gg, b] = viridis(v);
+        const [r, gg, b] = viridis((col[fr] - vmin) / span);
         const o = (py * iw + px) * 4; img.data[o] = r; img.data[o + 1] = gg; img.data[o + 2] = b; img.data[o + 3] = 255;
       }
     }
     g.putImageData(img, Math.round(padL), Math.round(padT));
-    // band overlay (horizontal freq band)
+    const x0 = times[0], x1 = times[times.length - 1];
+    const xpos = (xv: number) => padL + ((xv - x0) / (x1 - x0 || 1)) * pw;
     if (band) {
       const y1 = padT + ph - (Math.min(band[1], fM) / fM) * ph, y2 = padT + ph - (Math.min(band[0], fM) / fM) * ph;
       g.strokeStyle = acc; g.lineWidth = 1.5; g.setLineDash([4, 3]); g.strokeRect(padL, y1, pw, y2 - y1); g.setLineDash([]);
     }
-    // axes
+    for (const vl of vlines) {
+      const px = xpos(vl.x); if (px < padL || px > padL + pw) continue;
+      g.strokeStyle = vl.color; g.globalAlpha = 0.85; g.setLineDash([4, 3]); g.beginPath(); g.moveTo(px, padT); g.lineTo(px, padT + ph); g.stroke();
+      g.setLineDash([]); if (vl.label) { g.fillStyle = vl.color; g.font = '9px ui-sans-serif, sans-serif'; g.fillText(vl.label, px + 2, padT + 10); } g.globalAlpha = 1;
+    }
     g.fillStyle = dim; g.font = '10px ui-monospace, monospace';
-    for (let k = 0; k <= 4; k++) { const tt = times[0] + (times[times.length - 1] - times[0]) * (k / 4); g.fillText(tt.toFixed(2), padL + (pw * k) / 4 - 8, padT + ph + 13); }
+    for (let k = 0; k <= 4; k++) { const tt = x0 + (x1 - x0) * (k / 4); g.fillText(tt >= 1000 ? (tt / 1000).toFixed(1) + 'k' : tt.toFixed(tt < 5 ? 2 : 0), padL + (pw * k) / 4 - 8, padT + ph + 13); }
     for (let k = 0; k <= 4; k++) { const ff = (fM * k) / 4; g.fillText(ff >= 1000 ? (ff / 1000).toFixed(1) + 'k' : ff.toFixed(0), 2, padT + ph - (ph * k) / 4 + 3); }
-    g.fillText(xlabel, padL + pw - 40, padT + ph + 13); g.save(); g.translate(10, padT + 8); g.fillText(ylabel, 0, 0); g.restore();
-  }, [cols, times, freqs, fmax, dbFloor, height, band, xlabel, ylabel]);
+    g.fillText(xlabel, padL + pw - 44, padT + ph + 13); g.save(); g.translate(10, padT + 10); g.fillText(ylabel, 0, 0); g.restore();
+  }, [cols, times, freqs, fmax, dbFloor, height, band, vlines, norm, xlabel, ylabel]);
 
   const onMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const cv = ref.current; if (!cv || !cols.length) return;
     const rect = cv.getBoundingClientRect(); const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    const padL = 44, padT = 8, padB = 22, pw = rect.width - padL - 10, ph = rect.height - padT - padB;
+    const padL = 46, padT = 8, padB = 22, pw = rect.width - padL - 10, ph = rect.height - padT - padB;
     if (x < padL || y < padT || y > padT + ph || x > padL + pw) { setHov(null); return; }
     const fM = fmax ?? freqs[freqs.length - 1];
     const t = times[Math.min(times.length - 1, Math.floor(((x - padL) / pw) * times.length))];
@@ -74,7 +82,7 @@ export function Heatmap2D({
   return (
     <div className="heatmap-wrap" style={{ position: 'relative' }}>
       <canvas ref={ref} style={{ width: '100%', height, display: 'block' }} onMouseMove={onMove} onMouseLeave={() => setHov(null)} />
-      {hov && <div className="heatmap-readout" style={{ left: Math.min(hov.x + 8, 200), top: hov.y - 4 }}>{hov.t.toFixed(3)} s · {hov.f.toFixed(0)} Hz · {hov.v.toFixed(1)} dB</div>}
+      {hov && <div className="heatmap-readout" style={{ left: Math.min(hov.x + 8, 200), top: hov.y - 4 }}>{hov.t.toFixed(hov.t < 5 ? 3 : 0)} {xunit} · {hov.f.toFixed(0)} Hz · {hov.v.toFixed(norm === 'db' ? 1 : 2)} {unit}</div>}
     </div>
   );
 }
