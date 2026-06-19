@@ -11,6 +11,7 @@ import Introduction from './pages/Introduction';
 import Methodology from './pages/Methodology';
 import Implementation from './pages/Implementation';
 import Experiments from './pages/Experiments';
+import Benchmark from './pages/Benchmark';
 
 applyTheme(readTheme());
 
@@ -22,9 +23,10 @@ const config: ShellConfig = {
     { path: '/methodology', en: 'Methodology', es: 'Metodología' },
     { path: '/implementation', en: 'Implementation', es: 'Implementación' },
     { path: '/experiments', en: 'Experiments', es: 'Experimentos' },
+    { path: '/benchmark', en: 'Benchmark', es: 'Benchmark' },
   ],
   links: { github: 'https://github.com/fsantibanezleal/CAOS_RotorVitals' },
-  version: '0.22.000',
+  version: '0.23.000',
 };
 
 createRoot(document.getElementById('root')!).render(
@@ -38,6 +40,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/methodology" element={<Methodology />} />
             <Route path="/implementation" element={<Implementation />} />
             <Route path="/experiments" element={<Experiments />} />
+            <Route path="/benchmark" element={<Benchmark />} />
             <Route path="*" element={<Tool />} />
           </Routes>
         </AppShell>
