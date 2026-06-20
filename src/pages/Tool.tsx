@@ -24,6 +24,7 @@ import { IsoTrendPanel } from '../viz/IsoTrendPanel';
 import { FeatureSpacePanel } from '../viz/FeatureSpacePanel';
 import { PrognosticEvalPanel } from '../viz/PrognosticEvalPanel';
 import { DegradationReplayController } from '../viz/DegradationReplayController';
+import { LiveDiagnosisPanel } from '../viz/LiveDiagnosisPanel';
 import { buildLifeSnapshots, interpHI } from '../dsp/replay';
 import { PeakTable } from '../viz/PeakTable';
 import { realCepstrum } from '../dsp/cepstrum';
@@ -192,6 +193,7 @@ export default function Tool() {
   const faultLabel = (k: string) => (t as Record<string, string>)[`f_${k}`] ?? k;
 
   const tabs = [
+    { id: 'live', label: lang === 'es' ? 'Diagnóstico real (WDCNN)' : 'Real diagnosis (WDCNN)', content: <LiveDiagnosisPanel /> },
     { id: 'sig', label: t.tSig, content: (
       <div className="rv-vizstack">
         <div className="rv-plot"><div className="rv-plot-t">{t.waveform}</div><UPlotChart data={waveData} build={buildWave} plugins={wavePlugins} height={170} /></div>

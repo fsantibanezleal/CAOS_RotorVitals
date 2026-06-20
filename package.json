@@ -1,6 +1,6 @@
 {
   "name": "caos-rotorvitals",
-  "version": "0.23.000",
+  "version": "0.24.000",
   "private": true,
   "type": "module",
   "description": "RotorVitals — rotating-machinery condition-monitoring & prognostics suite (envelope/SES, spectral kurtosis & kurtogram, diagnosis, ISO severity, RUL).",
@@ -14,6 +14,7 @@
     "@fasl-work/caos-app-shell": "^0.1.1",
     "katex": "^0.16.11",
     "lucide-react": "^0.469.0",
+    "onnxruntime-web": "^1.27.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.1",
