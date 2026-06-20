@@ -287,6 +287,7 @@ export default function Experiments() {
             <thead>
               <tr>
                 <th>{es ? 'Dataset' : 'Dataset'}</th>
+                <th>{es ? 'Estado en la app' : 'Status in app'}</th>
                 <th>{es ? 'Uso' : 'Fit'}</th>
                 <th>{es ? 'Fallas' : 'Faults'}</th>
                 <th>{es ? 'Redistribución' : 'Redistribution'}</th>
@@ -294,17 +295,23 @@ export default function Experiments() {
               </tr>
             </thead>
             <tbody>
-              {DATASETS.map((d) => (
+              {DATASETS.map((d) => {
+                const live = d.name.startsWith('CWRU');
+                return (
                 <tr key={d.name}>
                   <td style={{ textAlign: 'left' }}>{d.name}</td>
+                  <td><span className="chip" style={{ background: live ? 'color-mix(in oklab,#3fb950 22%,transparent)' : 'transparent', color: live ? '#3fb950' : 'var(--color-fg-faint)', borderColor: live ? 'transparent' : 'var(--color-border)' }}>{live ? (es ? 'EN VIVO + benchmark' : 'LIVE + benchmarked') : (es ? 'roadmap' : 'planned')}</span></td>
                   <td>{d.fit}</td>
                   <td style={{ textAlign: 'left' }}>{d.faults}</td>
                   <td>{d.redist === 'mirror' ? (es ? 'espejo + atribución' : 'mirror + attribution') : (es ? 'solo-enlace' : 'link-only')}</td>
                   <td style={{ textAlign: 'left' }} className="muted">{es ? d.note.es : d.note.en}</td>
                 </tr>
-              ))}
+              ); })}
             </tbody>
           </table>
+          <p className="muted small">{es
+            ? 'Estado honesto: hoy SÓLO CWRU está integrado — entrena el WDCNN + el deep-AE y corre en vivo en la app (ver «Diagnóstico real» y Benchmark). Los demás conjuntos son el roadmap (descarga + tooling aún no implementados); no se afirma cobertura de engranaje/velocidad-variable hasta integrarlos.'
+            : 'Honest status: today ONLY CWRU is integrated — it trains the WDCNN + deep-AE and runs live in the app (see “Real diagnosis” and Benchmark). The others are the roadmap (download + tooling not yet implemented); no gear/variable-speed coverage is claimed until they are integrated.'}</p>
 
           <p>{es
             ? 'El generador sintético está fundamentado físicamente, no es cosmético: deposita un tren de impulsos cuasi-periódico en la frecuencia de falla cinemática, cada impulso excitando una resonancia estructural amortiguada (resonancia fₙ y amortiguamiento ζ especificados), añade jitter de deslizamiento por intervalo (~0.5 % de un período) para que el peine quede levemente difuminado en vez de perfectamente periódico, aplica la modulación de amplitud físicamente correcta (las fallas de pista interna modulan a la frecuencia de eje f_r; las de bola a la frecuencia de jaula FTF; las de pista externa, ninguna), superpone armónicos de eje y añade ruido gaussiano para alcanzar un SNR objetivo. Las relaciones de frecuencia de falla que planta son exactas y transferibles a rodamientos reales — eso legitima las celdas sintéticas como conjunto de auto-validación.'
