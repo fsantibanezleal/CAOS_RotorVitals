@@ -1,0 +1,49 @@
+// The learned tier: load the REAL held-out CWRU segments + the trained-model metrics, and run the heavy ONNX
+// models (WDCNN diagnosis, deep-AE health indicator) live in the browser. All inputs here are REAL CWRU
+// recordings (public/rv-cwru-samples.json), so the diagnosis the user sees is a real model on real data.
+import { wdcnnLogits, aeReconstruct } from '../lib/ort';
+
+export interface CwruSample { cls: string; raw: number[]; feat: number[]; }
+export interface Samples { fs: number; win: number; classes: string[]; samples: CwruSample[]; }
+export interface SnrPoint { snrDb: number | null; accuracy: number; }
+export interface Metrics {
+  dataset: string; nTrain: number; nTest: number; split: string;
+  wdcnn: { accuracy: number; perClass: Record<string, number>; confusion: number[][]; classes: string[]; snrCurve: SnrPoint[] };
+  deepAE: { thresholdP99: number; faultVsHealthyAUC: number | null };
+  aeScaler: { mean: number[]; std: number[] };
+  honesty: string;
+}
+
+const base = () => (import.meta.env.BASE_URL || '/');
+let _samples: Promise<Samples> | null = null;
+let _metrics: Promise<Metrics> | null = null;
+export const loadSamples = () => (_samples ??= fetch(`${base()}rv-cwru-samples.json`).then((r) => r.json()));
+export const loadMetrics = () => (_metrics ??= fetch(`${base()}rv-learned-metrics.json`).then((r) => r.json()));
+
+export function softmax(logits: ArrayLike<number>): number[] {
+  let m = -Infinity; for (let i = 0; i < logits.length; i++) m = Math.max(m, logits[i]);
+  const e = Array.from(logits, (v) => Math.exp(v - m));
+  const s = e.reduce((a, b) => a + b, 0);
+  return e.map((v) => v / s);
+}
+
+export interface DiagOut { classes: string[]; probs: number[]; predIdx: number; predClass: string; }
+
+/** WDCNN live diagnosis of a raw 2048 CWRU window. */
+export async function diagnoseRaw(raw: number[] | Float32Array, classes: string[]): Promise<DiagOut> {
+  const logits = await wdcnnLogits(Float32Array.from(raw));
+  const probs = softmax(logits);
+  let predIdx = 0; for (let i = 1; i < probs.length; i++) if (probs[i] > probs[predIdx]) predIdx = i;
+  return { classes, probs, predIdx, predClass: classes[predIdx] };
+}
+
+export interface HealthOut { mse: number; threshold: number; isAnomaly: boolean; ratio: number; }
+
+/** Deep-AE reconstruction-error health indicator for a (already standardized) 64-D feature. */
+export async function aeHealth(feat: number[] | Float32Array, threshold: number): Promise<HealthOut> {
+  const f = Float32Array.from(feat);
+  const xr = await aeReconstruct(f);
+  let mse = 0; for (let i = 0; i < f.length; i++) { const d = xr[i] - f[i]; mse += d * d; }
+  mse /= f.length;
+  return { mse, threshold, isAnomaly: mse > threshold, ratio: mse / threshold };
+}

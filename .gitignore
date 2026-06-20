@@ -6,3 +6,11 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+
+# python envs + caches + datasets (never commit)
+**/.venv/
+tools/**/.venv/
+__pycache__/
+*.pyc
+tools/**/data/*.mat
+tools/**/dataset.jsonl
