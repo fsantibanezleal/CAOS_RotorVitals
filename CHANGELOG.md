@@ -3,6 +3,34 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.24.000] — 2026-06-20
+
+The real-application step: the heavy learned models now run live on real data (previously the app was
+synthetic-only and the trained models were orphaned).
+
+### Added
+- **"Real diagnosis (WDCNN)" tab** — the user picks a real held-out CWRU 12 kHz drive-end segment and the
+  trained **WDCNN** (1-D CNN, wide first kernel) runs **live in the browser** via onnxruntime-web to diagnose it
+  (prediction vs the true label + per-class probabilities), alongside a **deep-AE health indicator**. Real
+  action capability on real recordings, not synthetic.
+- **`tools/ml/` real-data pipeline**: trains WDCNN (4-class) + a deep autoencoder on the actual CWRU recordings
+  (leakage-safe: the entire 3 HP load held out), exports `wdcnn.onnx` + `rv-ae.onnx` + the held-out segments +
+  `rv-learned-metrics.json`.
+- **Benchmark** now shows **learned-vs-classical on held-out real data**: WDCNN 100% vs envelope/SES 73.7%, the
+  honest **noise-robustness curve** (100% clean → 84% @2 dB → 35% @−4 dB), and the deep-AE one-class metrics.
+
+### Fixed
+- The deep-AE flagged a healthy 3 HP segment as anomalous (load-shift OOD) → retrained as an **all-load
+  one-class novelty** baseline (held-out healthy false-flag 4.3%, fault-vs-healthy AUC 1.0).
+- **Honesty**: Methodology no longer says deep learning is "out of scope" / aspirational — the WDCNN + deep-AE
+  are implemented and run live; the text now points to the real tab + Benchmark numbers.
+- `.gitignore` now excludes `**/.venv` + raw `.mat` (a torch DLL had leaked into a commit).
+
+### Note
+- Versions 0.16–0.23 were incremental DSP/visualization iterations (CSC, infogram, Campbell, prognostics-eval,
+  feature-space, degradation-replay, 3-D waterfall, ISO trend) shipped without individual changelog entries —
+  recorded here as a consolidated gap; from 0.24 every release is logged.
+
 ## [0.15.000] — 2026-06-19
 
 ### Added
