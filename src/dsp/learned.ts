@@ -9,7 +9,7 @@ export interface SnrPoint { snrDb: number | null; accuracy: number; }
 export interface Metrics {
   dataset: string; nTrain: number; nTest: number; split: string;
   wdcnn: { accuracy: number; perClass: Record<string, number>; confusion: number[][]; classes: string[]; snrCurve: SnrPoint[] };
-  deepAE: { thresholdP99: number; faultVsHealthyAUC: number | null };
+  deepAE: { thresholdP99: number; faultVsHealthyAUC: number | null; healthyFalseFlagRate: number; trainedOn?: string };
   aeScaler: { mean: number[]; std: number[] };
   honesty: string;
 }
