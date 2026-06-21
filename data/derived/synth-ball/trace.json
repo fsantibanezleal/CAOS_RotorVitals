@@ -1,0 +1,1 @@
+{"schema":"rotorvitals.trace/v1","case_id":"synth-ball","category":"synthetic self-validation (labelled synthetic)","kind":"synthetic","real_or_synthetic":"synthetic","expected_band":"planted 2*BSF comb recovered at 4.7136x fr (weak, modulated)","payload":{"fault_type":"ball","planted_mult":4.7136,"fr_hz":28.833,"defect_hz":135.909}}

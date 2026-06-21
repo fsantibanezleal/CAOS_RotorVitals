@@ -1,0 +1,1 @@
+{"schema":"rotorvitals.trace/v1","case_id":"synth-healthy","category":"synthetic self-validation (labelled synthetic)","kind":"synthetic","real_or_synthetic":"synthetic","expected_band":"no planted comb; envelope spectrum flat -> classified healthy","payload":{"fault_type":"normal","planted_mult":null,"fr_hz":28.833,"defect_hz":null}}

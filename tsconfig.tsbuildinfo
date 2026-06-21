@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/i18n.tsx","./src/main.tsx","./src/theme.ts","./src/components/eq.tsx","./src/components/plot.tsx","./src/data/bearings.ts","./src/data/scenarios.ts","./src/dsp/bearing.ts","./src/dsp/diagnose.ts","./src/dsp/envelope.ts","./src/dsp/fft.ts","./src/dsp/signal.ts","./src/lib/prng.ts","./test/dsp.test.ts"],"errors":true,"version":"5.9.3"}

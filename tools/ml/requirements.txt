@@ -1,5 +1,0 @@
-numpy
-scipy
-torch>=2.2
-onnx>=1.16
-onnxruntime>=1.17

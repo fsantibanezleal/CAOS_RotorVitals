@@ -1,0 +1,1 @@
+{"schema":"rotorvitals.trace/v1","case_id":"synth-outer","category":"synthetic self-validation (labelled synthetic)","kind":"synthetic","real_or_synthetic":"synthetic","expected_band":"planted BPFO comb recovered at 3.5848x fr","payload":{"fault_type":"outer","planted_mult":3.5848,"fr_hz":28.833,"defect_hz":103.362}}

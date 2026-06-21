@@ -1,0 +1,6 @@
+case_id,fs,channel,rpm,load_hp,fault_type,fault_size_in
+ex-normal-0hp,12000,DE,1797,0,normal,
+ex-outer-3hp,12000,DE,1730,3,outer,0.007
+ex-inner-3hp,12000,DE,1730,3,inner,0.007
+ex-ball-3hp,12000,DE,1730,3,ball,0.007
+ex-outer-48k-decimate,48000,DE,1797,0,outer,0.007

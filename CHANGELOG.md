@@ -3,6 +3,33 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.25.000] — 2026-06-21
+
+Refactor onto the CAOS product-repo archetype (ADR-0057) — the science core is unchanged; the repo is now a
+real, contract-bounded, staged offline pipeline + a frontend SPA.
+
+### Changed
+- **`tools/ml` + `tools/cwru-benchmark` → `data-pipeline/rotorlab/`** — the WDCNN, deep-AE, the 64-D spectral
+  feature, and the unsupervised classical envelope/SES chain are split into `model/` + the six named stages
+  (`preprocess → feature_extraction → train → infer → evaluate → export`). Bodies unchanged.
+- **`src/` → `frontend/src/`**; `public/*.onnx` + metrics → **`data/derived/`** (the canonical artifact home).
+  `frontend/copy-data.mjs` overlays them back into `public/` at build (the SPA's fetch paths are unchanged).
+- The default pipeline is **numpy-only**: `python -m rotorlab.pipeline all` rebuilds every per-case replay trace +
+  manifest from the committed artifacts (no torch, no CWRU download). `--retrain` regenerates the ONNX/metrics.
+
+### Added
+- **Two data contracts**: Contract 1 (`io/contract.py` — vibration-record schema + outlier policy + raw-signal
+  guard) and Contract 2 (`core/manifest.py` `rotorvitals.manifest/v2` + `core/trace.py` `rotorvitals.trace/v1`),
+  with a TS mirror (`frontend/src/lib/contract.types.ts`) that fails `tsc` on drift.
+- **Cases by category** (`cases/cwru_cases.py`): 15 cases / 5 categories (diagnosis · robustness · classical ·
+  synthetic · prognostics), each with an expected band + a real/synthetic flag + a validation anchor.
+- **The lane gate** (`core/gate.py`, client-side TS + onnxruntime-web), two venvs + per-lane requirements,
+  cross-platform `scripts/` (setup/precompute/fetch-data/dev/smoke), `tests/` (contract/manifest/smoke),
+  CI (`ci.yml` ruff+pytest+pipeline+check_artifacts+guards) + `deploy-pages.yml`, a `docs/` wiki (ADR-0056), and
+  a dormant `app/` FastAPI + VPS deploy templates.
+- Verified running: ruff clean · pytest 10/10 · pipeline 15 cases · CONTRACT 2 OK · deterministic re-run ·
+  `tsc + vite build` green · DSP node tests 8/8.
+
 ## [0.24.000] — 2026-06-20
 
 The real-application step: the heavy learned models now run live on real data (previously the app was
