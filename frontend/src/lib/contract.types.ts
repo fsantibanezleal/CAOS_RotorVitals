@@ -9,6 +9,8 @@ export interface CwruSample {
   cls: string;
   raw: number[];
   feat: number[];
+  file?: number; // the source CWRU recording (held-out 3 HP file for this class)
+  seg?: number;  // 1-based ordinal of this segment within its class
 }
 
 export interface Samples {
@@ -16,6 +18,9 @@ export interface Samples {
   win: number;
   classes: string[];
   samples: CwruSample[];
+  loadHp?: number;
+  rpm?: number;
+  sourceFiles?: Record<string, number>; // class -> held-out CWRU file number
 }
 
 export interface SnrPoint {

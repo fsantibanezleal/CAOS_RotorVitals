@@ -61,19 +61,32 @@ export function LiveDiagnosisPanel() {
         ? 'Elegí un segmento real de CWRU (12 kHz, lado motriz, carga 3 HP — held-out del entrenamiento) y el WDCNN entrenado corre EN EL NAVEGADOR (ONNX) para diagnosticarlo. Se muestra la etiqueta real para ver si acierta.'
         : 'Pick a real CWRU segment (12 kHz drive-end, 3 HP load — held out from training) and the trained WDCNN runs IN THE BROWSER (ONNX) to diagnose it. The true label is shown so you see whether it’s right.'}</p>
 
-      {/* action: choose a real segment, grouped by true class */}
-      {Object.entries(grouped).map(([cls, idxs]) => (
+      <p className="rv-note" style={{ marginTop: 0 }}>{es
+        ? 'Cada clase tiene 3 ventanas held-out distintas (#1–#3), extraídas de su grabación CWRU de carga 3 HP (la carga retenida del entrenamiento). El botón muestra la clase verdadera, el archivo CWRU de origen y el número de ventana.'
+        : 'Each class has 3 distinct held-out windows (#1–#3) taken from its CWRU 3 HP recording (the load held out of training). The button shows the true class, the source CWRU file, and the window number.'}</p>
+
+      {/* action: choose a real segment, grouped by true class — each labelled with its source CWRU file */}
+      {Object.entries(grouped).map(([cls, idxs]) => {
+        const file = samples.sourceFiles?.[cls] ?? samples.samples.find((s) => s.cls === cls)?.file;
+        const load = samples.loadHp ?? 3;
+        return (
         <div key={cls} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.3rem 0', flexWrap: 'wrap' }}>
-          <span style={{ width: 64, fontSize: '0.78rem', color: CLASS_COLOR[cls], fontWeight: 700 }}>{cls}</span>
+          <span style={{ width: 152, fontSize: '0.78rem', color: CLASS_COLOR[cls], fontWeight: 700 }}>
+            {cls}{file ? ` · CWRU #${file}` : ''}<span style={{ color: 'var(--color-fg-faint)', fontWeight: 400 }}> · {load} HP</span>
+          </span>
           {idxs.map((i, k) => (
-            <button key={i} className={`chip ${sel === i ? 'on' : ''}`} onClick={() => run(i)} disabled={busy}>#{k + 1}</button>
+            <button key={i} className={`chip ${sel === i ? 'on' : ''}`} onClick={() => run(i)} disabled={busy}
+              title={`${cls} · CWRU #${file ?? '?'} · ${es ? 'carga' : 'load'} ${load} HP · ${es ? 'ventana' : 'window'} ${k + 1}/${idxs.length} · 2048 @ 12 kHz`}>
+              #{k + 1}
+            </button>
           ))}
         </div>
-      ))}
+        );
+      })}
 
       {cur && <div style={{ margin: '0.6rem 0' }}>
         <Spark raw={cur.raw} color={CLASS_COLOR[cur.cls] || '#8b949e'} />
-        <div style={{ fontSize: '0.74rem', color: 'var(--color-fg-faint)', fontFamily: 'var(--font-mono)' }}>{es ? 'segmento real' : 'real segment'} · 2048 @ 12 kHz · {es ? 'verdad' : 'truth'}: <b style={{ color: CLASS_COLOR[cur.cls] }}>{cur.cls}</b></div>
+        <div style={{ fontSize: '0.74rem', color: 'var(--color-fg-faint)', fontFamily: 'var(--font-mono)' }}>{es ? 'segmento real' : 'real segment'} · CWRU #{cur.file ?? '?'} · {es ? 'carga' : 'load'} {samples.loadHp ?? 3} HP · {es ? 'ventana' : 'window'} {cur.seg ?? '?'} · 2048 @ 12 kHz · {es ? 'verdad' : 'truth'}: <b style={{ color: CLASS_COLOR[cur.cls] }}>{cur.cls}</b></div>
       </div>}
 
       {busy && <p className="rv-note">{es ? 'Corriendo WDCNN…' : 'Running WDCNN…'}</p>}
