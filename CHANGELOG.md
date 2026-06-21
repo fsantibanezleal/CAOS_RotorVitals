@@ -3,6 +3,21 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.26.000] — 2026-06-21
+
+App-page design fixes from review (content unchanged elsewhere; the offline pipeline + artifacts stay at 0.25.000).
+
+### Changed
+- **"Real diagnosis (WDCNN)" moved out of the App into the Benchmark page.** It is a cross-segment interactive
+  panel that does NOT react to the App's left-sidebar synthetic scenario, so per the archetype rule (App = one
+  selected case driven by the sidebar; cross-case/real-data views → Benchmark) it now sits at the top of Benchmark,
+  above the held-out numbers it reproduces. The App's 12 tabs all react to the sidebar again.
+- **"Replay degradation" scrubber scoped to the run-to-failure views it actually drives** (Envelope·SES, 3D
+  waterfall, Prognostics·RUL) instead of a global top bar — it no longer appears above tabs it does not affect.
+  Shared state is preserved, so the scrubber position persists across those three tabs.
+- Cross-references updated (Experiments, Methodology) to point at Benchmark for the live diagnosis; stale
+  `tools/ml` reference fixed to `data-pipeline/rotorlab`; app version display fixed (was a stale 0.24.000).
+
 ## [0.25.000] — 2026-06-21
 
 Refactor onto the CAOS product-repo archetype (ADR-0057) — the science core is unchanged; the repo is now a

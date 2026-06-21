@@ -24,7 +24,6 @@ import { IsoTrendPanel } from '../viz/IsoTrendPanel';
 import { FeatureSpacePanel } from '../viz/FeatureSpacePanel';
 import { PrognosticEvalPanel } from '../viz/PrognosticEvalPanel';
 import { DegradationReplayController } from '../viz/DegradationReplayController';
-import { LiveDiagnosisPanel } from '../viz/LiveDiagnosisPanel';
 import { buildLifeSnapshots, interpHI } from '../dsp/replay';
 import { PeakTable } from '../viz/PeakTable';
 import { realCepstrum } from '../dsp/cepstrum';
@@ -192,8 +191,17 @@ export default function Tool() {
 
   const faultLabel = (k: string) => (t as Record<string, string>)[`f_${k}`] ?? k;
 
+  // Degradation-replay scrubber — scoped to the run-to-failure views it actually drives (Envelope·SES, 3D
+  // waterfall, Prognostics·RUL), NOT a global top bar. Shared state lives in this component, so the scrubber
+  // position persists when switching among those three tabs.
+  const replayBar = () => (
+    <div className="rv-replay-bar">
+      <button className={`chip ${replayOn ? 'on' : ''}`} onClick={() => { setReplayOn((v) => !v); setPlaying(false); }}>{t.replay}</button>
+      {replayOn && <DegradationReplayController lifePos={lifePos} setLifePos={setLifePos} lifeH={replayLifeH} onsetH={rul.onset} failH={rul.failTime ?? (isFinite(rtf.trueFail) ? rtf.trueFail : null)} curSev={curSnap?.sev ?? 0} curHi={nowHi ?? 0} playing={playing} setPlaying={setPlaying} speed={speed} setSpeed={setSpeed} lang={lang} />}
+    </div>
+  );
+
   const tabs = [
-    { id: 'live', label: lang === 'es' ? 'Diagnóstico real (WDCNN)' : 'Real diagnosis (WDCNN)', content: <LiveDiagnosisPanel /> },
     { id: 'sig', label: t.tSig, content: (
       <div className="rv-vizstack">
         <div className="rv-plot"><div className="rv-plot-t">{t.waveform}</div><UPlotChart data={waveData} build={buildWave} plugins={wavePlugins} height={170} /></div>
@@ -201,6 +209,7 @@ export default function Tool() {
       </div>) },
     { id: 'env', label: t.tEnv, content: (
       <div className="rv-vizstack">
+        {replayBar()}
         <p className="hint">{t.band}: <b>{(effBand[0] / 1000).toFixed(2)}–{(effBand[1] / 1000).toFixed(2)} kHz</b> · {t.clickKg}</p>
         <div className="rv-plot"><div className="rv-plot-t">{t.ses}</div><UPlotChart data={sesData} build={buildSes} plugins={sesPlugins} height={200} /></div>
         <PeakTable ses={ses} f={base.f} lang={lang} />
@@ -217,9 +226,9 @@ export default function Tool() {
     { id: 'cam', label: t.tCam, content: (
       <CampbellPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} seed={seed} rpm={rpm} lang={lang} />) },
     { id: 'wat', label: t.tWat, content: (
-      <div className="rv-vizstack"><Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} lifeRow={replayOn ? lifePos : null} /></Suspense><p className="hint">{t.watNote}</p></div>) },
+      <div className="rv-vizstack">{replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} lifeRow={replayOn ? lifePos : null} /></Suspense><p className="hint">{t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
-      <div className="rv-vizstack"><RulChart points={rtf.points} rul={rul} nowT={nowT} nowHi={nowHi} /><p className="hint">{t.rulNote}</p>
+      <div className="rv-vizstack">{replayBar()}<RulChart points={rtf.points} rul={rul} nowT={nowT} nowHi={nowHi} /><p className="hint">{t.rulNote}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rul.onset != null ? `${rul.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rul.rul != null ? `${rul.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rul.failTime != null ? `${rul.failTime.toFixed(0)} ${t.h}` : '—'}</b></span></div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
@@ -249,10 +258,6 @@ export default function Tool() {
         <div className="rv-freqs small"><div className="muted">{t.freqs} · fr = {fr.toFixed(1)} Hz</div><span style={{ color: C.outer }}>BPFO {base.f.bpfo.toFixed(1)}</span> · <span style={{ color: C.inner }}>BPFI {base.f.bpfi.toFixed(1)}</span> · <span style={{ color: C.ball }}>2·BSF {(2 * base.f.bsf).toFixed(1)}</span> · FTF {base.f.ftf.toFixed(1)} Hz</div>
       </aside>
       <div className="rv-main">
-        <div className="rv-replay-bar">
-          <button className={`chip ${replayOn ? 'on' : ''}`} onClick={() => { setReplayOn((v) => !v); setPlaying(false); }}>{t.replay}</button>
-          {replayOn && <DegradationReplayController lifePos={lifePos} setLifePos={setLifePos} lifeH={replayLifeH} onsetH={rul.onset} failH={rul.failTime ?? (isFinite(rtf.trueFail) ? rtf.trueFail : null)} curSev={curSnap?.sev ?? 0} curHi={nowHi ?? 0} playing={playing} setPlaying={setPlaying} speed={speed} setSpeed={setSpeed} lang={lang} />}
-        </div>
         <Tabs tabs={tabs} ariaLabel="analysis" />
       </div>
     </div>

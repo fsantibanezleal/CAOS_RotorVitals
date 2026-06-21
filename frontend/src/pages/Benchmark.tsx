@@ -3,6 +3,7 @@ import { useShellLang } from '@fasl-work/caos-app-shell';
 import bench from '../data/cwru-benchmark.json';
 import { viridis } from '../viz/Heatmap2D';
 import { loadMetrics, type Metrics } from '../dsp/learned';
+import { LiveDiagnosisPanel } from '../viz/LiveDiagnosisPanel';
 
 type Method = { confusion: number[][]; rowRecall: number[]; accuracy: number; n: number };
 const METHODS = bench.methods as Record<string, Method>;
@@ -27,6 +28,14 @@ export default function Benchmark() {
           ? 'Modelos aprendidos (WDCNN, deep-AE) y el diagnóstico clásico de envolvente/SES, evaluados sobre el conjunto real de rodamientos de Case Western Reserve University — métricas calculadas, datos crudos nunca re-hospedados.'
           : 'Learned models (WDCNN, deep-AE) and the classical envelope/SES diagnoser, evaluated on the real Case Western Reserve University bearing set — metrics computed, raw data never re-hosted.'}</p>
       </div>
+
+      <section>
+        <h2>{es ? 'Diagnóstico en vivo sobre datos reales (acción)' : 'Live diagnosis on real data (action)'}</h2>
+        <p className="muted small">{es
+          ? 'Elegí un segmento real held-out de CWRU (carga 3 HP, fuera del entrenamiento) y el WDCNN entrenado lo diagnostica EN EL NAVEGADOR (ONNX), con el indicador de salud deep-AE. Debajo, los números held-out agregados que esta acción reproduce caso por caso.'
+          : 'Pick a real held-out CWRU segment (3 HP load, out of training) and the trained WDCNN diagnoses it IN THE BROWSER (ONNX), with the deep-AE health indicator. The aggregate held-out numbers this action reproduces case by case follow below.'}</p>
+        <LiveDiagnosisPanel />
+      </section>
 
       {lm && <section>
         <h2>{es ? 'Modelo aprendido — WDCNN (held-out, datos reales)' : 'Learned model — WDCNN (held-out, real data)'}</h2>
