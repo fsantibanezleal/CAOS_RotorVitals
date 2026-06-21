@@ -3,6 +3,15 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.26.001] — 2026-06-21
+
+### Fixed
+- **Benchmark · Live diagnosis: the #1/#2/#3 segment buttons now show what each one is.** Each held-out segment is
+  labelled with its source CWRU recording (the 3 HP held-out file per class: normal→#100, outer→#133, inner→#108,
+  ball→#121), the load (3 HP), and the window number — on the class row, the button tooltip, and the selected-segment
+  caption. `rv-cwru-samples.json` carries the provenance (`file`/`seg`/`loadHp`/`rpm`/`sourceFiles`), the offline
+  export emits it, and `contract.types.ts` mirrors it. Previously the buttons were opaque (#1/#2/#3 with no meaning).
+
 ## [0.26.000] — 2026-06-21
 
 App-page design fixes from review (content unchanged elsewhere; the offline pipeline + artifacts stay at 0.25.000).
