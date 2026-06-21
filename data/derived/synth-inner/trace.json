@@ -1,0 +1,1 @@
+{"schema":"rotorvitals.trace/v1","case_id":"synth-inner","category":"synthetic self-validation (labelled synthetic)","kind":"synthetic","real_or_synthetic":"synthetic","expected_band":"planted BPFI comb recovered at 5.4152x fr with sidebands","payload":{"fault_type":"inner","planted_mult":5.4152,"fr_hz":28.833,"defect_hz":156.138}}

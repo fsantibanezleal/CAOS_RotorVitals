@@ -1,0 +1,10 @@
+# PRECOMPUTE lane — the heavy, research-chosen SOTA engines, in .venv-pipeline (local-only, never deployed).
+# Run ONLY for `python -m rotorlab.pipeline all --retrain` (regenerate the ONNX/metrics from the raw CWRU data).
+# Each engine is documented in docs/frameworks/<tool>/ and pinned to the version it installs+verifies (Python 3.12).
+# torch is the CPU build (CWRU training is CPU-fast: 25-ep WDCNN + 150-ep AE over a few thousand windows).
+#   install torch CPU via:  pip install torch==2.12.1 --index-url https://download.pytorch.org/whl/cpu
+numpy==2.4.6
+scipy==1.18.0
+torch==2.12.1
+onnx==1.22.0
+onnxruntime==1.27.0

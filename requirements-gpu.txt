@@ -1,0 +1,5 @@
+# GPU lane (OPTIONAL, DORMANT) — RotorVitals' CWRU training is CPU-fast (25-ep WDCNN + 150-ep AE over a few
+# thousand 2048-windows), so no GPU is required. If a future dataset (e.g. XJTU-SY run-to-failure) makes training
+# heavy, install the CUDA torch build here and document it in docs/frameworks/. This solution does not require it
+# at the moment.
+# torch==2.12.1  --index-url https://download.pytorch.org/whl/cu124
