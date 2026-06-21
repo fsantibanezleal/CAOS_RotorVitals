@@ -81,15 +81,20 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
                       input_names=["x"], output_names=["xr"],
                       dynamic_axes={"x": {0: "n"}, "xr": {0: "n"}}, opset_version=17)
 
-    # committed real held-out windows for live in-browser inference (raw 2048 + spectral feats + label)
+    # committed real held-out windows for live in-browser inference (raw 2048 + spectral feats + label + provenance)
+    from ..io.fetch_cwru import FILES
+    src_file = {cls: n for n, (cls, load, _rpm) in FILES.items() if load == 3}  # the held-out 3 HP file per class
     samples = []
     rngsel = np.random.RandomState(1)
     for c in range(4):
         ci = np.where(teY == c)[0]
-        for k in rngsel.choice(ci, size=min(3, len(ci)), replace=False):
-            samples.append({"cls": classes[c], "raw": [round(float(v), 4) for v in teX[k]],
+        for seg, k in enumerate(rngsel.choice(ci, size=min(3, len(ci)), replace=False), start=1):
+            samples.append({"cls": classes[c], "file": int(src_file.get(classes[c], 0)), "seg": seg,
+                            "raw": [round(float(v), 4) for v in teX[k]],
                             "feat": [round(float(v), 4) for v in teFz[k]]})
-    write_json(derived / "rv-cwru-samples.json", {"fs": 12000, "win": 2048, "classes": classes, "samples": samples})
+    write_json(derived / "rv-cwru-samples.json",
+               {"fs": 12000, "win": 2048, "loadHp": 3, "rpm": 1730, "classes": classes,
+                "sourceFiles": {c: int(src_file.get(c, 0)) for c in classes}, "samples": samples})
 
     metrics = {
         "dataset": "CWRU 12 kHz drive-end (real)", "nTrain": int(len(train_out.get("trX", []) or [])),

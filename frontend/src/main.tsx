@@ -26,7 +26,7 @@ const config: ShellConfig = {
     { path: '/benchmark', en: 'Benchmark', es: 'Benchmark' },
   ],
   links: { github: 'https://github.com/fsantibanezleal/CAOS_RotorVitals' },
-  version: '0.26.000',
+  version: '0.26.001',
 };
 
 createRoot(document.getElementById('root')!).render(
