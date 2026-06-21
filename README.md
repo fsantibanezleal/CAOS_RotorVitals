@@ -32,29 +32,36 @@ diagnose it live, or drive the synthetic signal generator + the classical chain 
 
 ## Architecture
 
+Instantiated from the CAOS product-repo archetype (ADR-0057): a heavy **offline engine** + a **frontend SPA**, bound
+by two data contracts. See [`STRUCTURE.md`](STRUCTURE.md) and the [`docs/`](docs/README.md) wiki.
+
 ```
-OFFLINE (.venv, Python)                          LIVE (browser, TypeScript)
-  tools/cwru-benchmark/  real CWRU download         classical DSP chain (FFT/envelope/kurtogram/CMS/…)
-  tools/ml/  train WDCNN + deep-AE on real CWRU      onnxruntime-web → WDCNN + deep-AE inference
-        │  commit compact artifacts                  uPlot / three.js visualization
+OFFLINE  data-pipeline/rotorlab/ (torch+scipy)     LIVE  frontend/src/ (browser, TypeScript)
+  stages/  preprocess→…→export                        dsp/      classical chain (FFT/envelope/kurtogram/CMS/…)
+  model/   WDCNN + deep-AE + classical                lib/ort.ts onnxruntime-web → WDCNN + deep-AE inference
+        │  --retrain regenerates the artifacts         viz/      uPlot / three.js visualization
         ▼
-  public/wdcnn.onnx · rv-ae.onnx · rv-cwru-samples.json · rv-learned-metrics.json · cwru-benchmark.json
+  data/derived/  models/wdcnn.onnx · rv-ae.onnx · rv-cwru-samples.json · rv-learned-metrics.json · cwru-benchmark.json
+        │  (the committed compact artifacts = the heavy lane's real outputs)
+        ▼
+  pipeline (numpy) → data/derived/<case>/trace.json + manifests/  (Contract 2; copy-data overlays into frontend/public)
 ```
 
 No application server, no database — static files on a CDN; all numerical work is either precomputed into compact
-committed artifacts or runs live in the browser on one bounded signal segment.
+committed artifacts or runs live in the browser on one bounded signal segment. The default pipeline is **numpy-only**
+(rebuilds the replay layer from the committed artifacts), so a clone replays without torch or a CWRU download.
 
 ## Develop
 
 ```bash
-npm install
-npm run dev       # vite dev server
-npm test          # DSP unit tests (node --test)
-npm run build     # tsc --noEmit && vite build (+ SPA 404.html)
+./scripts/setup.sh            # venvs + light deps + editable pkg (numpy+ruff+pytest)   [.ps1 on Windows]
+./scripts/precompute.sh       # python -m rotorlab.pipeline all  (rebuild the replay layer, numpy-only)
+.venv-pipeline/bin/python -m pytest    # 10 passed     ·     ./scripts/smoke.sh   # CONTRACT 2 OK
+./scripts/dev.sh              # cd frontend && npm install && npm run dev (vite + live ONNX)
+cd frontend && npm run build  # tsc --noEmit && vite build (+ copy-data overlay + SPA 404.html)
 
-# the real-data ML pipeline (isolated .venv, never committed):
-cd tools/ml && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
-python train_models.py      # trains on real CWRU in ../cwru-benchmark/data → public/*.onnx + metrics
+# regenerate the models from the real CWRU data (local-only, torch+scipy):
+./scripts/setup.sh --precompute && ./scripts/fetch-data.sh && ./scripts/precompute.sh all --retrain
 ```
 
 ## Honesty
