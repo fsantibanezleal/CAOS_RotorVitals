@@ -2,17 +2,10 @@
 // models (WDCNN diagnosis, deep-AE health indicator) live in the browser. All inputs here are REAL CWRU
 // recordings (public/rv-cwru-samples.json), so the diagnosis the user sees is a real model on real data.
 import { wdcnnLogits, aeReconstruct } from '../lib/ort';
-
-export interface CwruSample { cls: string; raw: number[]; feat: number[]; }
-export interface Samples { fs: number; win: number; classes: string[]; samples: CwruSample[]; }
-export interface SnrPoint { snrDb: number | null; accuracy: number; }
-export interface Metrics {
-  dataset: string; nTrain: number; nTest: number; split: string;
-  wdcnn: { accuracy: number; perClass: Record<string, number>; confusion: number[][]; classes: string[]; snrCurve: SnrPoint[] };
-  deepAE: { thresholdP99: number; faultVsHealthyAUC: number | null; healthyFalseFlagRate: number; trainedOn?: string };
-  aeScaler: { mean: number[]; std: number[] };
-  honesty: string;
-}
+// The learned-tier artifact shapes are defined once in the CONTRACT-2 mirror; import for local use + re-export for
+// the existing importers (viz components import these from here).
+import type { CwruSample, Samples, SnrPoint, Metrics } from '../lib/contract.types';
+export type { CwruSample, Samples, SnrPoint, Metrics };
 
 const base = () => (import.meta.env.BASE_URL || '/');
 let _samples: Promise<Samples> | null = null;
