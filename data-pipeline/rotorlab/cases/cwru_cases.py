@@ -28,6 +28,7 @@ class Case:
 
 
 _DX = "fault-class diagnosis (held-out 3 HP, live WDCNN + deep-AE)"
+_DXS = "cross-severity diagnosis (UNSEEN fault size, held-out 3 HP, live WDCNN)"
 _ROB = "robustness control (real held-out + synthetic noise)"
 _CLS = "classical baseline (real, unsupervised envelope/SES)"
 _SYN = "synthetic self-validation (labelled synthetic)"
@@ -48,6 +49,34 @@ CASES: list[Case] = [
     Case("dx-ball-3hp", _DX, "diagnosis", "ball",
          "2*BSF 4.7136x fr comb + FTF (0.3983x) sidebands — the documented hard case (weak modulated line)", "real",
          "CWRU 121 (Ball 0.007in, 3 HP held out)", {"load_hp": 3, "rpm": HELDOUT_RPM, "mult": MULT["ball"], "sideband": FTF}),
+
+    # --- cross-severity generalization on REAL CWRU faults at UNSEEN sizes (0.014"/0.021"), held-out 3 HP load ---
+    # The WDCNN/AE/SVM/RF are trained ONLY on 0.007" faults at 0/1/2 HP; these larger spalls are a true held-out
+    # severity+load test (live WDCNN on the real segments; the per-size accuracy table lives on Benchmark).
+    Case("dx-inner-014-3hp", _DXS, "diagnosis", "inner",
+         "BPFI 5.4152x fr comb + 1x sidebands — stronger impacts than 0.007in (deeper spall)", "real",
+         "CWRU 172 (Inner 0.014in, 3 HP) — fault size unseen in training",
+         {"load_hp": 3, "rpm": HELDOUT_RPM, "mult": MULT["inner"], "sideband": 1.0, "sizeIn": 0.014, "file": 172}),
+    Case("dx-inner-021-3hp", _DXS, "diagnosis", "inner",
+         "BPFI 5.4152x fr comb + 1x sidebands — largest spall (0.021in)", "real",
+         "CWRU 212 (Inner 0.021in, 3 HP) — fault size unseen in training",
+         {"load_hp": 3, "rpm": HELDOUT_RPM, "mult": MULT["inner"], "sideband": 1.0, "sizeIn": 0.021, "file": 212}),
+    Case("dx-ball-014-3hp", _DXS, "diagnosis", "ball",
+         "2*BSF 4.7136x fr + FTF sidebands — the hard case at 0.014in (modulated, can confuse)", "real",
+         "CWRU 188 (Ball 0.014in, 3 HP) — fault size unseen in training",
+         {"load_hp": 3, "rpm": HELDOUT_RPM, "mult": MULT["ball"], "sideband": FTF, "sizeIn": 0.014, "file": 188}),
+    Case("dx-ball-021-3hp", _DXS, "diagnosis", "ball",
+         "2*BSF 4.7136x fr + FTF sidebands — the hard case at 0.021in", "real",
+         "CWRU 225 (Ball 0.021in, 3 HP) — fault size unseen in training",
+         {"load_hp": 3, "rpm": HELDOUT_RPM, "mult": MULT["ball"], "sideband": FTF, "sizeIn": 0.021, "file": 225}),
+    Case("dx-outer-014-3hp", _DXS, "diagnosis", "outer",
+         "BPFO 3.5848x fr comb (no sidebands) — 0.014in, stronger line than 0.007in", "real",
+         "CWRU 200 (Outer 0.014in @6:00, 3 HP) — fault size unseen in training",
+         {"load_hp": 3, "rpm": HELDOUT_RPM, "mult": MULT["outer"], "sizeIn": 0.014, "file": 200}),
+    Case("dx-outer-021-3hp", _DXS, "diagnosis", "outer",
+         "BPFO 3.5848x fr comb (no sidebands) — largest spall (0.021in)", "real",
+         "CWRU 237 (Outer 0.021in @6:00, 3 HP) — fault size unseen in training",
+         {"load_hp": 3, "rpm": HELDOUT_RPM, "mult": MULT["outer"], "sizeIn": 0.021, "file": 237}),
 
     # --- robustness: the honest SNR-degradation curve (clean CWRU is optimistic) ---
     Case("robust-snr-sweep", _ROB, "robustness", "mixed",

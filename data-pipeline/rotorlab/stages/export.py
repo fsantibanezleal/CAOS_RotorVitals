@@ -60,7 +60,7 @@ def build_replay(case: Any, *, derived_dir: str, manifests_dir: str,
 
 
 def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, classical_benchmark: dict,
-                  cml_models: dict, cml_metrics: dict,
+                  cml_models: dict, cml_metrics: dict, cross_severity: dict,
                   teX, teY, teFz, classes: list[str], derived_dir: str) -> None:
     """HEAVY: write the ONNX models + committed held-out samples + the learned-metrics + classical-benchmark JSON."""
     import json
@@ -101,10 +101,16 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
                             "raw": [round(float(v), 4) for v in teX[k]],
                             "feat": [round(float(v), 4) for v in teFz[k]],
                             "clsFeat": [round(float(v), 5) for v in teF[k]]})
+    # cross-severity (T4) committed segments: real 0.014"/0.021" fault windows for the live App severity cases.
+    from ..io.fetch_cwru import SEVERITY_FILES
+    sev_samples = cross_severity.get("samples", [])
     write_json(derived / "rv-cwru-samples.json",
                {"fs": 12000, "win": 2048, "loadHp": 3, "rpm": 1730, "classes": classes,
                 "clsFeatures": classical_ml.FEATURE_NAMES,
-                "sourceFiles": {c: int(src_file.get(c, 0)) for c in classes}, "samples": samples})
+                "sourceFiles": {c: int(src_file.get(c, 0)) for c in classes},
+                "severityFiles": {f"{cls}-{int(round(sz * 1000)):03d}": int(n)
+                                  for n, (cls, sz) in SEVERITY_FILES.items()},
+                "samples": samples + sev_samples})
 
     metrics = {
         "dataset": "CWRU 12 kHz drive-end (real)",
@@ -125,6 +131,9 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
                     "indicators + envelope-spectrum BPFO/BPFI/2BSF comb prominences + resonance-band kurtosis), the "
                     "classical counterpoint to the end-to-end WDCNN. Same hold-out-3HP split → comparable.",
         },
+        # T4: cross-severity generalization — every model evaluated on unseen 0.014"/0.021" faults at the held-out
+        # 3 HP load (trained only on 0.007" faults at 0/1/2 HP). The honest "is it a toy?" answer.
+        "crossSeverity": cross_severity,
         "honesty": "Trained on REAL CWRU recordings. CWRU reuses one physical bearing across loads, so a true "
                    "independent-bearing split is impossible; we hold out an entire load condition instead. CWRU is "
                    "a clean lab rig (Smith & Randall 2015) — accuracy is optimistic vs field data.",

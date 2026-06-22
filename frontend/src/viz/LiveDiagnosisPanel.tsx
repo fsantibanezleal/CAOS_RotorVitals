@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useShellLang } from '@fasl-work/caos-app-shell';
 import { loadSamples, loadMetrics, diagnoseRaw, aeHealth, classifyClassical, type Samples, type Metrics, type DiagOut, type HealthOut } from '../dsp/learned';
 
@@ -29,11 +29,13 @@ export function LiveDiagnosisPanel() {
   const [health, setHealth] = useState<HealthOut | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const running = useRef(false);   // re-entrancy guard: the WASM ORT sessions are single-flight per model
 
   useEffect(() => { Promise.all([loadSamples(), loadMetrics()]).then(([s, m]) => { setSamples(s); setMetrics(m); }).catch((e) => setErr(String(e))); }, []);
 
   const run = async (idx: number) => {
-    if (!samples || !metrics) return;
+    if (!samples || !metrics || running.current) return;   // ignore clicks while an inference is in flight
+    running.current = true;
     setBusy(true); setSel(idx); setDiag(null); setHealth(null); setCls(null);
     try {
       const sm = samples.samples[idx];
@@ -41,16 +43,23 @@ export function LiveDiagnosisPanel() {
       const h = await aeHealth(sm.feat, metrics.deepAE.thresholdP99);
       const c = sm.clsFeat ? await classifyClassical(sm.clsFeat, samples.classes) : null;
       setDiag(d); setHealth(h); setCls(c); setErr(null);
-    } catch (e) { setErr(String(e)); } finally { setBusy(false); }
+    } catch (e) { setErr(String(e)); } finally { running.current = false; setBusy(false); }
   };
   useEffect(() => { if (samples && metrics && !diag) run(0); /* auto-run first */ }, [samples, metrics]);
 
   const cur = samples?.samples[sel];
   const correct = diag && cur ? diag.predClass === cur.cls : null;
-  const grouped = useMemo(() => {
-    const g: Record<string, number[]> = {};
-    samples?.samples.forEach((s, i) => { (g[s.cls] ??= []).push(i); });
-    return g;
+  // group by (class + fault size): the 0.007" held-out baseline first, then the UNSEEN 0.014"/0.021" severity
+  // groups (T4). Stable sort by size keeps the baseline in class order and clusters the severities.
+  const groups = useMemo(() => {
+    const map = new Map<string, { cls: string; sizeIn?: number; file?: number; idxs: number[] }>();
+    samples?.samples.forEach((s, i) => {
+      const key = s.sizeIn != null ? `${s.cls}-${s.sizeIn}` : s.cls;
+      let g = map.get(key);
+      if (!g) { g = { cls: s.cls, sizeIn: s.sizeIn, file: s.file, idxs: [] }; map.set(key, g); }
+      g.idxs.push(i);
+    });
+    return [...map.values()].sort((a, b) => (a.sizeIn ?? 0) - (b.sizeIn ?? 0));
   }, [samples]);
 
   if (err) return <div className="rv-plot"><p className="rv-note">{es ? 'No se pudo cargar el modelo/datos:' : 'Could not load model/data:'} {err}</p></div>;
@@ -64,21 +73,24 @@ export function LiveDiagnosisPanel() {
         : 'Pick a real CWRU segment (12 kHz drive-end, 3 HP load — held out from training) and the trained WDCNN runs IN THE BROWSER (ONNX) to diagnose it. The true label is shown so you see whether it’s right.'}</p>
 
       <p className="rv-note" style={{ marginTop: 0 }}>{es
-        ? 'Cada clase tiene 3 ventanas held-out distintas (#1–#3), extraídas de su grabación CWRU de carga 3 HP (la carga retenida del entrenamiento). El botón muestra la clase verdadera, el archivo CWRU de origen y el número de ventana.'
-        : 'Each class has 3 distinct held-out windows (#1–#3) taken from its CWRU 3 HP recording (the load held out of training). The button shows the true class, the source CWRU file, and the window number.'}</p>
+        ? 'Las clases base (0.007″) tienen 3 ventanas held-out cada una, de su grabación CWRU de carga 3 HP. Las filas marcadas "tamaño no visto" son la prueba de generalización por severidad: fallas reales de 0.014″/0.021″ que el modelo NUNCA vio (entrenó solo con 0.007″) — un error ahí es la brecha honesta, no un bug.'
+        : 'The base classes (0.007″) have 3 held-out windows each, from their CWRU 3 HP recording. The rows tagged "unseen size" are the severity-generalization test: real 0.014″/0.021″ faults the model NEVER saw (it trained only on 0.007″) — a miss there is the honest gap, not a bug.'}</p>
 
-      {/* action: choose a real segment, grouped by true class — each labelled with its source CWRU file */}
-      {Object.entries(grouped).map(([cls, idxs]) => {
-        const file = samples.sourceFiles?.[cls] ?? samples.samples.find((s) => s.cls === cls)?.file;
+      {/* action: choose a real segment, grouped by (class, fault size); severity groups marked "unseen size" */}
+      {groups.map((g) => {
+        const file = g.file ?? (g.sizeIn == null ? samples.sourceFiles?.[g.cls] : undefined);
         const load = samples.loadHp ?? 3;
+        const sizeTxt = g.sizeIn != null ? `${g.sizeIn.toFixed(3)}″` : '0.007″';
+        const unseen = g.sizeIn != null;
         return (
-        <div key={cls} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.3rem 0', flexWrap: 'wrap' }}>
-          <span style={{ width: 152, fontSize: '0.78rem', color: CLASS_COLOR[cls], fontWeight: 700 }}>
-            {cls}{file ? ` · CWRU #${file}` : ''}<span style={{ color: 'var(--color-fg-faint)', fontWeight: 400 }}> · {load} HP</span>
+        <div key={`${g.cls}-${g.sizeIn ?? 'base'}`} style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', margin: '0.3rem 0', flexWrap: 'wrap' }}>
+          <span style={{ width: 232, fontSize: '0.78rem', color: CLASS_COLOR[g.cls], fontWeight: 700 }}>
+            {g.cls}{file ? ` · CWRU #${file}` : ''}<span style={{ color: 'var(--color-fg-faint)', fontWeight: 400 }}> · {load} HP · {sizeTxt}</span>
+            {unseen && <span className="chip" style={{ marginLeft: 6, padding: '0 6px', fontSize: '0.64rem', background: 'color-mix(in oklab,#d29922 20%,transparent)', color: '#d29922', borderColor: 'transparent' }}>{es ? 'tamaño no visto' : 'unseen size'}</span>}
           </span>
-          {idxs.map((i, k) => (
+          {g.idxs.map((i, k) => (
             <button key={i} className={`chip ${sel === i ? 'on' : ''}`} onClick={() => run(i)} disabled={busy}
-              title={`${cls} · CWRU #${file ?? '?'} · ${es ? 'carga' : 'load'} ${load} HP · ${es ? 'ventana' : 'window'} ${k + 1}/${idxs.length} · 2048 @ 12 kHz`}>
+              title={`${g.cls} · CWRU #${file ?? '?'} · ${sizeTxt} · ${es ? 'carga' : 'load'} ${load} HP · ${es ? 'ventana' : 'window'} ${k + 1}/${g.idxs.length} · 2048 @ 12 kHz`}>
               #{k + 1}
             </button>
           ))}
@@ -88,7 +100,10 @@ export function LiveDiagnosisPanel() {
 
       {cur && <div style={{ margin: '0.6rem 0' }}>
         <Spark raw={cur.raw} color={CLASS_COLOR[cur.cls] || '#8b949e'} />
-        <div style={{ fontSize: '0.74rem', color: 'var(--color-fg-faint)', fontFamily: 'var(--font-mono)' }}>{es ? 'segmento real' : 'real segment'} · CWRU #{cur.file ?? '?'} · {es ? 'carga' : 'load'} {samples.loadHp ?? 3} HP · {es ? 'ventana' : 'window'} {cur.seg ?? '?'} · 2048 @ 12 kHz · {es ? 'verdad' : 'truth'}: <b style={{ color: CLASS_COLOR[cur.cls] }}>{cur.cls}</b></div>
+        <div style={{ fontSize: '0.74rem', color: 'var(--color-fg-faint)', fontFamily: 'var(--font-mono)' }}>{es ? 'segmento real' : 'real segment'} · CWRU #{cur.file ?? '?'} · {es ? 'carga' : 'load'} {samples.loadHp ?? 3} HP · {cur.sizeIn != null ? `${cur.sizeIn.toFixed(3)}″` : '0.007″'} · {es ? 'ventana' : 'window'} {cur.seg ?? '?'} · 2048 @ 12 kHz · {es ? 'verdad' : 'truth'}: <b style={{ color: CLASS_COLOR[cur.cls] }}>{cur.cls}</b></div>
+        {cur.sizeIn != null && <div className="callout" data-variant="honest" style={{ marginTop: '0.4rem' }}><p style={{ margin: 0, fontSize: '0.78rem' }}>{es
+          ? `Tamaño de falla NO visto (${cur.sizeIn.toFixed(3)}″). El WDCNN entrenó solo con 0.007″ — si falla aquí, es la brecha de generalización por severidad (honesta), no un bug. La tabla agregada por tamaño está más abajo.`
+          : `UNSEEN fault size (${cur.sizeIn.toFixed(3)}″). The WDCNN trained only on 0.007″ — a miss here is the honest severity-generalization gap, not a bug. The aggregate accuracy-by-size table is below.`}</p></div>}
       </div>}
 
       {busy && <p className="rv-note">{es ? 'Corriendo WDCNN…' : 'Running WDCNN…'}</p>}
