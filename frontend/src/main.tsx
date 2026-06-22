@@ -27,7 +27,7 @@ const config: ShellConfig = {
     { path: '/benchmark', en: 'Benchmark', es: 'Benchmark' },
   ],
   links: { github: 'https://github.com/fsantibanezleal/CAOS_RotorVitals' },
-  version: '0.26.001',
+  version: __APP_VERSION__,   // injected from package.json by vite.config (never drifts)
   architecture,
 };
 

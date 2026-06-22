@@ -1,7 +1,10 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-import { copyFileSync, existsSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+
+// single source of truth for the displayed version: the package version (so the footer can never drift again).
+const pkgVersion = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf8')).version as string;
 
 // GitHub Pages has no SPA fallback: a direct hit / refresh on a client route (e.g. /methodology)
 // returns the host 404 page. Copying the built index.html to 404.html makes Pages serve the app for
@@ -22,5 +25,6 @@ function spaFallback(): Plugin {
 export default defineConfig({
   base: '/',
   plugins: [react(), spaFallback()],
+  define: { __APP_VERSION__: JSON.stringify(pkgVersion) },
   build: { target: 'es2022', outDir: 'dist', sourcemap: false },
 });
