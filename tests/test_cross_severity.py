@@ -7,9 +7,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from rotorlab import registry
 from rotorlab.io.fetch_cwru import FILES, SEVERITY_FILES
-from rotorlab.stages import cross_severity
+
+# NOTE: rotorlab.stages.cross_severity pulls in scipy (via model.classical) — a HEAVY-lane dep absent in light CI.
+# So it is imported lazily inside the one test that needs it (guarded by importorskip); the rest only touch the
+# registry / fetch table / committed JSON and run everywhere.
 
 DERIVED = Path(__file__).resolve().parents[1] / "data" / "derived"
 SIZES = {0.007, 0.014, 0.021}
@@ -35,6 +40,8 @@ def test_registry_has_six_unseen_size_cases():
 
 
 def test_cross_severity_helpers():
+    pytest.importorskip("scipy")   # cross_severity -> model.classical -> scipy (heavy lane only)
+    from rotorlab.stages import cross_severity
     assert cross_severity._size_tag(0.007) == "007"
     assert cross_severity._size_tag(0.014) == "014"
     assert cross_severity._size_tag(0.021) == "021"
