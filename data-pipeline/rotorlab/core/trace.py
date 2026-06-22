@@ -20,15 +20,29 @@ RUL_STEPS = 60               # decimated synthetic run-to-failure horizon
 def _diagnosis(case: Any, samples: dict, metrics: dict) -> dict:
     classes = metrics["wdcnn"]["classes"]
     ci = classes.index(case.fault_type)
-    seg_idx = [i for i, s in enumerate(samples["samples"]) if s["cls"] == case.fault_type]
+    size_in = case.params.get("sizeIn")
+    if size_in is not None:
+        # T4 cross-severity case (unseen 0.014"/0.021" fault size): its REAL segments carry this case's id, and the
+        # WDCNN recall is the held-out severity recall (trained on 0.007"), not the in-size held-out-load recall.
+        seg_idx = [i for i, s in enumerate(samples["samples"]) if s.get("caseId") == case.id]
+        row = next((r for r in metrics.get("crossSeverity", {}).get("rows", [])
+                    if r["fault"] == case.fault_type and abs(r["sizeIn"] - size_in) < 1e-6), None)
+        recall = row["wdcnn"] if row else None
+        conf_row = [int(row["wdcnnDist"].get(c, 0)) for c in classes] if row else metrics["wdcnn"]["confusion"][ci]
+    else:
+        # the original held-out-3HP 0.007" cases — exclude the cross-severity segments that share the class.
+        seg_idx = [i for i, s in enumerate(samples["samples"])
+                   if s["cls"] == case.fault_type and not s.get("caseId")]
+        recall = metrics["wdcnn"]["perClass"].get(case.fault_type)
+        conf_row = metrics["wdcnn"]["confusion"][ci]
     return {
         "classes": classes,
         "fault_type": case.fault_type,
         "segment_refs": seg_idx,                       # indices into rv-cwru-samples.json (no raw copy)
         "n_segments": len(seg_idx),
         "wdcnn": {
-            "per_class_recall": metrics["wdcnn"]["perClass"].get(case.fault_type),
-            "confusion_row": metrics["wdcnn"]["confusion"][ci],
+            "per_class_recall": recall,
+            "confusion_row": conf_row,
             "accuracy": metrics["wdcnn"]["accuracy"],
         },
         "deep_ae": {
