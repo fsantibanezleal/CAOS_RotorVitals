@@ -69,6 +69,8 @@ export default function Benchmark() {
         <div className="callout" data-variant="honest"><p>{lm.honesty}</p></div>
       </section>}
 
+      {lm?.crossSeverity && <CrossSeverityBlock xs={lm.crossSeverity} es={es} />}
+
       <section>
         <p>{es
           ? `Conjunto: ${bench.dataset}. Rodamiento ${bench.bearing}. Protocolo: ${bench.protocol}`
@@ -133,6 +135,77 @@ export default function Benchmark() {
 
 // react fragment helper that keeps grid children flat
 function FragmentRow({ children }: { children: React.ReactNode }) { return <>{children}</>; }
+
+// T4 — cross-severity generalization: every model is trained ONLY on 0.007" faults, then asked to diagnose UNSEEN
+// 0.014"/0.021" fault sizes at the held-out 3 HP load. The honest "is the App a toy?" answer.
+type CrossSeverity = NonNullable<Metrics['crossSeverity']>;
+function accColor(a: number) { return a >= 0.9 ? '#1a7f37' : a >= 0.6 ? '#9e6a03' : '#b62324'; }
+const SIZE_TAGS = ['007', '014', '021'] as const;
+function CrossSeverityBlock({ xs, es }: { xs: CrossSeverity; es: boolean }) {
+  const methodRows: { key: string; label: string; deep?: boolean }[] = [
+    { key: 'wdcnn', label: es ? 'WDCNN (profundo, señal cruda)' : 'WDCNN (deep, raw signal)', deep: true },
+    { key: 'rf', label: 'Random Forest' },
+    { key: 'svm', label: 'SVM-RBF' },
+    { key: 'env', label: es ? 'envolvente/SES (no-superv.)' : 'envelope/SES (unsupervised)' },
+  ];
+  const clsLbl = (c: string) => (es ? ({ normal: 'sano', outer: 'externa', inner: 'interna', ball: 'bola' } as Record<string, string>)[c] ?? c : c);
+  // per-fault WDCNN detail: where do the misses land?
+  const detail = xs.rows.map((r) => {
+    const entries = Object.entries(r.wdcnnDist).sort((a, b) => b[1] - a[1]);
+    const top = entries[0];
+    const landsAs = top && top[0] !== r.fault ? top[0] : (entries[1]?.[1] ? entries[1][0] : null);
+    return { ...r, landsAs };
+  });
+  return (
+    <section>
+      <h2>{es ? 'Generalización entre severidades — ¿reconoce tamaños de falla NO vistos? (held-out real)' : 'Cross-severity generalization — does it recognize UNSEEN fault sizes? (real held-out)'}</h2>
+      <p className="muted small">{es
+        ? 'Todos los modelos se entrenan SOLO con fallas de 0.007 in (cargas 0/1/2 HP). Aquí diagnostican fallas reales de pista interna / bola / externa a 0.007 / 0.014 / 0.021 in, en la carga 3 HP held-out. Los tamaños 0.014 in y 0.021 in NUNCA se ven en entrenamiento — es una prueba real de generalización por severidad. Exactitud = recall de la falla (cada archivo es un solo tipo de falla).'
+        : 'Every model is trained ONLY on 0.007 in faults (0/1/2 HP loads). Here they diagnose real inner / ball / outer faults at 0.007 / 0.014 / 0.021 in, at the held-out 3 HP load. The 0.014 in and 0.021 in sizes are NEVER seen in training — a true severity-generalization test. Accuracy = fault recall (each file is one fault type).'}</p>
+      <table className="cmp-table">
+        <thead><tr>
+          <th style={{ textAlign: 'left' }}>{es ? 'Modelo' : 'Model'}</th>
+          <th>0.007″ <span className="muted">({es ? 'visto' : 'seen'})</span></th>
+          <th>0.014″ <span className="muted">({es ? 'no visto' : 'unseen'})</span></th>
+          <th>0.021″ <span className="muted">({es ? 'no visto' : 'unseen'})</span></th>
+        </tr></thead>
+        <tbody>
+          {methodRows.map((mr) => (
+            <tr key={mr.key} className={mr.deep ? 'matched' : ''}>
+              <td style={{ textAlign: 'left' }}>{mr.label}</td>
+              {SIZE_TAGS.map((s) => {
+                const a = xs.byMethodBySize[mr.key]?.[s];
+                return <td key={s} className="mono">{a == null ? '—' : <b style={{ color: accColor(a) }}>{(a * 100).toFixed(1)}%</b>}</td>;
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="muted small">{es
+        ? 'El hallazgo honesto: el WDCNN clava los spalls más grandes de 0.021 in (98.9%) pero se desploma en el tamaño intermedio 0.014 in (27.8%) — y el envolvente/SES, que no entrena nunca, también falla en las MISMAS grabaciones de 0.014 in. Esa coincidencia entre métodos apunta a que las firmas de 0.014 in de CWRU son más débiles/atípicas (un matiz documentado, Smith & Randall 2015), no a un artefacto del modelo. La severidad held-out es genuinamente difícil — se muestra, no se esconde.'
+        : 'The honest finding: the WDCNN nails the largest 0.021 in spalls (98.9%) but collapses on the intermediate 0.014 in size (27.8%) — and the envelope/SES, which never trains, also fails on the SAME 0.014 in recordings. That cross-method agreement points to the 0.014 in CWRU signatures being weaker/atypical (a documented nuance, Smith & Randall 2015), not a model artefact. Held-out severity is genuinely hard — shown, not hidden.'}</p>
+      <h3>{es ? 'Detalle por falla — a dónde van los errores del WDCNN' : 'Per-fault detail — where the WDCNN misses go'}</h3>
+      <table className="cmp-table">
+        <thead><tr>
+          <th style={{ textAlign: 'left' }}>{es ? 'Falla' : 'Fault'}</th><th>{es ? 'tamaño' : 'size'}</th>
+          <th>CWRU</th><th>{es ? 'WDCNN recall' : 'WDCNN recall'}</th><th>{es ? 'errores caen como' : 'misses land as'}</th>
+        </tr></thead>
+        <tbody>
+          {detail.map((r) => (
+            <tr key={`${r.fault}-${r.sizeIn}`}>
+              <td style={{ textAlign: 'left' }}>{clsLbl(r.fault)}</td>
+              <td className="mono">{r.sizeIn.toFixed(3)}″ {r.isNew && <span className="muted">({es ? 'no visto' : 'unseen'})</span>}</td>
+              <td className="mono muted">#{r.file}</td>
+              <td className="mono"><b style={{ color: accColor(r.wdcnn) }}>{(r.wdcnn * 100).toFixed(1)}%</b></td>
+              <td className="mono">{r.wdcnn >= 0.9 || !r.landsAs ? '—' : clsLbl(r.landsAs)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="muted small">{xs.note}</p>
+    </section>
+  );
+}
 
 // WDCNN accuracy vs SNR — a small line chart (clean → noisy), the credible degradation curve.
 function SnrCurve({ curve, es }: { curve: { snrDb: number | null; accuracy: number }[]; es: boolean }) {

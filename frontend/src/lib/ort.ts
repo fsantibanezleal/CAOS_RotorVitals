@@ -12,11 +12,14 @@ const sessions: Record<string, Promise<ort.InferenceSession>> = {};
 const base = () => (import.meta.env.BASE_URL || '/');
 const get = (name: string) => (sessions[name] ??= ort.InferenceSession.create(`${base()}${name}`, { executionProviders: ['wasm'] }));
 
-const locks: Record<string, Promise<unknown>> = {};
-function serialize<T>(model: string, job: () => Promise<T>): Promise<T> {
-  const prev = locks[model] || Promise.resolve();
-  const run = prev.then(job);
-  locks[model] = run.catch(() => {});
+// A SINGLE global inference gate across ALL models. The onnxruntime-web WASM EP runs single-threaded
+// (numThreads=1), so two session.run() calls overlapping — even on different sessions — throw "Session already
+// started". Per-model locks are not enough (e.g. svm + rf via Promise.all overlap). Serializing every run
+// globally costs nothing (the runtime can only do one at a time) and removes the race entirely.
+let gate: Promise<unknown> = Promise.resolve();
+function serialize<T>(_model: string, job: () => Promise<T>): Promise<T> {
+  const run = gate.then(job);
+  gate = run.catch(() => {});
   return run;
 }
 

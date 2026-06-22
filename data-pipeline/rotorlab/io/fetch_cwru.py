@@ -21,6 +21,16 @@ FILES: dict[int, tuple[str, int, int]] = {
     130: ("outer", 0, 1797), 131: ("outer", 1, 1772), 132: ("outer", 2, 1750), 133: ("outer", 3, 1730),
 }
 
+# Cross-severity EVAL set (T4): inner/ball/outer at the LARGER fault diameters 0.014" and 0.021", at the held-out
+# 3 HP load (rpm 1730). These sizes are NEVER in training — the WDCNN/AE/SVM/RF see only 0.007" faults at 0/1/2 HP
+# — so diagnosing them is a true held-out severity+load generalization test (the honest story, not a fake 100%).
+# file number -> (class, fault size in inches). 12 kHz DE, 3 HP. Numbers per the CWRU 12k-DE fault table.
+SEVERITY_FILES: dict[int, tuple[str, float]] = {
+    172: ("inner", 0.014), 212: ("inner", 0.021),
+    188: ("ball", 0.014), 225: ("ball", 0.021),
+    200: ("outer", 0.014), 237: ("outer", 0.021),
+}
+
 
 def _valid(p: Path) -> bool:
     """A file is valid iff it is large enough AND loadmat succeeds AND it carries a DE channel (catches truncation)."""
@@ -37,7 +47,7 @@ def _valid(p: Path) -> bool:
 def download(dst: str | Path) -> Path:
     out = Path(dst)
     out.mkdir(parents=True, exist_ok=True)
-    for n in FILES:
+    for n in sorted(set(FILES) | set(SEVERITY_FILES)):   # training files + the cross-severity eval files
         p = out / f"{n}.mat"
         if _valid(p):
             continue
@@ -66,7 +76,8 @@ def main() -> None:
     ap.add_argument("--dst", default="data/raw/cwru")
     args = ap.parse_args()
     out = download(args.dst)
-    print(f"CWRU ready in {out} ({len(FILES)} files, link-only — not re-hosted)")
+    print(f"CWRU ready in {out} ({len(set(FILES) | set(SEVERITY_FILES))} files: "
+          f"{len(FILES)} train/test + {len(SEVERITY_FILES)} cross-severity eval, link-only — not re-hosted)")
 
 
 if __name__ == "__main__":

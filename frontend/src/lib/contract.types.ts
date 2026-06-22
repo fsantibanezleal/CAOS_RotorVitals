@@ -12,6 +12,8 @@ export interface CwruSample {
   clsFeat?: number[]; // the 10-D physics-informed feature vector for the classical-ML (SVM/RF) ONNX
   file?: number; // the source CWRU recording (held-out 3 HP file for this class)
   seg?: number;  // 1-based ordinal of this segment within its class
+  sizeIn?: number; // T4: fault diameter in inches (0.014/0.021) — present only for the cross-severity segments
+  caseId?: string; // T4: the registry case this segment belongs to (e.g. dx-inner-014-3hp)
 }
 
 export interface Samples {
@@ -23,6 +25,7 @@ export interface Samples {
   rpm?: number;
   clsFeatures?: string[]; // names of the classical-ML feature vector (order matches clsFeat)
   sourceFiles?: Record<string, number>; // class -> held-out CWRU file number
+  severityFiles?: Record<string, number>; // T4: "{class}-{sizeTag}" -> CWRU file (e.g. "inner-014" -> 172)
 }
 
 export interface SnrPoint {
@@ -43,6 +46,16 @@ export interface Metrics {
     features: string[]; nTest: number; classes: string[]; note?: string;
     svm: { accuracy: number; perClass: Record<string, number>; confusion: number[][] };
     rf: { accuracy: number; perClass: Record<string, number>; confusion: number[][] };
+  };
+  // T4: cross-severity generalization — WDCNN/SVM/RF/env-SES on UNSEEN 0.014"/0.021" fault sizes (trained only on
+  // 0.007"), at the held-out 3 HP load. The honest "is the App a toy?" answer.
+  crossSeverity?: {
+    trainedOn: string; evaluatedAt: string; sizesIn: number[]; methods: string[]; note: string;
+    rows: Array<{
+      fault: string; sizeIn: number; file: number; isNew: boolean; nWin: number;
+      wdcnn: number; svm: number; rf: number; env: number; wdcnnDist: Record<string, number>;
+    }>;
+    byMethodBySize: Record<string, Record<string, number>>; // method -> { "007"|"014"|"021" -> accuracy }
   };
   honesty: string;
 }

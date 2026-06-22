@@ -88,8 +88,16 @@ def retrain(seed: int = 42) -> None:
     cml_metrics = classical_ml.evaluate(cml_models, pre["teX"], pre["teY"], pre["teRpm"], pre["classes"])
     print(f"  svm acc {cml_metrics['svm']['accuracy']} | rf acc {cml_metrics['rf']['accuracy']} "
           f"(wdcnn {emetrics['accuracy']})", flush=True)
+    # cross-severity generalization (T4): diagnose unseen 0.014/0.021 in faults at the held-out 3 HP load.
+    from .stages import cross_severity
+    print("[retrain] cross-severity generalization (0.007/0.014/0.021 in @ held-out 3 HP) ...", flush=True)
+    xsev = cross_severity.run(model, cml_models, str(RAW_CWRU), pre["classes"])
+    for s in ("007", "014", "021"):
+        print(f"  WDCNN @0.{s} in: {xsev['byMethodBySize']['wdcnn'].get(s)} "
+              f"| SVM {xsev['byMethodBySize']['svm'].get(s)} | RF {xsev['byMethodBySize']['rf'].get(s)} "
+              f"| env-SES {xsev['byMethodBySize']['env'].get(s)}", flush=True)
     export.export_models(train_out=model, infer_out=iout, eval_metrics=emetrics, classical_benchmark=benchmark,
-                         cml_models=cml_models, cml_metrics=cml_metrics,
+                         cml_models=cml_models, cml_metrics=cml_metrics, cross_severity=xsev,
                          teX=pre["teX"], teY=pre["teY"], teFz=teFz, classes=pre["classes"], derived_dir=str(DERIVED))
     print(f"[retrain] wrote ONNX + metrics + benchmark -> {DERIVED}", flush=True)
 

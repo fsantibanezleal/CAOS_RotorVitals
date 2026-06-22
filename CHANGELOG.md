@@ -3,6 +3,35 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.28.000] — 2026-06-22
+
+Cross-severity generalization (T4) — real held-out fault sizes, kills the "toy 4". Engine `rotorlab 0.27.000`.
+
+### Added
+- **Six REAL cross-severity cases** (`dx-{inner,ball,outer}-{014,021}-3hp`): the WDCNN / deep-AE / SVM-RBF /
+  Random Forest are trained ONLY on 0.007″ faults (0/1/2 HP), then asked to diagnose UNSEEN 0.014″/0.021″ faults
+  at the held-out 3 HP load (CWRU 172/212, 188/225, 200/237 — downloaded, never re-hosted). A true held-out
+  severity+load generalization test. New `stages/cross_severity.py`; `fetch_cwru.SEVERITY_FILES`; the trace builder
+  reuses the live WDCNN diagnosis path (a `sizeIn` param routes to the severity segments + the severity recall).
+- **Benchmark — cross-severity generalization table + per-fault detail.** Accuracy by fault size for all four
+  methods, colour-coded, plus a per-(fault,size) table showing **where each WDCNN miss lands**. The honest finding:
+  the WDCNN nails 0.021″ spalls (98.9%) but **collapses on the intermediate 0.014″ (27.8%)** — and the unsupervised
+  envelope/SES, which never trains, struggles on the SAME 0.014″ recordings, so the signatures are weaker/atypical
+  (Smith & Randall 2015), not a model artefact. Shown, not hidden.
+- **Live panel — unseen-size segments.** The real-diagnosis panel now groups segments by (class, fault size); the
+  0.014″/0.021″ groups are tagged "unseen size" with an honest callout. Running the live WDCNN on e.g. inner-0.014″
+  (#172) shows it predict `outer` ✗ — a real, visible generalization gap, framed honestly.
+- **Docs/tests:** `docs/cases/` cross-severity row + honesty note; `tests/test_cross_severity.py` (the registry
+  cases, the stage helpers, and the SHIPPED `crossSeverity` + severity-sample contract). `crossSeverity` block in
+  `rv-learned-metrics.json`; severity segments (with `sizeIn`/`caseId`) in `rv-cwru-samples.json`.
+
+### Fixed
+- **onnxruntime-web "Session already started" race.** The WASM EP runs single-threaded (`numThreads=1`), so two
+  `session.run()` overlapping — even on different models, e.g. SVM+RF via `Promise.all` — threw. `lib/ort.ts` now
+  serialises every inference through a single global gate (zero perf cost; the runtime can only do one at a time).
+  Also a `useRef` re-entrancy guard on the live panel. This latent race could intermittently break the deep-vs-
+  classical block shipped in 0.27.000.
+
 ## [0.27.000] — 2026-06-22
 
 Classical-ML supervised baselines (T12) — the deep-vs-classical comparison made real, not rhetorical. Engine
