@@ -214,5 +214,97 @@
       0.129581
     ]
   },
+  "classicalML": {
+    "features": [
+      "kurtosis",
+      "skewness",
+      "crest",
+      "impulse",
+      "shape",
+      "clearance",
+      "prom_outer",
+      "prom_inner",
+      "prom_ball",
+      "spectral_kurtosis"
+    ],
+    "nTest": 471,
+    "svm": {
+      "accuracy": 0.8556,
+      "perClass": {
+        "normal": 0.5299,
+        "outer": 1.0,
+        "inner": 1.0,
+        "ball": 0.8889
+      },
+      "confusion": [
+        [
+          62,
+          0,
+          0,
+          55
+        ],
+        [
+          0,
+          118,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          119,
+          0
+        ],
+        [
+          13,
+          0,
+          0,
+          104
+        ]
+      ]
+    },
+    "rf": {
+      "accuracy": 0.8556,
+      "perClass": {
+        "normal": 0.5128,
+        "outer": 1.0,
+        "inner": 1.0,
+        "ball": 0.906
+      },
+      "confusion": [
+        [
+          60,
+          0,
+          0,
+          57
+        ],
+        [
+          0,
+          118,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          119,
+          0
+        ],
+        [
+          11,
+          0,
+          0,
+          106
+        ]
+      ]
+    },
+    "classes": [
+      "normal",
+      "outer",
+      "inner",
+      "ball"
+    ],
+    "note": "SVM-RBF and Random Forest over 10 physics-informed hand-crafted features (time-domain shape indicators + envelope-spectrum BPFO/BPFI/2BSF comb prominences + resonance-band kurtosis), the classical counterpoint to the end-to-end WDCNN. Same hold-out-3HP split \u2192 comparable."
+  },
   "honesty": "Trained on REAL CWRU recordings. CWRU reuses one physical bearing across loads, so a true independent-bearing split is impossible; we hold out an entire load condition instead. CWRU is a clean lab rig (Smith & Randall 2015) \u2014 accuracy is optimistic vs field data."
 }

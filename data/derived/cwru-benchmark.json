@@ -9,7 +9,7 @@
     "2BSF": 4.7136,
     "FTF": 0.3983
   },
-  "protocol": "Unsupervised envelope/SES comb-scoring (no training -> leakage-immune by construction); 1 s windows from independent recordings; per-class row-normalized confusion. The three methods differ ONLY in the demodulation band: a fixed fault-resonance band, the auto kurtogram pick, or no demodulation (raw spectrum) \u2014 so the table isolates how decisive band selection is.",
+  "protocol": "Unsupervised envelope/SES comb-scoring (no training -> leakage-immune by construction); 1 s windows from independent recordings; per-class row-normalized confusion. The three methods differ ONLY in the demodulation band.",
   "classes": [
     "normal",
     "outer",
@@ -240,7 +240,7 @@
       "n": 95
     }
   },
-  "caveat": "Honest reading: band selection dominates \u2014 envelope analysis in the documented resonance band recovers normal/inner/outer reliably, the auto kurtogram pick underperforms on this data, and the raw spectrum is near chance. Rolling-element (ball) faults stay the hard case (their 2*BSF line is weak and modulated) \u2014 a well-known CWRU difficulty, not a bug. The 0.007 in faults are also large/largely separable (Smith & Randall 2015), so this is not field-grade difficulty.",
+  "caveat": "Band selection dominates; rolling-element (ball) faults stay the hard case; the 0.007 in faults are large/largely separable (Smith & Randall 2015), so this is not field-grade difficulty.",
   "refs": [
     {
       "label": "CWRU Bearing Data Center",

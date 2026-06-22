@@ -81,7 +81,15 @@ def retrain(seed: int = 42) -> None:
     iout = infer.run(model, pre["teX"], teFz)
     emetrics = evaluate.run(model, iout, pre["teX"], pre["teY"], pre["classes"])
     benchmark = evaluate.run_classical_benchmark(str(RAW_CWRU))
+    # classical-ML supervised baselines (T12): SVM-RBF + Random Forest over physics-informed features, SAME split.
+    from .model import classical_ml
+    print("[retrain] classical-ML baselines (SVM-RBF + Random Forest) ...", flush=True)
+    cml_models = classical_ml.train(pre["trX"], pre["trY"], pre["trRpm"])
+    cml_metrics = classical_ml.evaluate(cml_models, pre["teX"], pre["teY"], pre["teRpm"], pre["classes"])
+    print(f"  svm acc {cml_metrics['svm']['accuracy']} | rf acc {cml_metrics['rf']['accuracy']} "
+          f"(wdcnn {emetrics['accuracy']})", flush=True)
     export.export_models(train_out=model, infer_out=iout, eval_metrics=emetrics, classical_benchmark=benchmark,
+                         cml_models=cml_models, cml_metrics=cml_metrics,
                          teX=pre["teX"], teY=pre["teY"], teFz=teFz, classes=pre["classes"], derived_dir=str(DERIVED))
     print(f"[retrain] wrote ONNX + metrics + benchmark -> {DERIVED}", flush=True)
 

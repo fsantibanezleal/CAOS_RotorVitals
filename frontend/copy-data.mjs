@@ -22,6 +22,8 @@ mkdirSync(PUB, { recursive: true });
 const rootArtifacts = [
   ['models/wdcnn.onnx', 'wdcnn.onnx'],
   ['models/rv-ae.onnx', 'rv-ae.onnx'],
+  ['models/rv-svm.onnx', 'rv-svm.onnx'], // T12: classical-ML SVM-RBF baseline (skl2onnx, ai.onnx.ml)
+  ['models/rv-rf.onnx', 'rv-rf.onnx'],   // T12: classical-ML Random Forest baseline (skl2onnx, ai.onnx.ml)
   ['rv-cwru-samples.json', 'rv-cwru-samples.json'],
   ['rv-learned-metrics.json', 'rv-learned-metrics.json'],
 ];

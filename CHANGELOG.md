@@ -3,6 +3,40 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.27.000] — 2026-06-22
+
+Classical-ML supervised baselines (T12) — the deep-vs-classical comparison made real, not rhetorical. Engine
+bumped to `rotorlab 0.26.000`.
+
+### Added
+- **Two classical-ML diagnosers trained on real CWRU and run LIVE in the browser** alongside the deep WDCNN: an
+  **RBF-kernel SVM** and a **Random Forest**, both over a 10-D physics-informed feature vector (six scale-invariant
+  time-domain shape factors — kurtosis/skewness/crest/impulse/shape/clearance — plus the envelope-spectrum comb
+  prominence at BPFO/BPFI/2·BSF and the resonance-band spectral kurtosis). Same **leakage-safe split** as the WDCNN
+  (hold out the entire 3 HP load), so their held-out accuracy is directly comparable. New `model/classical_ml.py`;
+  wired through `preprocess` (per-window rpm arrays) → `retrain` → `export`.
+- **skl2onnx export → live `ai.onnx.ml` inference.** `rv-svm.onnx` / `rv-rf.onnx` (SVMClassifier /
+  TreeEnsembleClassifier, StandardScaler baked in) run on the onnxruntime-web WASM EP. `lib/ort.ts` gains
+  `svmClassify`/`rfClassify`; `dsp/learned.ts` gains `classifyClassical`.
+- **Benchmark — the deep-vs-classical-ML-vs-unsupervised comparison table** (held-out, real): WDCNN **100%** /
+  Random Forest **85.6%** / SVM-RBF **85.6%** / envelope-SES **73.7%**, with a **healthy-recall column** that tells
+  the honest story — the classical ML nails the faults but false-alarms on half the healthy windows (recall ~0.51),
+  which is exactly the boundary the deep CNN learns. The live diagnosis panel now runs all three models on the same
+  real segment (a real disagreement is visible: RF predicts `ball` on a healthy segment, marked ✗).
+- **Methodology · ML/Deep-Learning tab** documents the classical-ML baseline concretely: the shape-factor equations,
+  the 10-D feature vector, the honest result, and the new `widodo2007svm` reference (DOI-verified).
+- **Docs:** `docs/frameworks/08_classical-ml/classical-ml.md` (the method card) + `tests/test_classical_ml.py`
+  (train→evaluate→export→onnxruntime round-trip; ONNX ↔ sklearn label agreement; determinism).
+
+### Changed
+- Manifests now list `rv-svm.onnx` / `rv-rf.onnx` in `shared.models` and the engine `model` string names the
+  classical-ML baselines; `rv-cwru-samples.json` carries `clsFeat` (the 10-D vector) per committed segment and
+  `clsFeatures`; `rv-learned-metrics.json` carries a `classicalML` block (svm/rf accuracy + per-class + confusion).
+
+### Fixed
+- `export.export_models` — `len(train_out.get("trX", []) or [])` raised on a numpy array (ambiguous truth value);
+  now `int(len(train_out["trX"])) if train_out.get("trX") is not None else 0`.
+
 ## [0.26.001] — 2026-06-21
 
 ### Fixed
