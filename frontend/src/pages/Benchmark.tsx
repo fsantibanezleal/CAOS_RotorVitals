@@ -71,6 +71,8 @@ export default function Benchmark() {
 
       {lm?.crossSeverity && <CrossSeverityBlock xs={lm.crossSeverity} es={es} />}
 
+      {lm?.crossDataset && <CrossDatasetBlock xs={lm.crossDataset} es={es} />}
+
       <section>
         <p>{es
           ? `Conjunto: ${bench.dataset}. Rodamiento ${bench.bearing}. Protocolo: ${bench.protocol}`
@@ -202,6 +204,57 @@ function CrossSeverityBlock({ xs, es }: { xs: CrossSeverity; es: boolean }) {
           ))}
         </tbody>
       </table>
+      <p className="muted small">{xs.note}</p>
+    </section>
+  );
+}
+
+// T13 — cross-DATASET generalization: the CWRU-trained WDCNN vs the unsupervised envelope/SES on MFPT (a DIFFERENT
+// rig). The domain-shift test that completes the arc: deep wins in-distribution, physics wins cross-distribution.
+type CrossDataset = NonNullable<Metrics['crossDataset']>;
+function CrossDatasetBlock({ xs, es }: { xs: CrossDataset; es: boolean }) {
+  const clsLbl = (c: string) => (es ? ({ normal: 'sano', outer: 'externa', inner: 'interna' } as Record<string, string>)[c] ?? c : c);
+  const k = xs.kinematics;
+  const methodRows: { key: 'wdcnn' | 'classical'; label: string; deep?: boolean }[] = [
+    { key: 'wdcnn', label: es ? 'WDCNN (profundo, entrenado en CWRU)' : 'WDCNN (deep, trained on CWRU)', deep: true },
+    { key: 'classical', label: es ? 'envolvente/SES (física, no-superv.)' : 'envelope/SES (physics, unsupervised)' },
+  ];
+  // where the deep model sends each MFPT class (the honest "it confuses the rig" detail)
+  const outerDist = xs.wdcnn.dist?.outer ?? {};
+  const outerLanded = Object.entries(outerDist).sort((a, b) => b[1] - a[1]).filter(([, n]) => n > 0);
+  return (
+    <section>
+      <h2>{es ? 'Generalización entre DATASETS — ¿funciona en otro banco? (MFPT, real)' : 'Cross-DATASET generalization — does it work on another rig? (MFPT, real)'}</h2>
+      <p className="muted small">{es
+        ? `El WDCNN fue entrenado en CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) y NUNCA vio MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz) — otro banco, otra geometría, otra tasa de muestreo. Es la prueba clásica de domain-shift. Multiplicadores de defecto distintos: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT) — el envolvente/SES usa los de MFPT (física correcta); el WDCNN solo conoce los patrones de CWRU.`
+        : `The WDCNN was trained on CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) and NEVER saw MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz) — a different rig, geometry and sample rate. The classic domain-shift test. Different defect multipliers: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT) — the envelope/SES uses MFPT's (correct physics); the WDCNN only knows CWRU's learned patterns.`}</p>
+      <table className="cmp-table">
+        <thead><tr>
+          <th style={{ textAlign: 'left' }}>{es ? 'Método' : 'Method'}</th>
+          <th>{es ? 'global' : 'overall'}</th>
+          {xs.classes.map((c) => <th key={c}>{clsLbl(c)}</th>)}
+        </tr></thead>
+        <tbody>
+          {methodRows.map((mr) => {
+            const blk = xs[mr.key];
+            return (
+              <tr key={mr.key} className={mr.deep ? 'matched' : ''}>
+                <td style={{ textAlign: 'left' }}>{mr.label}</td>
+                <td className="mono"><b style={{ color: accColor(blk.overall) }}>{(blk.overall * 100).toFixed(1)}%</b></td>
+                {xs.classes.map((c) => {
+                  const r = blk.recall[c];
+                  return <td key={c} className="mono">{r == null ? '—' : <b style={{ color: accColor(r) }}>{(r * 100).toFixed(0)}%</b>}</td>;
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div className="callout" data-variant="honest"><p>{es
+        ? `El resultado completa el arco profundo-vs-clásico: el WDCNN profundo GANA dentro de su distribución (CWRU) pero se DESPLOMA en otro banco (${(xs.wdcnn.overall * 100).toFixed(0)}% global, recall de pista externa ${((xs.wdcnn.recall.outer ?? 0) * 100).toFixed(0)}%) — sus features aprendidas son específicas del banco. El envolvente/SES no-supervisado, que no entrena, TRANSFIERE perfecto (${(xs.classical.overall * 100).toFixed(0)}%) porque la física (peine en la frecuencia de defecto correcta) es universal. La lección honesta: profundo gana in-distribution, la física gana cross-distribution.`
+        : `The result completes the deep-vs-classical arc: the deep WDCNN WINS in-distribution (CWRU) but COLLAPSES on another rig (${(xs.wdcnn.overall * 100).toFixed(0)}% overall, outer-race recall ${((xs.wdcnn.recall.outer ?? 0) * 100).toFixed(0)}%) — its learned features are rig-specific. The unsupervised envelope/SES, which never trains, TRANSFERS perfectly (${(xs.classical.overall * 100).toFixed(0)}%) because the physics (a comb at the correct defect frequency) is universal. The honest lesson: deep wins in-distribution, physics wins cross-distribution.`}</p></div>
+      {outerLanded.length > 0 && <p className="muted small">{es ? 'A dónde manda el WDCNN las fallas de pista externa de MFPT: ' : 'Where the WDCNN sends MFPT outer-race faults: '}
+        {outerLanded.map(([c, n], i) => <span key={c}>{i > 0 ? ' · ' : ''}{clsLbl(c)} {n}</span>)} — {es ? 'nunca las reconoce como "externa" (recall 0%), las confunde con clases de CWRU.' : 'never recognised as "outer" (0% recall), confused with CWRU classes.'}</p>}
       <p className="muted small">{xs.note}</p>
     </section>
   );

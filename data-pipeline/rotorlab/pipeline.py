@@ -25,6 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DERIVED = REPO_ROOT / "data" / "derived"
 MANIFESTS = DERIVED / "manifests"
 RAW_CWRU = REPO_ROOT / "data" / "raw" / "cwru"
+RAW_MFPT = REPO_ROOT / "data" / "raw" / "mfpt"
 
 STAGES = ("preprocess", "feature_extraction", "train", "infer", "evaluate", "export")
 
@@ -96,8 +97,16 @@ def retrain(seed: int = 42) -> None:
         print(f"  WDCNN @0.{s} in: {xsev['byMethodBySize']['wdcnn'].get(s)} "
               f"| SVM {xsev['byMethodBySize']['svm'].get(s)} | RF {xsev['byMethodBySize']['rf'].get(s)} "
               f"| env-SES {xsev['byMethodBySize']['env'].get(s)}", flush=True)
+    # cross-DATASET generalization (T13): the CWRU-trained WDCNN vs unsupervised envelope/SES on MFPT (a diff rig).
+    from .io import fetch_mfpt
+    from .stages import cross_dataset
+    print("[retrain] cross-dataset generalization (MFPT — a different rig) ...", flush=True)
+    mfpt_root = fetch_mfpt.download(RAW_MFPT)
+    xdata = cross_dataset.run(model, str(mfpt_root), pre["classes"])
+    print(f"  MFPT: WDCNN overall {xdata['wdcnn']['overall']} (deep) vs env-SES {xdata['classical']['overall']} "
+          f"(physics) | WDCNN recall {xdata['wdcnn']['recall']}", flush=True)
     export.export_models(train_out=model, infer_out=iout, eval_metrics=emetrics, classical_benchmark=benchmark,
-                         cml_models=cml_models, cml_metrics=cml_metrics, cross_severity=xsev,
+                         cml_models=cml_models, cml_metrics=cml_metrics, cross_severity=xsev, cross_dataset=xdata,
                          teX=pre["teX"], teY=pre["teY"], teFz=teFz, classes=pre["classes"], derived_dir=str(DERIVED))
     print(f"[retrain] wrote ONNX + metrics + benchmark -> {DERIVED}", flush=True)
 
