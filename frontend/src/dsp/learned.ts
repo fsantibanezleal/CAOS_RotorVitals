@@ -1,7 +1,7 @@
 // The learned tier: load the REAL held-out CWRU segments + the trained-model metrics, and run the heavy ONNX
 // models (WDCNN diagnosis, deep-AE health indicator) live in the browser. All inputs here are REAL CWRU
 // recordings (public/rv-cwru-samples.json), so the diagnosis the user sees is a real model on real data.
-import { wdcnnLogits, aeReconstruct } from '../lib/ort';
+import { wdcnnLogits, aeReconstruct, svmClassify, rfClassify } from '../lib/ort';
 // The learned-tier artifact shapes are defined once in the CONTRACT-2 mirror; import for local use + re-export for
 // the existing importers (viz components import these from here).
 import type { CwruSample, Samples, SnrPoint, Metrics } from '../lib/contract.types';
@@ -28,6 +28,17 @@ export async function diagnoseRaw(raw: number[] | Float32Array, classes: string[
   const probs = softmax(logits);
   let predIdx = 0; for (let i = 1; i < probs.length; i++) if (probs[i] > probs[predIdx]) predIdx = i;
   return { classes, probs, predIdx, predClass: classes[predIdx] };
+}
+
+export interface ClsOut { pred: DiagOut; svm: DiagOut; rf: DiagOut; }
+
+/** The classical-ML supervised baselines (SVM-RBF + Random Forest) live on the same real segment's 10-D feature
+ * vector — the classical counterpoint to the deep WDCNN, for a like-for-like deep-vs-classical comparison. */
+export async function classifyClassical(clsFeat: number[] | Float32Array, classes: string[]): Promise<{ svm: DiagOut; rf: DiagOut }> {
+  const f = Float32Array.from(clsFeat);
+  const toOut = (r: { label: number; probs: number[] }): DiagOut => ({ classes, probs: r.probs, predIdx: r.label, predClass: classes[r.label] });
+  const [svm, rf] = await Promise.all([svmClassify(f), rfClassify(f)]);
+  return { svm: toOut(svm), rf: toOut(rf) };
 }
 
 export interface HealthOut { mse: number; threshold: number; isAnomaly: boolean; ratio: number; }

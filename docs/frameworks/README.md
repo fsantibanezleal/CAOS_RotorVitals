@@ -20,5 +20,6 @@ cards cover the algorithm + its provenance.
 | [WDCNN](05_wdcnn/wdcnn.md) | Zhang et al. 2017, Sensors 17(2):425 |
 | [Deep-AE health indicator](06_deep-ae/deep-ae.md) | González-Muñiz et al. 2022, RESS 224:108482 |
 | [Classical envelope/SES](07_classical-envelope-ses/classical.md) | Randall & Antoni 2011, MSSP 25:485–520; Antoni 2006/2007 (kurtogram); Smith & Randall 2015 |
+| [Classical-ML baselines (SVM-RBF + RandomForest)](08_classical-ml/classical-ml.md) | Widodo & Yang 2007, MSSP 21(6):2560–2574; ISO 13373 condition indicators; Smith & Randall 2015 split |
 
-All 28 DOI-verified references are in `frontend/src/data/citations.ts` and surfaced in the Methodology page.
+All 29 DOI-verified references are in `frontend/src/data/citations.ts` and surfaced in the Methodology page.

@@ -60,6 +60,7 @@ def build_replay(case: Any, *, derived_dir: str, manifests_dir: str,
 
 
 def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, classical_benchmark: dict,
+                  cml_models: dict, cml_metrics: dict,
                   teX, teY, teFz, classes: list[str], derived_dir: str) -> None:
     """HEAVY: write the ONNX models + committed held-out samples + the learned-metrics + classical-benchmark JSON."""
     import json
@@ -67,6 +68,8 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
 
     import numpy as np
     import torch
+
+    from ..model import classical_ml
 
     derived = Path(derived_dir)
     (derived / "models").mkdir(parents=True, exist_ok=True)
@@ -80,8 +83,13 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
     torch.onnx.export(ae, torch.zeros(1, 64), str(derived / "models" / "rv-ae.onnx"), dynamo=False,
                       input_names=["x"], output_names=["xr"],
                       dynamic_axes={"x": {0: "n"}, "xr": {0: "n"}}, opset_version=17)
+    # classical-ML supervised baselines (T12) -> ONNX (skl2onnx); run live alongside the WDCNN on the same samples.
+    classical_ml.export_onnx(cml_models, str(derived / "models"))
 
-    # committed real held-out windows for live in-browser inference (raw 2048 + spectral feats + label + provenance)
+    teF = cml_metrics["teF"]   # the classical feature matrix, aligned with teX (so committed samples carry their vector)
+
+    # committed real held-out windows for live in-browser inference (raw 2048 + AE spectral feats + classical-ML
+    # feature vector + label + provenance) — so the WDCNN, deep-AE AND the SVM/RF all run live on the SAME segment.
     from ..io.fetch_cwru import FILES
     src_file = {cls: n for n, (cls, load, _rpm) in FILES.items() if load == 3}  # the held-out 3 HP file per class
     samples = []
@@ -91,13 +99,16 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
         for seg, k in enumerate(rngsel.choice(ci, size=min(3, len(ci)), replace=False), start=1):
             samples.append({"cls": classes[c], "file": int(src_file.get(classes[c], 0)), "seg": seg,
                             "raw": [round(float(v), 4) for v in teX[k]],
-                            "feat": [round(float(v), 4) for v in teFz[k]]})
+                            "feat": [round(float(v), 4) for v in teFz[k]],
+                            "clsFeat": [round(float(v), 5) for v in teF[k]]})
     write_json(derived / "rv-cwru-samples.json",
                {"fs": 12000, "win": 2048, "loadHp": 3, "rpm": 1730, "classes": classes,
+                "clsFeatures": classical_ml.FEATURE_NAMES,
                 "sourceFiles": {c: int(src_file.get(c, 0)) for c in classes}, "samples": samples})
 
     metrics = {
-        "dataset": "CWRU 12 kHz drive-end (real)", "nTrain": int(len(train_out.get("trX", []) or [])),
+        "dataset": "CWRU 12 kHz drive-end (real)",
+        "nTrain": int(len(train_out["trX"])) if train_out.get("trX") is not None else 0,
         "nTest": int(len(teX)),
         "split": "hold-out entire 3 HP load (train 0/1/2 HP) — no test recording seen in training",
         "wdcnn": {"accuracy": eval_metrics["accuracy"], "perClass": eval_metrics["perClass"],
@@ -106,6 +117,14 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
                    "healthyFalseFlagRate": eval_metrics["healthyFalseFlagRate"],
                    "trainedOn": "all-load healthy baseline (one-class novelty); faults held out"},
         "aeScaler": {"mean": [round(float(v), 6) for v in fmu], "std": [round(float(v), 6) for v in fsd]},
+        # T12: the classical-ML supervised baselines on the SAME leakage-safe held-out split (directly comparable).
+        "classicalML": {
+            "features": cml_metrics["features"], "nTest": cml_metrics["nTest"],
+            "svm": cml_metrics["svm"], "rf": cml_metrics["rf"], "classes": classes,
+            "note": "SVM-RBF and Random Forest over 10 physics-informed hand-crafted features (time-domain shape "
+                    "indicators + envelope-spectrum BPFO/BPFI/2BSF comb prominences + resonance-band kurtosis), the "
+                    "classical counterpoint to the end-to-end WDCNN. Same hold-out-3HP split → comparable.",
+        },
         "honesty": "Trained on REAL CWRU recordings. CWRU reuses one physical bearing across loads, so a true "
                    "independent-bearing split is impossible; we hold out an entire load condition instead. CWRU is "
                    "a clean lab rig (Smith & Randall 2015) — accuracy is optimistic vs field data.",

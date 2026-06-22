@@ -9,6 +9,7 @@ export interface CwruSample {
   cls: string;
   raw: number[];
   feat: number[];
+  clsFeat?: number[]; // the 10-D physics-informed feature vector for the classical-ML (SVM/RF) ONNX
   file?: number; // the source CWRU recording (held-out 3 HP file for this class)
   seg?: number;  // 1-based ordinal of this segment within its class
 }
@@ -20,6 +21,7 @@ export interface Samples {
   samples: CwruSample[];
   loadHp?: number;
   rpm?: number;
+  clsFeatures?: string[]; // names of the classical-ML feature vector (order matches clsFeat)
   sourceFiles?: Record<string, number>; // class -> held-out CWRU file number
 }
 
@@ -36,6 +38,12 @@ export interface Metrics {
   wdcnn: { accuracy: number; perClass: Record<string, number>; confusion: number[][]; classes: string[]; snrCurve: SnrPoint[] };
   deepAE: { thresholdP99: number; faultVsHealthyAUC: number | null; healthyFalseFlagRate: number; trainedOn?: string };
   aeScaler: { mean: number[]; std: number[] };
+  // T12: the classical-ML supervised baselines (SVM-RBF + Random Forest), same leakage-safe held-out split.
+  classicalML?: {
+    features: string[]; nTest: number; classes: string[]; note?: string;
+    svm: { accuracy: number; perClass: Record<string, number>; confusion: number[][] };
+    rf: { accuracy: number; perClass: Record<string, number>; confusion: number[][] };
+  };
   honesty: string;
 }
 

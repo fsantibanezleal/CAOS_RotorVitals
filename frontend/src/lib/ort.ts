@@ -37,3 +37,20 @@ export function aeReconstruct(feat64: Float32Array): Promise<Float32Array> {
     return out.xr.data as Float32Array;
   });
 }
+
+/** Classical-ML classifier (SVM-RBF or Random Forest, skl2onnx): a 10-D physics-informed feature vector → the
+ * predicted class index + the 4-class probabilities. The StandardScaler is baked into the ONNX (input is the RAW
+ * feature vector). skl2onnx names the input `X` and emits `label` (int64) + `probabilities`. The SVMClassifier /
+ * TreeEnsembleClassifier ops run on the WASM EP (ai.onnx.ml). */
+function mlClassify(model: string, feat: Float32Array): Promise<{ label: number; probs: number[] }> {
+  return serialize(model, async () => {
+    const s = await get(model);
+    const out = await s.run({ X: new ort.Tensor('float32', feat, [1, feat.length]) });
+    return {
+      label: Number((out.label.data as ArrayLike<number | bigint>)[0]),
+      probs: Array.from(out.probabilities.data as Float32Array, Number),
+    };
+  });
+}
+export const svmClassify = (feat: Float32Array) => mlClassify('rv-svm.onnx', feat);
+export const rfClassify = (feat: Float32Array) => mlClassify('rv-rf.onnx', feat);

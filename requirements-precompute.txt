@@ -8,3 +8,6 @@ scipy==1.18.0
 torch==2.12.1
 onnx==1.22.0
 onnxruntime==1.27.0
+# classical-ML baselines (T12): supervised SVM + RandomForest diagnosers vs the SOTA WDCNN, exported to ONNX.
+scikit-learn==1.6.1
+skl2onnx==1.20.0
