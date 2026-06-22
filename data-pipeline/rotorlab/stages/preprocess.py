@@ -33,8 +33,8 @@ def run(raw_dir: str) -> dict:
             for n, (cls, load, rpm) in FILES.items()]
     report = validate_records(rows)
 
-    tr_X, tr_y, te_X, te_y = [], [], [], []
-    for n, (cls, load, _rpm) in FILES.items():
+    tr_X, tr_y, tr_rpm, te_X, te_y, te_rpm = [], [], [], [], [], []
+    for n, (cls, load, rpm) in FILES.items():
         p = raw / f"{n}.mat"
         if not p.exists():
             continue
@@ -48,11 +48,16 @@ def run(raw_dir: str) -> dict:
         if load == 3:                                     # held-out load
             te_X += ws
             te_y += [yi] * len(ws)
+            te_rpm += [rpm] * len(ws)
         else:
             tr_X += ws
             tr_y += [yi] * len(ws)
+            tr_rpm += [rpm] * len(ws)
     return {
         "trX": np.array(tr_X, np.float32), "trY": np.array(tr_y, np.int64),
         "teX": np.array(te_X, np.float32), "teY": np.array(te_y, np.int64),
+        # per-window shaft rpm — the kinematic defect frequencies (BPFO/BPFI/2·BSF) the classical-ML envelope
+        # features key off depend on it (the deep WDCNN/AE do not need it; they consume the raw window/spectrum).
+        "trRpm": np.array(tr_rpm, np.int64), "teRpm": np.array(te_rpm, np.int64),
         "classes": classes, "report": report,
     }

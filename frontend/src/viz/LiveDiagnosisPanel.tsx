@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useShellLang } from '@fasl-work/caos-app-shell';
-import { loadSamples, loadMetrics, diagnoseRaw, aeHealth, type Samples, type Metrics, type DiagOut, type HealthOut } from '../dsp/learned';
+import { loadSamples, loadMetrics, diagnoseRaw, aeHealth, classifyClassical, type Samples, type Metrics, type DiagOut, type HealthOut } from '../dsp/learned';
 
 // LIVE diagnosis on REAL held-out CWRU recordings. This is real action capability on real data: the user
 // picks an actual CWRU 12 kHz drive-end segment (held out from training — load 3 HP), and the heavy WDCNN
@@ -25,6 +25,7 @@ export function LiveDiagnosisPanel() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [sel, setSel] = useState(0);
   const [diag, setDiag] = useState<DiagOut | null>(null);
+  const [cls, setCls] = useState<{ svm: DiagOut; rf: DiagOut } | null>(null);
   const [health, setHealth] = useState<HealthOut | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -33,12 +34,13 @@ export function LiveDiagnosisPanel() {
 
   const run = async (idx: number) => {
     if (!samples || !metrics) return;
-    setBusy(true); setSel(idx); setDiag(null); setHealth(null);
+    setBusy(true); setSel(idx); setDiag(null); setHealth(null); setCls(null);
     try {
       const sm = samples.samples[idx];
       const d = await diagnoseRaw(sm.raw, samples.classes);
       const h = await aeHealth(sm.feat, metrics.deepAE.thresholdP99);
-      setDiag(d); setHealth(h); setErr(null);
+      const c = sm.clsFeat ? await classifyClassical(sm.clsFeat, samples.classes) : null;
+      setDiag(d); setHealth(h); setCls(c); setErr(null);
     } catch (e) { setErr(String(e)); } finally { setBusy(false); }
   };
   useEffect(() => { if (samples && metrics && !diag) run(0); /* auto-run first */ }, [samples, metrics]);
@@ -106,6 +108,33 @@ export function LiveDiagnosisPanel() {
               <span style={{ width: 52, textAlign: 'right', fontFamily: 'var(--font-mono)', fontSize: '0.76rem' }}>{(diag.probs[i] * 100).toFixed(1)}%</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {cls && cur && (
+        <div className="rv-diag" style={{ marginTop: '0.5rem' }}>
+          <div className="rv-plot-th">{es ? 'Mismo segmento — modelo profundo vs ML clásico (en vivo)' : 'Same segment — deep model vs classical ML (live)'}</div>
+          <table className="cmp-table" style={{ marginTop: '0.3rem' }}>
+            <thead><tr><th>{es ? 'método' : 'method'}</th><th>{es ? 'tipo' : 'type'}</th><th>{es ? 'predicción' : 'prediction'}</th><th /></tr></thead>
+            <tbody>
+              {([['WDCNN', es ? 'CNN profundo · señal cruda' : 'deep CNN · raw signal', diag],
+                 ['SVM-RBF', es ? 'ML clásico · 10 features' : 'classical ML · 10 features', cls.svm],
+                 ['Random Forest', es ? 'ML clásico · 10 features' : 'classical ML · 10 features', cls.rf]] as const).map(([name, type, d]) => {
+                const ok = !!d && d.predClass === cur.cls;
+                return (
+                  <tr key={name}>
+                    <td style={{ fontWeight: 600 }}>{name}</td>
+                    <td style={{ color: 'var(--color-fg-subtle)', fontSize: '0.78rem' }}>{type}</td>
+                    <td style={{ color: d ? CLASS_COLOR[d.predClass] : undefined, fontWeight: 700 }}>{d?.predClass ?? '—'}</td>
+                    <td style={{ color: ok ? '#3fb950' : '#f85149', fontWeight: 700 }}>{ok ? '✓' : '✗'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="rv-note" style={{ marginTop: '0.3rem' }}>{es
+            ? 'Los tres corren EN VIVO sobre el mismo segmento real. El WDCNN aprende de la señal cruda; el SVM/RF clasifican un vector de 10 features físicas (indicadores de forma + prominencias de los peines BPFO/BPFI/2·BSF). En held-out: WDCNN 100% vs SVM/RF ~86% — el ML clásico falsa-alarma en sanos (ver Benchmark).'
+            : 'All three run LIVE on the same real segment. The WDCNN learns from the raw signal; the SVM/RF classify a 10-D physics-feature vector (shape indicators + BPFO/BPFI/2·BSF comb prominences). Held-out: WDCNN 100% vs SVM/RF ~86% — the classical ML false-alarms on healthy (see Benchmark).'}</p>
         </div>
       )}
 

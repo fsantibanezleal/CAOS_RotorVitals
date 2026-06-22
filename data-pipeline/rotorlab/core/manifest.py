@@ -31,6 +31,8 @@ def shared_artifacts() -> dict:
         "models": [
             {"id": "wdcnn", "file": "models/wdcnn.onnx", "opset": 17, "input": [1, 1, 2048]},
             {"id": "deep_ae", "file": "models/rv-ae.onnx", "opset": 17, "input": [1, 64]},
+            {"id": "svm", "file": "models/rv-svm.onnx", "opset": 17, "input": [1, 10]},
+            {"id": "rf", "file": "models/rv-rf.onnx", "opset": 17, "input": [1, 10]},
         ],
         "samples": "rv-cwru-samples.json",
         "learned_metrics": "rv-learned-metrics.json",
@@ -60,7 +62,8 @@ def build_case_manifest(
         "expected_band": case.expected_band,
         "validation_anchor": case.validation_anchor,
         "engine": {"package": "rotorlab", "version": __version__,
-                   "model": "WDCNN (Zhang 2017) + deep-AE HI (González-Muñiz 2022) + classical envelope/SES"},
+                   "model": "WDCNN (Zhang 2017) + deep-AE HI (González-Muñiz 2022) + classical envelope/SES + "
+                            "classical-ML SVM-RBF/RandomForest (Widodo & Yang 2007)"},
         "dataset": DATASET,
         "split": SPLIT,
         "seed": seed,

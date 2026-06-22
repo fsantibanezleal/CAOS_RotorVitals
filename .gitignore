@@ -25,6 +25,8 @@ frontend/.vite/
 frontend/public/data/
 frontend/public/wdcnn.onnx
 frontend/public/rv-ae.onnx
+frontend/public/rv-svm.onnx
+frontend/public/rv-rf.onnx
 frontend/public/rv-cwru-samples.json
 frontend/public/rv-learned-metrics.json
 *.tsbuildinfo
