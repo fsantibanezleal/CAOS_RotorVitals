@@ -20,9 +20,10 @@ prognostics cases are clearly labelled.
 * **Only CWRU is a live real dataset.** The training loads (0/1/2 HP) feed the model but only the held-out **3 HP**
   segments are committed as replayable live cases. The synthetic + run-to-failure cases are **labelled synthetic** —
   they are NOT presented as real benchmark numbers.
-* **Roadmap (not yet wired as live cases):** XJTU-SY / FEMTO / IMS (real run-to-failure → replace the synthetic RUL
-  trend), Ottawa-TVS (variable-speed → only then claim variable-speed), a gear rig (→ only then claim gear),
-  Paderborn / MFPT (more bearing diversity). Until wired, the docs + UI do not claim them.
+* **MFPT is wired (T13)** as a real cross-DATASET eval (see below) — a second rig, live. **Roadmap (still not
+  wired):** XJTU-SY / FEMTO / IMS (real run-to-failure → replace the synthetic RUL trend), Ottawa-TVS
+  (variable-speed → only then claim variable-speed), a gear rig (→ only then claim gear), Paderborn (more bearing
+  diversity). Until wired, the docs + UI do not claim them.
 * **CWRU caveats:** a clean lab rig (optimistic accuracy → the SNR curve is the honest headline); one physical
   bearing per fault across loads (→ hold out a load, not a bearing); ball faults are the documented hard case
   (a weak, modulated 2·BSF line), not a bug.
@@ -32,6 +33,14 @@ prognostics cases are clearly labelled.
   `crossSeverity` block in `rv-learned-metrics.json` carries the per-(fault,size) numbers + where each WDCNN miss
   lands; see [`../frameworks/08_classical-ml/classical-ml.md`](../frameworks/08_classical-ml/classical-ml.md) for
   the shared feature path.
+* **Cross-DATASET generalization (T13):** the CWRU-trained WDCNN is also run on **MFPT** — a DIFFERENT rig (NICE
+  bearing, 48828/97656 Hz resampled to ~12 kHz, BPFO 3.245× / BPFI 4.755× vs CWRU 3.5848× / 5.4152×), downloaded
+  link-only from the MathWorks/MFPT mirror, never re-hosted. The honest domain-shift result: the deep WDCNN
+  **collapses** cross-rig (≈49% overall, **0% outer-race recall** — it calls MFPT outer faults *normal*), while the
+  unsupervised envelope/SES (the same comb physics, at the CORRECT MFPT defect frequencies, auto band) **transfers
+  perfectly (100%)**. The lesson, shown not claimed: *deep wins in-distribution, physics wins cross-distribution.*
+  The `crossDataset` block carries the WDCNN-vs-physics recall + where the deep misses land; MFPT segments are
+  committed for live in-browser replay (tagged `dataset:"MFPT"`).
 
 See [`../architecture/06_model-evaluation.md`](../architecture/06_model-evaluation.md) for the split + the SNR + AE
 protocol, and the per-case `data/derived/manifests/<case>.json` for the exact recorded numbers.

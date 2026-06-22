@@ -69,7 +69,8 @@ def test_shipped_metrics_cross_severity_block():
 
 def test_shipped_severity_samples():
     s = json.loads((DERIVED / "rv-cwru-samples.json").read_text(encoding="utf-8"))
-    sev = [x for x in s["samples"] if x.get("caseId")]
+    # severity samples carry sizeIn (the MFPT cross-dataset samples also carry caseId but no sizeIn — exclude them)
+    sev = [x for x in s["samples"] if x.get("sizeIn") is not None]
     assert sev, "no cross-severity sample segments committed"
     for x in sev:
         assert x["sizeIn"] in {0.014, 0.021}

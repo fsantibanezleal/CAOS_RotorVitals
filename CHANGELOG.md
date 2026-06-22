@@ -3,6 +3,29 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.29.000] — 2026-06-22
+
+Cross-DATASET generalization (T13) — a second real rig (MFPT). The domain-shift test that completes the
+deep-vs-classical arc. Engine `rotorlab 0.28.000`.
+
+### Added
+- **MFPT as a real second dataset** (`io/fetch_mfpt.py`, `stages/cross_dataset.py`): the CWRU-trained WDCNN — which
+  never saw a single MFPT sample — is run on the **MFPT** bearing set (NICE bearing, 48828/97656 Hz resampled to
+  ~12 kHz, BPFO 3.245× / BPFI 4.755× vs CWRU 3.5848× / 5.4152×). Downloaded link-only from the MathWorks/MFPT
+  mirror, never re-hosted (raw gitignored). A true held-out **domain-shift** test.
+- **The honest result:** the deep WDCNN **collapses cross-rig** — ≈49% overall, **0% outer-race recall** (it calls
+  MFPT outer faults `normal`) — while the unsupervised **envelope/SES transfers perfectly (100%)** because the comb
+  physics, evaluated at the CORRECT MFPT defect frequencies (auto band), is rig-agnostic. The lesson, shown not
+  claimed: **deep wins in-distribution (T12), physics wins cross-distribution (T13).**
+- **Benchmark — cross-dataset section:** the CWRU-vs-MFPT rig/kinematics, the WDCNN-vs-physics recall table
+  (overall + per class), the honest takeaway, and where the deep model sends the MFPT outer faults.
+- **Live panel — MFPT group:** segments tagged "different rig"; running the live WDCNN on a real MFPT outer segment
+  shows it predict `normal` ✗ — the domain-shift miss, demonstrated live (the deep-vs-classical SVM/RF block cleanly
+  skips for MFPT, which carries no classical-ML feature vector).
+- **Docs/tests:** `docs/cases` cross-dataset note + MFPT moved from roadmap to wired; `tests/test_cross_dataset.py`
+  (the MFPT file set + the shipped `crossDataset` block + the MFPT sample contract; scipy-guarded for light CI).
+  `crossDataset` block in `rv-learned-metrics.json`; MFPT segments (`dataset:"MFPT"`) in `rv-cwru-samples.json`.
+
 ## [0.28.000] — 2026-06-22
 
 Cross-severity generalization (T4) — real held-out fault sizes, kills the "toy 4". Engine `rotorlab 0.27.000`.

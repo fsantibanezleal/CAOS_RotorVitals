@@ -13,7 +13,8 @@ export interface CwruSample {
   file?: number; // the source CWRU recording (held-out 3 HP file for this class)
   seg?: number;  // 1-based ordinal of this segment within its class
   sizeIn?: number; // T4: fault diameter in inches (0.014/0.021) — present only for the cross-severity segments
-  caseId?: string; // T4: the registry case this segment belongs to (e.g. dx-inner-014-3hp)
+  caseId?: string; // T4/T13: the case this segment belongs to (e.g. dx-inner-014-3hp, mfpt-outer-2)
+  dataset?: string; // T13: "MFPT" for the cross-dataset (different-rig) segments; absent for CWRU
 }
 
 export interface Samples {
@@ -56,6 +57,18 @@ export interface Metrics {
       wdcnn: number; svm: number; rf: number; env: number; wdcnnDist: Record<string, number>;
     }>;
     byMethodBySize: Record<string, Record<string, number>>; // method -> { "007"|"014"|"021" -> accuracy }
+  };
+  // T13: cross-DATASET generalization — the CWRU-trained WDCNN vs unsupervised envelope/SES on MFPT (a different
+  // rig). The domain-shift test: learned features are rig-specific, physics is rig-agnostic.
+  crossDataset?: {
+    dataset: string; trainedOn: string; classes: string[]; note: string;
+    kinematics: {
+      cwru: { bearing: string; BPFO: number; BPFI: number; fsHz: number };
+      mfpt: { bearing: string; BPFO: number; BPFI: number; fsHz: number | string };
+    };
+    wdcnn: { recall: Record<string, number>; overall: number; dist: Record<string, Record<string, number>> };
+    classical: { recall: Record<string, number>; overall: number; method: string };
+    perFile: Array<{ file: string; class: string; fs: number; rate: number; nWin: number; bpfoHz: number; bpfiHz: number }>;
   };
   honesty: string;
 }
