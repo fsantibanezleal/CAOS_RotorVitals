@@ -75,6 +75,8 @@ export default function Benchmark() {
 
       {lm?.crossDataset && <CrossDatasetBlock xs={lm.crossDataset} es={es} />}
 
+      {lm?.leakage && <LeakageBlock lk={lm.leakage} es={es} />}
+
       <EmbeddingPanel lang={es ? 'es' : 'en'} />
 
       <IngestPanel lang={es ? 'es' : 'en'} />
@@ -262,6 +264,100 @@ function CrossDatasetBlock({ xs, es }: { xs: CrossDataset; es: boolean }) {
       {outerLanded.length > 0 && <p className="muted small">{es ? 'A dónde manda el WDCNN las fallas de pista externa de MFPT: ' : 'Where the WDCNN sends MFPT outer-race faults: '}
         {outerLanded.map(([c, n], i) => <span key={c}>{i > 0 ? ' · ' : ''}{clsLbl(c)} {n}</span>)} — {es ? 'nunca las reconoce como "externa" (recall 0%), las confunde con clases de CWRU.' : 'never recognised as "outer" (0% recall), confused with CWRU classes.'}</p>}
       <p className="muted small">{xs.note}</p>
+    </section>
+  );
+}
+
+// T15 — window-overlap leakage, quantified TWO ways on ONE frozen pool (the CWRU window-overlap trap, Hendriks 2022).
+// (1) the ISOLATED overlap leak via a purge/embargo control (same random test set + load; overlapping train
+// neighbours removed) — the clean number; (2) the naive-vs-production gap — an UPPER BOUND that ALSO charges the
+// grouped arm a 3 HP load-generalization penalty, so it is NOT pure leakage. Honest decomposition: most of the
+// naive gap is the load penalty, the pure overlap leak is small on this clean dataset.
+type Leakage = NonNullable<Metrics['leakage']>;
+function LeakageBlock({ lk, es }: { lk: Leakage; es: boolean }) {
+  const ctl = lk.controls;
+  // the two classical models carry the legible story (the WDCNN saturates → uninformative here). Per model decompose
+  // the naive-vs-production gap into {isolated overlap leak} + {load penalty (the remainder)}.
+  const rows = (['rf', 'svm'] as const).map((k) => {
+    const iso = lk.overlapIsolated[k], nvp = lk.naiveVsProduction[k];
+    const overlap = Math.max(0, iso.isolatedPts), load = Math.max(0, Math.round((nvp.gapPts - iso.isolatedPts) * 10) / 10);
+    return { key: k, label: k === 'rf' ? 'Random Forest' : 'SVM-RBF', iso, nvp, overlap, load, gap: nvp.gapPts };
+  });
+  const maxGap = Math.max(...rows.map((r) => r.gap), 6);
+  // horizontal stacked decomposition bar: overlap (red) + load penalty (amber) = the naive-vs-production gap.
+  const W = 560, rh = 34, padL = 110, padR = 64, top = 26, barH = 16;
+  const sw = (pts: number) => (pts / maxGap) * (W - padL - padR);
+  return (
+    <section>
+      <h2>{es ? 'Fuga por solape de ventanas — aislada vs el techo del split ingenuo (real)' : 'Window-overlap leakage — isolated vs the naive-split upper bound (real)'}</h2>
+      <p className="muted small">{es
+        ? `Un conjunto congelado de ${lk.nWindows} ventanas (16 grabaciones CWRU, ${lk.overlapPct}% de solape porque HOP ${lk.hop} < WIN ${lk.win}). Se mide la fuga de DOS formas, separadas a propósito para no exagerar. (1) Fuga AISLADA — control de purga/embargo: sobre el MISMO test aleatorio (mezcla de 4 cargas → carga y clase fijas), se compara el train con-solape contra un train al que se le quitan las ventanas vecinas (orden ±1) de cualquier ventana de test; quitar datos solo puede PERJUDICAR, así que la ganancia restante es solo del solape (media de ${lk.nSeeds} semillas). (2) Ingenuo vs producción — un TECHO: el split aleatorio vs el split agrupado de producción (held-out 3 HP), que ADEMÁS paga una penalización por generalizar a una carga no vista — no es fuga pura.`
+        : `One frozen pool of ${lk.nWindows} windows (16 CWRU recordings, ${lk.overlapPct}% overlap because HOP ${lk.hop} < WIN ${lk.win}). Leakage is measured TWO ways, deliberately kept apart so the demo does not overclaim. (1) ISOLATED leak — a purge/embargo control: on the SAME random test set (a 4-load mix → load and class held constant), a with-overlap train is compared against a train with every order±1 neighbour of a test window removed; removing data can only HURT, so the residual gain isolates the overlap (mean over ${lk.nSeeds} seeds). (2) Naive-vs-production — an UPPER BOUND: the random split vs the production grouped split (held-out 3 HP), which ALSO pays a penalty for generalizing to an unseen load — so it is NOT pure leakage.`}</p>
+
+      <div className="rv-plot" style={{ maxWidth: W + 20 }}>
+        <svg viewBox={`0 0 ${W} ${top + rows.length * rh + 16}`} width="100%" style={{ font: '11px var(--font-sans, sans-serif)' }} role="img" aria-label={es ? 'descomposición de la brecha' : 'gap decomposition by model'}>
+          <text x={padL} y={14} fill="var(--color-fg-faint)">{es ? 'puntos de exactitud (techo ingenuo-vs-producción)' : 'accuracy points (naive-vs-production gap)'}</text>
+          {rows.map((r, i) => {
+            const y = top + i * rh;
+            return (
+              <g key={r.key}>
+                <text x={padL - 8} y={y + barH - 3} textAnchor="end" fill="var(--color-fg)">{r.label}</text>
+                <rect x={padL} y={y} width={sw(r.overlap)} height={barH} fill="#b62324" opacity={0.8} />
+                <rect x={padL + sw(r.overlap)} y={y} width={sw(r.load)} height={barH} fill="#d9a406" opacity={0.8} />
+                <text x={padL + sw(r.gap) + 6} y={y + barH - 3} fill="var(--color-fg-subtle)">+{r.gap.toFixed(1)} pts</text>
+                <text x={padL + sw(r.overlap) / 2} y={y + barH + 11} textAnchor="middle" fill="#b62324">{r.overlap.toFixed(1)}</text>
+                <text x={padL + sw(r.overlap) + sw(r.load) / 2} y={y + barH + 11} textAnchor="middle" fill="#9e6a03">{r.load.toFixed(1)}</text>
+              </g>
+            );
+          })}
+        </svg>
+        <div className="muted small" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.2rem' }}>
+          <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#b62324', opacity: 0.8, marginRight: 4 }} />{es ? 'fuga por solape (aislada)' : 'overlap leak (isolated)'}</span>
+          <span><span style={{ display: 'inline-block', width: 10, height: 10, background: '#d9a406', opacity: 0.8, marginRight: 4 }} />{es ? 'penalización por carga' : 'load penalty'}</span>
+        </div>
+      </div>
+
+      <table className="cmp-table">
+        <thead><tr>
+          <th style={{ textAlign: 'left' }}>{es ? 'Modelo' : 'Model'}</th>
+          <th>{es ? 'producción (agrup.)' : 'production (grouped)'}</th>
+          <th>{es ? 'aleatorio (con fuga)' : 'random (leaky)'}</th>
+          <th>{es ? 'brecha (techo)' : 'gap (upper bound)'}</th>
+          <th>{es ? 'fuga aislada' : 'isolated overlap'}</th>
+          <th>{es ? 'recall sano (prod→fuga)' : 'healthy recall (prod→leaky)'}</th>
+        </tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} className={r.key === 'rf' ? 'matched' : ''}>
+              <td style={{ textAlign: 'left' }}>{r.label} <span className="muted">· {es ? 'ML clásico' : 'classical'}</span></td>
+              <td className="mono"><b style={{ color: accColor(r.nvp.honestAcc) }}>{(r.nvp.honestAcc * 100).toFixed(1)}%</b></td>
+              <td className="mono">{(r.nvp.leakyAcc * 100).toFixed(1)}<span className="muted">±{(r.nvp.leakyStd * 100).toFixed(1)}</span>%</td>
+              <td className="mono"><b style={{ color: '#9e6a03' }}>+{r.gap.toFixed(1)} pts</b></td>
+              <td className="mono"><b style={{ color: '#b62324' }}>+{r.iso.isolatedPts.toFixed(1)} pts</b></td>
+              <td className="mono">{(r.nvp.honestPerClass.normal * 100).toFixed(0)}% → {(r.nvp.leakyPerClass.normal * 100).toFixed(0)}%</td>
+            </tr>
+          ))}
+          <tr>
+            <td style={{ textAlign: 'left' }}>WDCNN <span className="muted">· {es ? 'profundo' : 'deep'}</span></td>
+            <td className="mono">{(lk.naiveVsProduction.wdcnn.honestAcc * 100).toFixed(0)}%</td>
+            <td className="mono">{(lk.naiveVsProduction.wdcnn.leakyAcc * 100).toFixed(0)}%</td>
+            <td className="mono" colSpan={3}><span className="muted">{es ? 'saturado en este conjunto limpio → no informativo aquí' : 'saturated on this clean pool → uninformative here'}</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p className="muted small" style={{ marginTop: '0.3rem' }}>
+        {es ? 'Controles de integridad: ' : 'Integrity controls: '}
+        <b>{es ? 'etiqueta barajada (plomería)' : 'shuffled-label (plumbing)'}</b> {(ctl.shuffledLabelPlumbing.leakyWdcnn * 100).toFixed(0)}%/{(ctl.shuffledLabelPlumbing.honestWdcnn * 100).toFixed(0)}% ({es ? 'azar' : 'chance'} 25%) {ctl.shuffledLabelPlumbing.pass ? '✓' : '✗'} · <b>{es ? 'ventanas solapadas train↔test' : 'overlapping windows train↔test'}</b> {es ? 'aleatorio' : 'random'} {ctl.overlapWindowsSharedTrainTest.leaky}/{es ? 'agrupado' : 'grouped'} {ctl.overlapWindowsSharedTrainTest.honest} · <b>{es ? 'honesto-T15 vs producción' : 'honest-T15 vs production'}</b> {(ctl.honestVsProduction.honestT15Wdcnn * 100).toFixed(0)}% vs {(ctl.honestVsProduction.productionHoldout3HP * 100).toFixed(0)}% {ctl.honestVsProduction.consistent ? '✓' : '✗'}.
+      </p>
+
+      <div className="callout" data-variant="honest"><p>{es
+        ? `La descomposición honesta: de la brecha ingenuo-vs-producción (+${lk.naiveVsProduction.rf.gapPts.toFixed(1)} pts en RF), solo +${Math.max(0, lk.overlapIsolated.rf.isolatedPts).toFixed(1)} pts son fuga PURA por solape de ventanas (test y carga fijos); el resto es la penalización por generalizar a la carga 3 HP no vista que el split de producción sí paga. En este conjunto limpio de 0.007″ la fuga por solape es modesta —no el colapso dramático publicado, que viene de la fuga más profunda de IDENTIDAD DE RODAMIENTO. El WDCNN satura (1.0) → no informa aquí. ${lk.caveat}`
+        : `The honest decomposition: of the naive-vs-production gap (+${lk.naiveVsProduction.rf.gapPts.toFixed(1)} pts on RF), only +${Math.max(0, lk.overlapIsolated.rf.isolatedPts).toFixed(1)} pts is PURE window-overlap leakage (test set + load held constant); the rest is the penalty for generalizing to the unseen 3 HP load that the production split honestly pays. On this clean 0.007″ pool the overlap leak is modest — not the dramatic published collapse, which is driven by the deeper BEARING-IDENTITY leak. The WDCNN saturates (1.0) → uninformative here. ${lk.caveat}`}</p></div>
+
+      <p className="muted small">{lk.refs.map((r, i) => (
+        <span key={i}>{i > 0 ? ' · ' : ''}{r.doi ? <a href={`https://doi.org/${r.doi}`} target="_blank" rel="noreferrer">{r.label}</a> : r.label}</span>
+      ))}</p>
     </section>
   );
 }

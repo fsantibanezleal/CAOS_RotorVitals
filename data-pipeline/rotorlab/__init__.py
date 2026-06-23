@@ -9,4 +9,4 @@ instantiated here, not redesigned. The supervised classical-ML baselines (SVM-RB
 features, `model/classical_ml.py`) are the deep-vs-classical counterpoint, exported to ONNX and run live too.
 """
 
-__version__ = "0.29.000"  # display X.XX.XXX; PEP 440 form in pyproject.toml (0.29.0)
+__version__ = "0.30.000"  # display X.XX.XXX; PEP 440 form in pyproject.toml (0.30.0)

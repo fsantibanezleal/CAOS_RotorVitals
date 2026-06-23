@@ -71,6 +71,40 @@ export interface Metrics {
     classical: { recall: Record<string, number>; overall: number; method: string };
     perFile: Array<{ file: string; class: string; fs: number; rate: number; nWin: number; bpfoHz: number; bpfiHz: number }>;
   };
+  // T15: leakage demonstration — window-overlap leakage quantified TWO ways on ONE frozen pool (the CWRU
+  // window-overlap trap, Hendriks et al. 2022). (1) overlapIsolated — the clean number: a purge/embargo control on
+  // the SAME random test set (load + class held constant) where overlapping train neighbours are removed, so the
+  // gain isolates the leak. (2) naiveVsProduction — an UPPER BOUND: the naive random split vs the production grouped
+  // split, which ALSO charges the grouped arm a 3 HP load-generalization penalty, so it is NOT pure leakage. Real
+  // fitted-model numbers; ships integrity controls.
+  leakage?: {
+    purpose: string; pool: string; nWindows: number; win: number; hop: number; overlapPct: number;
+    classes: string[]; seedSplit: number; seedModel: number; nSeeds: number; testFractionPct: number;
+    overlapIsolated: {
+      method: string; nTest: number; nSeeds: number;
+      svm: { withOverlapAcc: number; withOverlapStd: number; purgedAcc: number; purgedStd: number; isolatedPts: number; withOverlapPerClass: Record<string, number>; purgedPerClass: Record<string, number> };
+      rf: { withOverlapAcc: number; withOverlapStd: number; purgedAcc: number; purgedStd: number; isolatedPts: number; withOverlapPerClass: Record<string, number>; purgedPerClass: Record<string, number> };
+      wdcnn: { withOverlapAcc: number; purgedAcc: number; isolatedPts: number; saturates: boolean };
+    };
+    naiveVsProduction: {
+      note: string;
+      splits: {
+        leaky: { name: string; grouped: boolean; ratio: string; nSeeds: number; nTrain: number; nTest: number };
+        honest: { name: string; grouped: boolean; heldOutRecordings: number[]; heldOutLoadHp: number; nTrain: number; nTest: number };
+      };
+      svm: { leakyAcc: number; leakyStd: number; honestAcc: number; gapPts: number; leakyPerClass: Record<string, number>; honestPerClass: Record<string, number>; leakyConfusion: number[][]; honestConfusion: number[][] };
+      rf: { leakyAcc: number; leakyStd: number; honestAcc: number; gapPts: number; leakyPerClass: Record<string, number>; honestPerClass: Record<string, number>; leakyConfusion: number[][]; honestConfusion: number[][] };
+      wdcnn: { leakyAcc: number; honestAcc: number; gapPts: number; saturatesHonest: boolean; leakyPerClass: Record<string, number>; honestPerClass: Record<string, number>; leakyConfusion: number[][]; honestConfusion: number[][] };
+    };
+    controls: {
+      shuffledLabelPlumbing: { seed: number; leakyWdcnn: number; honestWdcnn: number; expectChance: number; pass: boolean; note: string };
+      overlapWindowsSharedTrainTest: { leaky: number; honest: number };
+      classBalance: { leakyTestClassFrac: Record<string, number>; honestTestClassFrac: Record<string, number>; maxAbsDiff: number; balancedOk: boolean; note: string };
+      honestVsProduction: { productionHoldout3HP: number; honestT15Wdcnn: number; deltaPts: number; consistent: boolean };
+    };
+    note: string; caveat: string;
+    refs: Array<{ label: string; doi?: string }>;
+  };
   honesty: string;
 }
 
