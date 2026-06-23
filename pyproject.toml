@@ -7,8 +7,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rotorlab"
-# PEP 440 form of the display version X.XX.XXX (see CHANGELOG.md + rotorlab.__version__ = "0.28.000").
-version = "0.28.0"
+# PEP 440 form of the display version X.XX.XXX (see CHANGELOG.md + rotorlab.__version__ = "0.29.000").
+version = "0.29.0"
 description = "RotorVitals — bearing-fault diagnosis (WDCNN + deep-AE on real CWRU) + classical envelope/SES, as a staged offline pipeline with two data contracts (ADR-0057)."
 readme = "README.md"
 requires-python = ">=3.11"

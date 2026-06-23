@@ -5,6 +5,7 @@ import { viridis } from '../viz/Heatmap2D';
 import { loadMetrics, type Metrics } from '../dsp/learned';
 import { LiveDiagnosisPanel } from '../viz/LiveDiagnosisPanel';
 import { IngestPanel } from '../viz/IngestPanel';
+import { EmbeddingPanel } from '../viz/EmbeddingPanel';
 
 type Method = { confusion: number[][]; rowRecall: number[]; accuracy: number; n: number };
 const METHODS = bench.methods as Record<string, Method>;
@@ -73,6 +74,8 @@ export default function Benchmark() {
       {lm?.crossSeverity && <CrossSeverityBlock xs={lm.crossSeverity} es={es} />}
 
       {lm?.crossDataset && <CrossDatasetBlock xs={lm.crossDataset} es={es} />}
+
+      <EmbeddingPanel lang={es ? 'es' : 'en'} />
 
       <IngestPanel lang={es ? 'es' : 'en'} />
 

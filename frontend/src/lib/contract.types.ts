@@ -15,6 +15,7 @@ export interface CwruSample {
   sizeIn?: number; // T4: fault diameter in inches (0.014/0.021) — present only for the cross-severity segments
   caseId?: string; // T4/T13: the case this segment belongs to (e.g. dx-inner-014-3hp, mfpt-outer-2)
   dataset?: string; // T13: "MFPT" for the cross-dataset (different-rig) segments; absent for CWRU
+  emb?: number[]; // T14: the WDCNN's 100-D penultimate LEARNED feature, for the feature-space embedding
 }
 
 export interface Samples {

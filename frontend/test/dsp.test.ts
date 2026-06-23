@@ -276,3 +276,27 @@ test('IESFOgram backward-compat: gramGrid(x,fs,5) unchanged + IESFO fields zero'
   assert.equal(g.cells[0][0].iesfo, 0);                          // per-cell IESFO is 0 with no target
   assert.equal(g.cells[0][0].iesfoBlind, 0);
 });
+
+// ---- T14: PCA-2D for the learned-feature embedding ----
+import { pca2d } from '../src/dsp/pca.ts';
+
+test('pca2d: separates two well-separated high-D clusters in the 2-D projection', () => {
+  const d = 100, rows: number[][] = [];
+  let s = 5 >>> 0; const rng = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296 - 0.5; };
+  // cluster A near +3 on dims 0..4, cluster B near -3 — plus isotropic noise
+  for (let i = 0; i < 20; i++) { const r = Array.from({ length: d }, () => 0.3 * rng()); for (let k = 0; k < 5; k++) r[k] += (i < 10 ? 3 : -3); rows.push(r); }
+  const { pts, varExpl } = pca2d(rows);
+  assert.equal(pts.length, 20);
+  // PC1 should carry the bulk of the (cluster-separation) variance
+  assert.ok(varExpl[0] > 0.5, `PC1 variance ${varExpl[0].toFixed(2)} should dominate`);
+  // the two clusters separate along PC1: mean of A vs mean of B differ by ≫ within-cluster spread
+  const a = pts.slice(0, 10).map((p) => p[0]), bvals = pts.slice(10).map((p) => p[0]);
+  const meanA = a.reduce((x, y) => x + y, 0) / 10, meanB = bvals.reduce((x, y) => x + y, 0) / 10;
+  const spread = Math.sqrt(a.concat(bvals).reduce((acc, v) => { const m = (v < (meanA + meanB) / 2) === (meanB < meanA) ? meanB : meanA; return acc + (v - m) ** 2; }, 0) / 20);
+  assert.ok(Math.abs(meanA - meanB) > 4 * (spread || 1e-9), `clusters separated on PC1 (|ΔμA-B|=${Math.abs(meanA - meanB).toFixed(2)} vs spread ${spread.toFixed(2)})`);
+});
+
+test('pca2d: degenerate input is handled', () => {
+  assert.deepEqual(pca2d([]).pts, []);
+  assert.equal(pca2d([[1, 2, 3]]).pts.length, 1);   // single row → projects to ~origin, no crash
+});
