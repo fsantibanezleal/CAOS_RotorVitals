@@ -1,5 +1,9 @@
 # 05 — The staged precompute pipeline
 
+**The science/algorithm flow** — real CWRU → windows → classical envelope/SES + WDCNN + deep-AE → held-out metrics → ONNX:
+
+![The science flow — raw CWRU → contract gate → classical SES + WDCNN + deep-AE training → held-out eval → ONNX export](../diagrams/04-the-science.svg)
+
 `data-pipeline/rotorlab/stages/` — six named, seeded, typed stages with an explicit input→output contract. Frozen
 names; the bodies are the real CWRU science (split out of the original `train_models.py` + `cwru-benchmark/run.py`).
 

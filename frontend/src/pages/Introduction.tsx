@@ -1,4 +1,4 @@
-import { Callout, Equation, InlineMath, Refs, useShellLang } from '@fasl-work/caos-app-shell';
+import { Callout, Cite, Equation, InlineMath, Refs, useShellLang } from '@fasl-work/caos-app-shell';
 
 export default function Introduction() {
   const es = useShellLang() === 'es';
@@ -165,7 +165,7 @@ export default function Introduction() {
           : 'Across mining rotating equipment — primary and secondary crushers, conveyor pulleys and idlers, slurry and process pumps, ventilation and dust-collection fans, ball/SAG mill pinion drives — the rolling-element bearing is the single most common point of mechanical failure. A bearing carries the full dynamic load of the shaft on a thin lubricant film over a handful of rolling elements, runs continuously, and degrades from fatigue, contamination, poor lubrication and overload long before any other component shows distress.'}</p>
         <p>{es
           ? 'El costo es asimétrico: el rodamiento es barato, pero una detención no planificada en una línea crítica — un chancador que se agarrota a mitad de turno, un accionamiento de correa que falla entre ventanas de mantención — se propaga en pérdida de producción, daño secundario al eje y la carcasa, y trabajo de emergencia en el peor momento. La disciplina del monitoreo de condición basado en vibración existe para convertir esa falla no planificada en una intervención planificada, detectando el defecto semanas antes de que sea catastrófico y estimando cuánto tiempo de operación resta.'
-          : 'The cost is asymmetric: the bearing itself is cheap, but an unplanned stop on a critical line — a crusher that seizes mid-shift, a conveyor drive that fails between maintenance windows — cascades into lost throughput, secondary damage to the shaft and housing, and emergency labour at the worst possible time. The discipline of vibration-based condition monitoring exists to convert that unplanned failure into a planned intervention, by detecting the defect weeks before it becomes catastrophic and estimating how much running time remains.'}</p>
+          : 'The cost is asymmetric: the bearing itself is cheap, but an unplanned stop on a critical line — a crusher that seizes mid-shift, a conveyor drive that fails between maintenance windows — cascades into lost throughput, secondary damage to the shaft and housing, and emergency labour at the worst possible time. The discipline of vibration-based condition monitoring exists to convert that unplanned failure into a planned intervention, by detecting the defect weeks before it becomes catastrophic and estimating how much running time remains.'}{' '}<Cite id="randall2011" paren /></p>
         <Refs ids={['randall2011']} label={es ? 'Refs' : 'Refs'} />
       </section>
 
@@ -177,7 +177,7 @@ export default function Introduction() {
           : 'A localized bearing defect — a spall, pit, or crack on the outer race, inner race, or a rolling element — produces a force impulse each time a rolling element passes over it. The contact is sudden and broadband, so each pass acts as a near-impulsive hammer-blow that excites a high-frequency structural resonance of the bearing housing and surrounding mechanics (often in the kHz range). What you measure at the accelerometer is therefore not the defect frequency directly, but that resonance ringing down — repeatedly — once per defect contact.'}</p>
         <p>{es
           ? 'El resultado es una portadora (la resonancia) modulada en amplitud a la baja frecuencia de defecto cinemática (la tasa de contacto). Este es el núcleo: en el espectro crudo la energía está arriba, en la resonancia, difuminada por toda otra fuente de banda ancha, y la lenta tasa de defecto queda enterrada como bandas laterales de modulación fáciles de pasar por alto. La falla se esconde en cómo se modula la energía de alta frecuencia, no en una línea aislada. Por eso justamente la demodulación de amplitud (análisis de envolvente) es la herramienta correcta: remover la portadora y recuperar la señal moduladora expone la tasa de defecto como una línea espectral limpia, allí donde el espectro crudo no mostraba nada accionable.'
-          : 'The result is a carrier (the resonance) amplitude-modulated at the low kinematic defect frequency (the contact rate). This is the crux: in the raw spectrum the energy sits up at the resonance, smeared by every other broadband source, and the slow defect rate is buried as modulation sidebands that are easy to miss. The fault hides in how the high-frequency energy is modulated, not in any single line. That is precisely why amplitude demodulation (envelope analysis) is the correct tool: stripping away the carrier and recovering the modulating signal exposes the defect rate as a clean spectral line, where the raw spectrum showed nothing actionable.'}</p>
+          : 'The result is a carrier (the resonance) amplitude-modulated at the low kinematic defect frequency (the contact rate). This is the crux: in the raw spectrum the energy sits up at the resonance, smeared by every other broadband source, and the slow defect rate is buried as modulation sidebands that are easy to miss. The fault hides in how the high-frequency energy is modulated, not in any single line. That is precisely why amplitude demodulation (envelope analysis) is the correct tool: stripping away the carrier and recovering the modulating signal exposes the defect rate as a clean spectral line, where the raw spectrum showed nothing actionable.'}{' '}<Cite id="randall2011" paren /></p>
         <Refs ids={['randall2011']} label={es ? 'Refs' : 'Refs'} />
       </section>
 
@@ -213,7 +213,7 @@ export default function Introduction() {
           <InlineMath tex={String.raw`2\cdot\text{BSF}`} />{es ? ', no en BSF. ' : ', not BSF itself. '}
           {es
             ? 'Estas relaciones son exactas y transferibles — valen para datos reales medidos igual que para datos sintéticos; solo los números de severidad y vida restante de las demostraciones son ilustrativos (ver la nota de marco honesto más abajo).'
-            : 'These relations are exact and transferable — they hold for real measured data identically to synthetic data; only the severity and remaining-life numbers in the demonstrations are illustrative (see the honest-framing note below).'}</p>
+            : 'These relations are exact and transferable — they hold for real measured data identically to synthetic data; only the severity and remaining-life numbers in the demonstrations are illustrative (see the honest-framing note below).'}{' '}<Cite id="randall2011" paren /></p>
 
         <h3>{es ? 'Símbolos' : 'Symbols'}</h3>
         <ul>
@@ -238,7 +238,7 @@ export default function Introduction() {
         <h2>{es ? 'Alcance del conjunto — un pipeline, no un solo algoritmo' : 'The suite scope — a pipeline, not one algorithm'}</h2>
         <p>{es
           ? 'El diagnóstico de rodamientos no es un truco único; es una cadena disciplinada, y este conjunto la implementa de extremo a extremo.'
-          : 'Bearing diagnosis is not a single trick; it is a disciplined chain, and this suite implements the chain end to end.'}</p>
+          : 'Bearing diagnosis is not a single trick; it is a disciplined chain, and this suite implements the chain end to end.'}{' '}<Cite id="randall2011" paren /></p>
         <ol>
           <li>{es
             ? 'Desde la geometría y la velocidad calcula las frecuencias cinemáticas anteriores — los objetivos que toda etapa posterior busca.'
@@ -251,23 +251,23 @@ export default function Introduction() {
               : ' into dyadic bands across levels 1…5 (skipping the lowest 2% of '}
             <InlineMath tex={String.raw`f_s`} />{es
               ? ', que porta contenido determinista del eje), filtra cada banda, toma la envolvente de Hilbert y la puntúa por curtosis en exceso; la banda de máxima curtosis es la banda óptima de demodulación, porque el contenido impulsivo de falla es justamente lo que eleva la curtosis.'
-              : ', which carries deterministic shaft content), band-passes each, takes the Hilbert envelope, and scores it by excess kurtosis; the maximal-kurtosis band is the optimal demodulation band, because impulsive fault content is precisely what raises kurtosis.'}</li>
+              : ', which carries deterministic shaft content), band-passes each, takes the Hilbert envelope, and scores it by excess kurtosis; the maximal-kurtosis band is the optimal demodulation band, because impulsive fault content is precisely what raises kurtosis.'}{' '}<Cite id="antoni2006sk" paren /></li>
           <li>{es
             ? 'Luego calcula el espectro de envolvente de amplitud en esa banda: un filtro pasa-banda de pared abrupta en el dominio FFT, una señal analítica formada por duplicación del medio espectro FFT (se conservan DC y Nyquist, se duplican las frecuencias positivas, se anulan las negativas), la magnitud de la envolvente y un espectro de amplitud de un solo lado con ventana Hann y media removida.'
             : 'It then computes the amplitude-envelope spectrum in that band: an FFT-domain brick-wall band-pass, an analytic signal formed by FFT half-spectrum doubling (DC and Nyquist kept, positive frequencies doubled, negatives zeroed), the magnitude envelope, and a Hann-windowed, mean-removed, single-sided amplitude spectrum.'}</li>
           <li>{es
             ? 'El diagnóstico es explícito y explicable: para cada falla candidata (BPFO, BPFI, 2·BSF) mide la prominencia de los primeros cinco armónicos — cada pico armónico dividido por la mediana local de los bines circundantes — y los promedia; las fallas competidoras actúan como controles negativos. Un veredicto de "falla" exige que el mayor puntaje supere una compuerta absoluta de 4.5 y venza a la siguiente mejor falla por una razón relativa de 1.7; de lo contrario el rodamiento se declara sano.'
-            : 'Diagnosis is explicit and explainable: for each candidate fault (BPFO, BPFI, 2·BSF) it measures the prominence of the first five harmonics — each harmonic peak divided by the local-median baseline of the surrounding bins — and averages them; the competing faults act as negative controls. A verdict of “fault” requires the top score to clear an absolute gate of 4.5 and beat the next-best fault by a relative ratio of 1.7; otherwise the bearing is called healthy.'}</li>
+            : 'Diagnosis is explicit and explainable: for each candidate fault (BPFO, BPFI, 2·BSF) it measures the prominence of the first five harmonics — each harmonic peak divided by the local-median baseline of the surrounding bins — and averages them; the competing faults act as negative controls. A verdict of “fault” requires the top score to clear an absolute gate of 4.5 and beat the next-best fault by a relative ratio of 1.7; otherwise the bearing is called healthy.'}{' '}<Cite id="smith2015" paren /></li>
           <li>{es
             ? 'La vibración global se gradúa con un índice de severidad al estilo ISO 20816 — zonas ilustrativas (Sano / Vigilar / Alarma / Disparo), no una lectura certificada de velocidad en mm/s.'
-            : 'Overall vibration is graded with an ISO-20816-style severity index — illustrative zones (Healthy / Watch / Alarm / Trip), not a certified velocity reading in mm/s.'}</li>
+            : 'Overall vibration is graded with an ISO-20816-style severity index — illustrative zones (Healthy / Watch / Alarm / Trip), not a certified velocity reading in mm/s.'}{' '}<Cite id="iso20816" paren /></li>
           <li>{es
             ? 'Una tendencia de degradación se proyecta a un umbral de falla para una estimación de vida útil remanente (RUL).'
             : 'A degradation trend is projected to a failure threshold for a remaining-useful-life (RUL) estimate.'}</li>
         </ol>
         <p>{es
           ? 'Vistas complementarias — el espectrograma de magnitud, el cepstrum real (que colapsa familias de armónicos/bandas laterales en un solo rahmónico), la curtosis espectral y una aproximación de espectro de modulación cíclica a la coherencia espectral cíclica — completan el mismo registro desde ángulos independientes.'
-          : 'Complementary views — the magnitude spectrogram, real cepstrum (collapsing harmonic/sideband families to a single rahmonic), spectral kurtosis, and a cyclic-modulation-spectrum approximation to cyclic spectral coherence — round out the same record from independent angles.'}</p>
+          : 'Complementary views — the magnitude spectrogram, real cepstrum (collapsing harmonic/sideband families to a single rahmonic), spectral kurtosis, and a cyclic-modulation-spectrum approximation to cyclic spectral coherence — round out the same record from independent angles.'}{' '}<Cite id="antoni2007" paren /></p>
         <Refs ids={['randall2011', 'antoni2006sk', 'antoni2007', 'smith2015', 'iso20816']} label={es ? 'Refs' : 'Refs'} />
       </section>
 
@@ -280,7 +280,7 @@ export default function Introduction() {
           <InlineMath tex={String.raw`+\,4\sigma`} />{es
             ? ' en dos puntos consecutivos), ajusta un modelo de crecimiento exponencial a los puntos posteriores al inicio mediante regresión log-lineal, y proyecta el tiempo de primer cruce en que el HI supera el umbral de alarma; la vida remanente es ese tiempo de cruce menos la última observación, con un abanico de incertidumbre a partir de la dispersión del residuo de la regresión ('
             : ' across two consecutive points), fits an exponential growth model to the post-onset points by log-linear regression, and projects the first-passage time at which the HI crosses the alarm threshold; remaining life is that crossing time minus the last observation, with an uncertainty fan from the regression residual spread ('}
-          <InlineMath tex={String.raw`\pm 2`} />{es ? ' desviaciones estándar residuales en escala logarítmica).' : ' residual standard deviations on the log scale).'}</p>
+          <InlineMath tex={String.raw`\pm 2`} />{es ? ' desviaciones estándar residuales en escala logarítmica).' : ' residual standard deviations on the log scale).'}{' '}<Cite id="lei2018" paren /></p>
 
         <Equation
           tex={String.raw`\ln(\text{HI}) = \ln A + b\,t, \qquad
@@ -297,7 +297,7 @@ t_{\text{fail}} = \frac{\ln(\text{thr}) - \ln A}{b}, \qquad
             : ' resonance, with ~0.5% per-period slip jitter so periodicity is preserved but mildly smeared, inner-race faults amplitude-modulated at '}
           <InlineMath tex={String.raw`f_r`} />{es
             ? ' y fallas de bola a la tasa de jaula FTF, sobre el fundamental del eje y su segundo armónico más ruido gaussiano hasta un SNR objetivo), y el HI run-to-failure es una curva sintética base→inicio→crecimiento-exponencial modelada sobre estudios run-to-failure publicados. Tratar las relaciones de frecuencia como verdad de terreno y los números absolutos de severidad / horas-a-falla como ilustrativos.'
-            : ' and ball faults at the cage rate FTF, over the shaft fundamental and its second harmonic plus Gaussian noise to a target SNR), and the run-to-failure HI is a synthetic baseline→onset→exponential-growth curve modeled on published run-to-failure studies. Treat the frequency relationships as ground truth and the absolute severity / hours-to-failure numbers as illustrative.'}</p>
+            : ' and ball faults at the cage rate FTF, over the shaft fundamental and its second harmonic plus Gaussian noise to a target SNR), and the run-to-failure HI is a synthetic baseline→onset→exponential-growth curve modeled on published run-to-failure studies. Treat the frequency relationships as ground truth and the absolute severity / hours-to-failure numbers as illustrative.'}{' '}<Cite id="randall2011" paren /> <Cite id="smith2015" paren /></p>
         <Refs ids={['lei2018', 'randall2011', 'smith2015']} label={es ? 'Refs' : 'Refs'} />
       </section>
 

@@ -1,5 +1,9 @@
 # 04 — The live lane (client-side)
 
+**The web-app flow** — case selector → TS DSP engine + onnxruntime-web inference → the reactive views:
+
+![The web-app flow — controls → live TS engine + ONNX inference → the 13 reactive method views](../diagrams/03-web-flow.svg)
+
 RotorVitals' live lane is **TypeScript + onnxruntime-web**, not Pyodide. The archetype permits either ("Pyodide +
 lightweight wheels, OR a small TS engine") — RotorVitals uses the same exported models the offline lane trained, so
 the live lane is faithful, not a toy surrogate.

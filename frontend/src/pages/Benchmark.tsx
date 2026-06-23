@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useShellLang } from '@fasl-work/caos-app-shell';
+import { useShellLang, Cite } from '@fasl-work/caos-app-shell';
 import bench from '../data/cwru-benchmark.json';
 import { viridis } from '../viz/Heatmap2D';
 import { loadMetrics, type Metrics } from '../dsp/learned';
@@ -193,7 +193,7 @@ function CrossSeverityBlock({ xs, es }: { xs: CrossSeverity; es: boolean }) {
       </table>
       <p className="muted small">{es
         ? 'El hallazgo honesto: el WDCNN clava los spalls más grandes de 0.021 in (98.9%) pero se desploma en el tamaño intermedio 0.014 in (27.8%) — y el envolvente/SES, que no entrena nunca, también falla en las MISMAS grabaciones de 0.014 in. Esa coincidencia entre métodos apunta a que las firmas de 0.014 in de CWRU son más débiles/atípicas (un matiz documentado, Smith & Randall 2015), no a un artefacto del modelo. La severidad held-out es genuinamente difícil — se muestra, no se esconde.'
-        : 'The honest finding: the WDCNN nails the largest 0.021 in spalls (98.9%) but collapses on the intermediate 0.014 in size (27.8%) — and the envelope/SES, which never trains, also fails on the SAME 0.014 in recordings. That cross-method agreement points to the 0.014 in CWRU signatures being weaker/atypical (a documented nuance, Smith & Randall 2015), not a model artefact. Held-out severity is genuinely hard — shown, not hidden.'}</p>
+        : 'The honest finding: the WDCNN nails the largest 0.021 in spalls (98.9%) but collapses on the intermediate 0.014 in size (27.8%) — and the envelope/SES, which never trains, also fails on the SAME 0.014 in recordings. That cross-method agreement points to the 0.014 in CWRU signatures being weaker/atypical (a documented nuance, Smith & Randall 2015), not a model artefact. Held-out severity is genuinely hard — shown, not hidden.'}{' '}<Cite id="smith2015" paren /></p>
       <h3>{es ? 'Detalle por falla — a dónde van los errores del WDCNN' : 'Per-fault detail — where the WDCNN misses go'}</h3>
       <table className="cmp-table">
         <thead><tr>

@@ -1,5 +1,13 @@
 # 01 — Overview
 
+**What the app is** — the live workbench at a glance:
+
+![RotorVitals — a condition-monitoring & prognostics workbench: offline engine → committed artifacts → live SPA](../diagrams/01-the-app.svg)
+
+**The lanes** — what runs WEB (live TS engine + in-browser ONNX inference) vs OFFLINE/COMPUTE (precompute bake + torch training) vs REPLAY (committed artifacts):
+
+![The three lanes — web (live) / offline (precompute + train) / replay (committed artifacts)](../diagrams/02-lanes.svg)
+
 RotorVitals is split into a heavy **offline engine** (`data-pipeline/rotorlab/`) and a **frontend SPA**
 (`frontend/`), bound by two data contracts. The committed compact artifacts under `data/derived/` are the offline
 engine's real outputs and the SPA's replay payload.

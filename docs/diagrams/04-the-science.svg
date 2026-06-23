@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" width="900" class="arch-svg" role="img" aria-label="RotorVitals science — kurtogram, envelope spectrum, cyclostationary, prognostics, the WDCNN + deep-AE">
+  <style>
+    .arch-svg text { font-family: var(--font-sans, Inter, "Segoe UI", system-ui, sans-serif); }
+    .arch-svg .mono { font-family: var(--font-mono, ui-monospace, Consolas, monospace); }
+    .arch-svg .bx { fill: var(--color-surface-2); stroke: var(--color-border, #d0d7de); stroke-width: 1.2; }
+    .arch-svg .bx-hi { stroke: var(--color-accent, #6e5cff); }
+    .arch-svg .bx-good { stroke: var(--color-good, #1a7f37); }
+    .arch-svg .ttl { fill: var(--color-fg, #1f2328); font-size: 13px; font-weight: 700; }
+    .arch-svg .sub { fill: var(--color-fg-subtle, #656d76); font-size: 10px; }
+    .arch-svg .st { fill: var(--color-accent, #6e5cff); font-size: 11px; font-weight: 700; }
+    .arch-svg .it { fill: var(--color-fg, #1f2328); font-size: 10.5px; }
+    .arch-svg .cd { fill: var(--color-accent, #6e5cff); font-size: 9px; }
+    .arch-svg .eq { fill: var(--color-fg, #1f2328); font-size: 12.5px; }
+    .arch-svg .eqi { fill: var(--color-fg, #1f2328); font-size: 12.5px; font-style: italic; }
+    .arch-svg .mu { fill: var(--color-fg-subtle, #656d76); font-size: 9.5px; }
+    .arch-svg .flow { fill: none; stroke: var(--color-fg-faint, #8b949e); stroke-width: 1.6; }
+  </style>
+  <defs>
+    <marker id="sc-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L8,4 L0,8 z" fill="var(--color-fg-faint, #8b949e)"/>
+    </marker>
+  </defs>
+
+  <text class="ttl" x="22" y="28">The science — envelope analysis + cyclostationarity + RUL prognostics</text>
+  <text class="sub" x="22" y="45">frontend/src/dsp/ · the same TypeScript runs live in the browser and under Node in the offline bake</text>
+
+  <!-- Stage 1 -->
+  <rect class="bx bx-hi" x="16" y="66" width="170" height="104" rx="9"/>
+  <text class="st" x="28" y="88">① Kurtogram</text>
+  <text class="it" x="28" y="108">spectral kurtosis</text>
+  <text class="mu" x="28" y="124">→ the most impulsive</text>
+  <text class="mu" x="28" y="138">demodulation band</text>
+  <text class="cd mono" x="28" y="160">kurtogram.ts · infogram.ts</text>
+
+  <!-- Stage 2 -->
+  <rect class="bx bx-hi" x="202" y="66" width="170" height="104" rx="9"/>
+  <text class="st" x="214" y="88">② Envelope</text>
+  <text class="it" x="214" y="108">band-pass + Hilbert</text>
+  <text class="mu" x="214" y="124">→ squared envelope</text>
+  <text class="mu" x="214" y="138">spectrum (SES)</text>
+  <text class="cd mono" x="214" y="160">envelope.ts</text>
+
+  <!-- Stage 3 -->
+  <rect class="bx bx-hi" x="388" y="66" width="170" height="104" rx="9"/>
+  <text class="st" x="400" y="88">③ Diagnose</text>
+  <text class="it" x="400" y="108">match SES peaks to</text>
+  <text class="mu" x="400" y="124">BPFO / BPFI / 2·BSF</text>
+  <text class="mu" x="400" y="138">+ cyclostationary CMS</text>
+  <text class="cd mono" x="400" y="160">diagnose.ts · csc.ts</text>
+
+  <!-- Stage 4 -->
+  <rect class="bx bx-hi" x="574" y="66" width="170" height="104" rx="9"/>
+  <text class="st" x="586" y="88">④ Health → RUL</text>
+  <text class="it" x="586" y="108">health index trend</text>
+  <text class="mu" x="586" y="124">→ project to ISO</text>
+  <text class="mu" x="586" y="138">threshold (RUL)</text>
+  <text class="cd mono" x="586" y="160">health.ts · prognostics.ts</text>
+
+  <!-- Stage 5 -->
+  <rect class="bx bx-good" x="760" y="66" width="124" height="104" rx="9"/>
+  <text class="st" x="772" y="88" style="fill:var(--color-good, #1a7f37)">⑤ Verdict</text>
+  <text class="it" x="772" y="108">fault + severity</text>
+  <text class="mu" x="772" y="124">+ remaining life</text>
+  <text class="cd mono" x="772" y="148">diagnose · projectRUL</text>
+
+  <path class="flow" d="M186,118 H200" marker-end="url(#sc-arrow)"/>
+  <path class="flow" d="M372,118 H386" marker-end="url(#sc-arrow)"/>
+  <path class="flow" d="M558,118 H572" marker-end="url(#sc-arrow)"/>
+  <path class="flow" d="M744,118 H758" marker-end="url(#sc-arrow)"/>
+
+  <!-- equations -->
+  <rect class="bx" x="16" y="190" width="430" height="120" rx="9"/>
+  <text class="it" x="30" y="212" style="font-weight:700">Defect frequencies + squared envelope spectrum</text>
+  <text class="eqi" x="30" y="240">BPFO = (n/2)·fr·(1 − d/D·cosφ)</text>
+  <text class="eq" x="30" y="266">SES(f) = |FFT( |hilbert(x_band)|² )|</text>
+  <text class="mu" x="30" y="292">a localised fault modulates the resonance at its defect frequency; the envelope demodulates it.</text>
+
+  <rect class="bx" x="454" y="190" width="430" height="120" rx="9"/>
+  <text class="it" x="468" y="212" style="font-weight:700">Cyclostationarity (the confirmation)</text>
+  <text class="eqi" x="468" y="240">CMS(f, α): coherence at cyclic frequency α</text>
+  <text class="eq" x="468" y="266">a real fault = a vertical α-ridge family at BPFO/BPFI/2·BSF</text>
+  <text class="mu" x="468" y="292">independent of the carrier f → separates a true fault from a coincidental spectral peak.</text>
+
+  <!-- learned lane -->
+  <rect class="bx" x="16" y="330" width="430" height="124" rx="9"/>
+  <text class="it" x="30" y="352" style="font-weight:700">Signal-processing engine (always on)</text>
+  <text class="mu" x="30" y="374">the transparent kurtogram + envelope +</text>
+  <text class="mu" x="30" y="392">cyclostationary diagnosis — the reference the</text>
+  <text class="mu" x="30" y="410">WDCNN is measured against; recomputes live.</text>
+  <text class="cd mono" x="30" y="436">dsp/diagnose.ts · envelope.ts (live)</text>
+
+  <rect class="bx bx-good" x="454" y="330" width="430" height="124" rx="9"/>
+  <text class="it" x="468" y="352" style="font-weight:700">Learned lane (ONNX, client-side, REAL CWRU)</text>
+  <text class="mu" x="468" y="374">• WDCNN: raw vibration → fault-class softmax (a wide</text>
+  <text class="mu" x="468" y="392">  first-layer deep CNN), held-out on unseen HP files.</text>
+  <text class="mu" x="468" y="410">• deep-AE: features → reconstruction → health index.</text>
+  <text class="cd mono" x="468" y="436">train.py → wdcnn.onnx · rv-ae.onnx → dsp/learned.ts</text>
+</svg>
