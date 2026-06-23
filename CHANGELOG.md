@@ -3,6 +3,25 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.31.000] — 2026-06-22
+
+Bring-your-own-data ingest (T6) — run the real pipeline on YOUR signal. Frontend only (engine `rotorlab 0.28.000`).
+
+### Added
+- **A "Bring your own data" section on the Benchmark page** (`viz/IngestPanel.tsx`): paste or upload a vibration
+  signal (CSV / one-number-per-line — the last numeric column is taken), set the sample rate, shaft rpm and bearing
+  geometry, and it runs the REAL unsupervised pipeline on it — kurtogram auto-band → envelope/SES → diagnosis → the
+  T5 recommendation — rendering the envelope spectrum with the BPFO/BPFI/2·BSF defect combs marked, the diagnosis,
+  and the maintenance recommendation. A "Load real example" button (a committed real CWRU outer-race segment) makes
+  it work with no file.
+- **`dsp/parseSignal.ts`** (pure, tested): robust text parsing — per row takes the last numeric token (handles a
+  single accel column AND `time,accel`), skips non-numeric headers, guards length ≥ 2048 / finite / not flatline.
+- **Honest scope:** the unsupervised physics is rig-agnostic, so it runs on any bearing; the deep WDCNN is NOT
+  applied to arbitrary data — it is CWRU-specific (12 kHz / 2048 / SKF 6205), and applying it to a different
+  geometry/rate is exactly the domain-shift the MFPT cross-dataset section shows fails. Stated in the UI.
+- **Tests:** 4 new `parseSignal` unit tests (single column, `time,accel` + header, too-short, flatline) — 17
+  frontend dsp tests pass.
+
 ## [0.30.000] — 2026-06-22
 
 Recommendation / decision engine + exportable report (T5) — the "what do I do about it?" surface. Frontend only

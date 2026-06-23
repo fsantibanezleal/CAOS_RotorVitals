@@ -3,6 +3,17 @@
 RotorVitals is not limited to replaying CWRU — Contract 1 is the gate that lets it ingest a NEW accelerometer
 recording.
 
+## 0. In-browser ingest (no Python, T6)
+
+The fastest path: the **"Bring your own data"** section on the **Benchmark** page. Paste or upload a vibration
+signal (CSV or one number per line — the last numeric column is taken), set the sample rate, shaft rpm and bearing
+geometry, and it runs the REAL unsupervised pipeline client-side — kurtogram auto-band → envelope/SES → diagnosis →
+the maintenance recommendation — and marks the BPFO/BPFI/2·BSF defect combs on the envelope spectrum. A "Load real
+example" button runs it on a committed real CWRU outer-race segment. **Honest scope:** this is the rig-agnostic
+*physics* path; the learned WDCNN is NOT applied to arbitrary data (it is CWRU-specific — 12 kHz / 2048 / SKF 6205,
+and a different rig is exactly the MFPT domain-shift that fails). For the full learned pipeline on your data, use
+the offline Contract-1 route below.
+
 ## 1. Describe the record (Contract 1)
 
 A record needs: `fs ∈ {12000, 48000}` Hz, `channel ∈ {DE, FE, BA}`, `rpm`, `load_hp`, `fault_type ∈ {normal,
