@@ -5,6 +5,7 @@ import { synth, type SignalSpec } from '../dsp/signal';
 import { magSpectrum, envelopeSpectrum } from '../dsp/envelope';
 import { kurtogram } from '../dsp/kurtogram';
 import { diagnose } from '../dsp/diagnose';
+import { ISO_CLASSES } from '../dsp/iso';
 import { defectFreqs, type FaultKind } from '../dsp/bearing';
 import { BEARINGS, bearingById } from '../data/bearings';
 import { SCENARIOS } from '../data/scenarios';
@@ -45,7 +46,9 @@ const T = {
     waveform: 'Vibration waveform — drag to zoom, hover to read; ▼=outliers, shaded=BPFO windows', spectrum: 'Raw spectrum (dB) — drag to zoom; click to set a harmonic comb; shaded=demod band',
     ses: 'Squared-envelope spectrum — defect-frequency combs (BPFO/BPFI/2·BSF/fr)', watNote: 'Run-to-failure spectral waterfall (synthetic): each row is a life snapshot, height is amplitude. Watch the BPFO ridge emerge and grow. Drag to rotate.',
     rulNote: 'Health-indicator trend with onset, failure threshold and the RUL projection fan (±2σ).',
-    onset: 'Onset', rul: 'RUL', fail: 'Proj. failure', h: 'h', freqs: 'Kinematic frequencies', replay: 'Replay degradation' },
+    onset: 'Onset', rul: 'RUL', fail: 'Proj. failure', h: 'h', freqs: 'Kinematic frequencies', replay: 'Replay degradation',
+    anlys: 'Analysis', aBand: 'Demod band', aEnv: 'Envelope', aHarm: 'Harmonics (comb)', aIso: 'ISO scale',
+    bAuto: 'Auto (kurtogram)', bFixed: 'Fixed 2–4 kHz', bManual: 'Manual (pick/brush)', eSq: 'Squared (SES)', eMag: 'Magnitude' },
   es: { bearing: 'Rodamiento', fault: 'Falla plantada', severity: 'Severidad', rpm: 'Velocidad eje (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnóstico', conf: 'confianza', sev: 'Índice de severidad', band: 'Banda demod', clickKg: 'Clic en una celda del kurtograma para fijar la banda → el SES se actualiza en vivo.',
     f_healthy: 'Sano', f_outer: 'Pista externa (BPFO)', f_inner: 'Pista interna (BPFI)', f_ball: 'Bola (2·BSF)',
@@ -53,7 +56,9 @@ const T = {
     waveform: 'Forma de onda — arrastra para zoom, hover para leer; ▼=outliers, sombreado=ventanas BPFO', spectrum: 'Espectro crudo (dB) — arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
     ses: 'Espectro de envolvente al cuadrado — peines de frecuencias de falla (BPFO/BPFI/2·BSF/fr)', watNote: 'Waterfall espectral run-to-failure (sintético): cada fila es una instantánea de vida, la altura es amplitud. Observa la cresta BPFO emerger y crecer. Arrastra para rotar.',
     rulNote: 'Tendencia del indicador de salud con onset, umbral de falla y el abanico de proyección de RUL (±2σ).',
-    onset: 'Onset', rul: 'RUL', fail: 'Falla proy.', h: 'h', freqs: 'Frecuencias cinemáticas', replay: 'Reproducir degradación' },
+    onset: 'Onset', rul: 'RUL', fail: 'Falla proy.', h: 'h', freqs: 'Frecuencias cinemáticas', replay: 'Reproducir degradación',
+    anlys: 'Análisis', aBand: 'Banda demod', aEnv: 'Envolvente', aHarm: 'Armónicos (peine)', aIso: 'Escala ISO',
+    bAuto: 'Auto (kurtograma)', bFixed: 'Fija 2–4 kHz', bManual: 'Manual (clic/pincel)', eSq: 'Cuadrática (SES)', eMag: 'Magnitud' },
 };
 
 export default function Tool() {
@@ -66,6 +71,11 @@ export default function Tool() {
   const [snr, setSnr] = useState(2);
   const [band, setBand] = useState<[number, number] | null>(null);
   const [fund, setFund] = useState<number | null>(null);
+  // T7 — configurable analysis parameters (drive the always-visible sidebar diagnosis + the relevant tabs)
+  const [bandMethod, setBandMethod] = useState<'auto' | 'fixed' | 'manual'>('auto'); // demod-band selection
+  const [envSquared, setEnvSquared] = useState(false);  // magnitude envelope (the diagnosis gates are tuned on it) vs squared (SES)
+  const [nHarm, setNHarm] = useState(5);                 // harmonics averaged in the comb prominence
+  const [isoClass, setIsoClass] = useState('classI');   // ISO severity scale (class/group)
   // degradation replay (life-position scrubber)
   const [replayOn, setReplayOn] = useState(false);
   const [lifePos, setLifePos] = useState(0);
@@ -89,10 +99,16 @@ export default function Tool() {
 
   useEffect(() => { setBand(null); setFund(null); }, [base]);
 
-  const effBand = useMemo<[number, number]>(() => band ?? [Math.max(base.kg.best.f1, 0.02 * FS), base.kg.best.f2], [band, base]);
-  const ses = useMemo(() => envelopeSpectrum(base.sig.x, FS, effBand), [base, effBand]);
-  const dx = useMemo(() => diagnose(ses, base.f), [ses, base]);
+  // demod band: fixed 2–4 kHz resonance, manual brush/kurtogram pick, or auto (kurtogram max-kurtosis band)
+  const effBand = useMemo<[number, number]>(() => {
+    if (bandMethod === 'fixed') return [2000, 4000];
+    if (bandMethod === 'manual' && band) return band;
+    return [Math.max(base.kg.best.f1, 0.02 * FS), base.kg.best.f2];
+  }, [bandMethod, band, base]);
+  const ses = useMemo(() => envelopeSpectrum(base.sig.x, FS, effBand, envSquared), [base, effBand, envSquared]);
+  const dx = useMemo(() => diagnose(ses, base.f, nHarm), [ses, base, nHarm]);
   const sev = dx.scores[0]?.score ?? 0;
+  const isoBounds = ISO_CLASSES[isoClass].bounds;
 
   // ---- chart data (memoized) ----
   const waveData = useMemo<uPlot.AlignedData>(() => { const [x, y] = minMaxDecimate(base.sig.t, base.sig.x, 0.08, 700); return [x, y]; }, [base]);
@@ -137,7 +153,7 @@ export default function Tool() {
   const specCombs = useMemo<Comb[]>(() => { const a: Comb[] = [{ base: fr, harmonics: 6, color: C.shaft, label: `fr ${fr.toFixed(1)} Hz` }]; if (fund) a.push({ base: fund, harmonics: 5, color: C.band, label: `${fund.toFixed(0)} Hz` }); return a; }, [fr, fund]);
   const specPlugins = useMemo(() => {
     const p = [regionsPlugin([effBand], C.band), combsPlugin(specCombs)];
-    if (bandBrush) p.push(selectPlugin((lo, hi) => setBand([Math.max(lo, 0.02 * FS), hi])));
+    if (bandBrush) p.push(selectPlugin((lo, hi) => { setBand([Math.max(lo, 0.02 * FS), hi]); setBandMethod('manual'); }));
     return p;
   }, [effBand, specCombs, bandBrush]);
   const sesCombs = useMemo<Comb[]>(() => [
@@ -156,7 +172,7 @@ export default function Tool() {
     setFund(bestI >= 0 ? f[bestI] : x);
   }, [base]);
 
-  const onPickBand = useCallback((b: [number, number]) => setBand(b), []);
+  const onPickBand = useCallback((b: [number, number]) => { setBand(b); setBandMethod('manual'); }, []);
 
   // ---- run-to-failure (RUL + 3D waterfall) — REACT to the selected scenario ----
   const bearingHash = useMemo(() => bearingId.split('').reduce((a, ch) => a + ch.charCodeAt(0), 0), [bearingId]);
@@ -235,11 +251,11 @@ export default function Tool() {
     { id: 'eval', label: t.tEval, content: (
       <PrognosticEvalPanel rtf={rtf} fault={fault} severity={severity} lang={lang} />) },
     { id: 'iso', label: t.tIso, content: (
-      <IsoTrendPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} />) },
+      <IsoTrendPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} bounds={isoBounds} isoLabel={ISO_CLASSES[isoClass].label} lang={lang} />) },
     { id: 'feat', label: t.tFeat, content: (
       <FeatureSpacePanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} />) },
     { id: 'rec', label: t.tRec, content: (
-      <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={rul} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} />) },
+      <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={rul} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} isoBounds={isoBounds} lang={lang} />) },
   ];
 
   return (
@@ -253,6 +269,17 @@ export default function Tool() {
         <label className="rv-ctl">{t.severity}: {severity.toFixed(2)}<input className="range" type="range" min={0} max={1.5} step={0.05} value={severity} disabled={fault === 'healthy'} onChange={(e) => setSeverity(+e.target.value)} /></label>
         <label className="rv-ctl">{t.rpm}: {rpm}<input className="range" type="range" min={600} max={3600} step={1} value={rpm} onChange={(e) => setRpm(+e.target.value)} /></label>
         <label className="rv-ctl">{t.snr}: {snr}<input className="range" type="range" min={-8} max={12} step={1} value={snr} onChange={(e) => setSnr(+e.target.value)} /></label>
+
+        {/* T7 — analysis parameters: change HOW the signal is analysed (band, envelope, harmonics, ISO scale).
+            They drive the always-visible diagnosis + the Envelope·SES / ISO trend / Recommendation tabs. */}
+        <div className="rv-analysis" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
+          <div className="muted small" style={{ fontWeight: 700, letterSpacing: '0.03em', marginBottom: '0.2rem' }}>{t.anlys}</div>
+          <label className="rv-ctl">{t.aBand}<select className="select" value={bandMethod} onChange={(e) => setBandMethod(e.target.value as 'auto' | 'fixed' | 'manual')}><option value="auto">{t.bAuto}</option><option value="fixed">{t.bFixed}</option><option value="manual">{t.bManual}</option></select></label>
+          <label className="rv-ctl">{t.aEnv}<select className="select" value={envSquared ? 'sq' : 'mag'} onChange={(e) => setEnvSquared(e.target.value === 'sq')}><option value="sq">{t.eSq}</option><option value="mag">{t.eMag}</option></select></label>
+          <label className="rv-ctl">{t.aHarm}: {nHarm}<input className="range" type="range" min={3} max={8} step={1} value={nHarm} onChange={(e) => setNHarm(+e.target.value)} /></label>
+          <label className="rv-ctl">{t.aIso}<select className="select" value={isoClass} onChange={(e) => setIsoClass(e.target.value)}>{Object.entries(ISO_CLASSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
+        </div>
+
         <div className="rv-diag card" data-fault={dx.top}>
           <div className="rv-diag-top"><span className="muted small">{t.diag}</span><strong>{faultLabel(dx.top)}</strong><span className="muted small">{(dx.confidence * 100).toFixed(0)}% {t.conf}</span></div>
           {dx.scores.map((s) => <div key={s.kind} className="rv-bar"><span>{faultLabel(s.kind)}</span><div className="rv-bar-t"><i style={{ width: `${Math.min(100, (s.score / (dx.scores[0].score || 1)) * 100)}%` }} /></div><span className="mono">{s.score.toFixed(1)}×</span></div>)}

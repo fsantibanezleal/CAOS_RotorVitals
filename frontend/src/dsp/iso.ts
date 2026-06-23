@@ -12,6 +12,15 @@ const G0 = 9.80665; // m/s² per g
 // scale; ISO 20816-3 (Group 1/2) applies to the ≥15 kW mining machines the suite ultimately targets.
 export const ISO_CLASS_I = { ab: 0.71, bc: 1.8, cd: 4.5 };
 
+export interface IsoBounds { ab: number; bc: number; cd: number }
+// Selectable severity scales (A/B, B/C-ALERT, C/D-DANGER velocity-RMS boundaries in mm/s). The A/B/C/D framework is
+// identical across them; only the numeric limits move with machine class / power / mounting.
+export const ISO_CLASSES: Record<string, { label: string; bounds: IsoBounds }> = {
+  classI: { label: 'ISO 10816-1 Class I (≤15 kW)', bounds: { ab: 0.71, bc: 1.8, cd: 4.5 } },
+  group2: { label: 'ISO 20816-3 Group 2 (15–300 kW, rigid)', bounds: { ab: 1.4, bc: 2.8, cd: 4.5 } },
+  group1: { label: 'ISO 20816-3 Group 1 (>300 kW, rigid)', bounds: { ab: 2.3, bc: 4.5, cd: 7.1 } },
+};
+
 /** Broadband velocity RMS (mm/s) over [fLo,fHi] from an acceleration signal in g, by Parseval on the
  * single-sided amplitude spectrum: aₖ[m/s²] = magₖ[g]·g₀; vₖ = aₖ/(2πfₖ); RMS = √(½·Σ vₖ²). */
 export function velocityRmsMmps(accel_g: Float64Array, fs: number, fLo = 10, fHi = 1000): number {

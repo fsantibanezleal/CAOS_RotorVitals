@@ -4,7 +4,7 @@
 // most severe of them. Honesty is built in — when the coarse broadband ISO screen disagrees with the envelope
 // (which it does for an early bearing fault, whose energy sits in the HF resonance OUTSIDE the 10–1000 Hz band),
 // the engine surfaces the disagreement and trusts the envelope rather than hiding it.
-import { ISO_CLASS_I } from './iso';
+import { ISO_CLASS_I, type IsoBounds } from './iso';
 import { type Diagnosis } from './diagnose';
 import { type RulResult } from './health';
 import { type FaultKind } from './bearing';
@@ -40,10 +40,10 @@ export interface Recommendation {
 const LADDER: Priority[] = ['ok', 'watch', 'plan', 'alarm', 'trip'];
 const worse = (a: Priority, b: Priority): Priority => (LADDER.indexOf(a) >= LADDER.indexOf(b) ? a : b);
 
-export function isoZoneOf(vrms: number): IsoZone {
-  if (vrms <= ISO_CLASS_I.ab) return 'A';
-  if (vrms <= ISO_CLASS_I.bc) return 'B';
-  if (vrms <= ISO_CLASS_I.cd) return 'C';
+export function isoZoneOf(vrms: number, bounds: IsoBounds = ISO_CLASS_I): IsoZone {
+  if (vrms <= bounds.ab) return 'A';
+  if (vrms <= bounds.bc) return 'B';
+  if (vrms <= bounds.cd) return 'C';
   return 'D';
 }
 
@@ -89,14 +89,15 @@ const T: Record<'en' | 'es', Txt> = {
 };
 
 export function recommend(input: {
-  diag: Diagnosis; velocityRms: number; rul: RulResult; lifeH: number; hiRatio?: number | null; lang: 'en' | 'es';
+  diag: Diagnosis; velocityRms: number; rul: RulResult; lifeH: number; hiRatio?: number | null;
+  isoBounds?: IsoBounds; lang: 'en' | 'es';
 }): Recommendation {
-  const { diag, velocityRms, rul, lifeH, hiRatio, lang } = input;
+  const { diag, velocityRms, rul, lifeH, hiRatio, isoBounds, lang } = input;
   const es = lang === 'es';
   const tx = T[lang];
   const isFault = diag.top !== 'healthy';
   const sev = diag.scores[0]?.score ?? 0;
-  const zone = isoZoneOf(velocityRms);
+  const zone = isoZoneOf(velocityRms, isoBounds);
   const state = faultStateOf(sev, isFault);
   const rulH = rul.rul != null && isFinite(rul.rul) ? rul.rul : null;
 
