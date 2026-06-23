@@ -130,3 +130,35 @@ test('finite mid RUL escalates to PLAN even with a mild fault', () => {
   assert.equal(r.priority, 'plan');
   assert.equal(r.rulHours, 6);
 });
+
+// ---- T6: bring-your-own-data signal parsing ----
+import { parseSignal } from '../src/dsp/parseSignal.ts';
+
+test('parseSignal: single-column numbers', () => {
+  const txt = Array.from({ length: 2100 }, (_, i) => String(Math.sin(i))).join('\n');
+  const p = parseSignal(txt);
+  assert.ok(p.ok);
+  assert.equal(p.n, 2100);
+});
+
+test('parseSignal: time,accel CSV takes the last column + skips a header', () => {
+  const lines = ['t,accel'];
+  for (let i = 0; i < 2100; i++) lines.push(`${i / 12000},${Math.cos(i) * 2}`);
+  const p = parseSignal(lines.join('\n'));
+  assert.ok(p.ok);
+  assert.equal(p.n, 2100);
+  assert.equal(p.skipped, 1);             // the header row
+  assert.ok(Math.abs(p.x![0] - Math.cos(0) * 2) < 1e-9);   // last column (accel), not the time column
+});
+
+test('parseSignal: too short is rejected', () => {
+  const p = parseSignal('1\n2\n3');
+  assert.equal(p.ok, false);
+  assert.match(p.reason ?? '', /≥ 2048/);
+});
+
+test('parseSignal: flatline is rejected', () => {
+  const p = parseSignal(Array.from({ length: 2100 }, () => '5').join('\n'));
+  assert.equal(p.ok, false);
+  assert.match(p.reason ?? '', /flat/);
+});

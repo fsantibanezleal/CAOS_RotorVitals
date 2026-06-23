@@ -4,6 +4,7 @@ import bench from '../data/cwru-benchmark.json';
 import { viridis } from '../viz/Heatmap2D';
 import { loadMetrics, type Metrics } from '../dsp/learned';
 import { LiveDiagnosisPanel } from '../viz/LiveDiagnosisPanel';
+import { IngestPanel } from '../viz/IngestPanel';
 
 type Method = { confusion: number[][]; rowRecall: number[]; accuracy: number; n: number };
 const METHODS = bench.methods as Record<string, Method>;
@@ -72,6 +73,8 @@ export default function Benchmark() {
       {lm?.crossSeverity && <CrossSeverityBlock xs={lm.crossSeverity} es={es} />}
 
       {lm?.crossDataset && <CrossDatasetBlock xs={lm.crossDataset} es={es} />}
+
+      <IngestPanel lang={es ? 'es' : 'en'} />
 
       <section>
         <p>{es
