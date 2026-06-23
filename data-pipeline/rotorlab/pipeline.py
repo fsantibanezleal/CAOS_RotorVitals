@@ -105,8 +105,22 @@ def retrain(seed: int = 42) -> None:
     xdata = cross_dataset.run(model, str(mfpt_root), pre["classes"])
     print(f"  MFPT: WDCNN overall {xdata['wdcnn']['overall']} (deep) vs env-SES {xdata['classical']['overall']} "
           f"(physics) | WDCNN recall {xdata['wdcnn']['recall']}", flush=True)
+    # leakage demonstration (T15): random-window vs honest grouped split on a frozen 16-recording pool — the
+    # documented CWRU window-overlap leakage trap (Hendriks et al. 2022). Real fitted models only; ships integrity controls.
+    from .stages import leakage
+    print("[retrain] leakage demonstration (random-window vs grouped split-by-recording) ...", flush=True)
+    leak = leakage.run(str(RAW_CWRU), pre["classes"], emetrics["accuracy"])
+    print(f"  WDCNN leaky {leak['wdcnn']['leakyAcc']} vs honest {leak['wdcnn']['honestAcc']} "
+          f"(+{leak['wdcnn']['inflationPts']} pts; saturatesHonest={leak['wdcnn']['saturatesHonest']}) | "
+          f"SVM +{leak['classicalML']['svm']['inflationPts']} | RF +{leak['classicalML']['rf']['inflationPts']} pts | "
+          f"shuffle-ctrl pass={leak['controls']['shuffledLabel']['pass']} "
+          f"(leaky {leak['controls']['shuffledLabel']['leakyWdcnn']}/honest "
+          f"{leak['controls']['shuffledLabel']['honestWdcnn']}) | overlap leaky "
+          f"{leak['controls']['overlapWindowsSharedTrainTest']['leaky']}/honest "
+          f"{leak['controls']['overlapWindowsSharedTrainTest']['honest']}", flush=True)
     export.export_models(train_out=model, infer_out=iout, eval_metrics=emetrics, classical_benchmark=benchmark,
                          cml_models=cml_models, cml_metrics=cml_metrics, cross_severity=xsev, cross_dataset=xdata,
+                         leakage=leak,
                          teX=pre["teX"], teY=pre["teY"], teFz=teFz, classes=pre["classes"], derived_dir=str(DERIVED))
     print(f"[retrain] wrote ONNX + metrics + benchmark -> {DERIVED}", flush=True)
 
