@@ -5,6 +5,10 @@ type DatasetRow = {
   fit: string;
   faults: string;
   redist: 'mirror' | 'link';
+  // What is actually wired in the app today: 'live' = trained + benchmarked (CWRU);
+  // 'crosseval' = real data used for the held-out cross-dataset domain-shift test (MFPT);
+  // undefined = roadmap (not yet integrated). Keeps this table consistent with the Benchmark page.
+  appStatus?: 'live' | 'crosseval';
   note: { es: string; en: string };
 };
 
@@ -12,7 +16,7 @@ type DatasetRow = {
 // attribution (open license) or is link-only (no explicit redistribution grant).
 const DATASETS: DatasetRow[] = [
   {
-    name: 'CWRU (Case Western)', fit: 'diagnosis', faults: 'OR/IR/ball · 3 sizes · 0–3 hp', redist: 'link',
+    name: 'CWRU (Case Western)', fit: 'diagnosis', faults: 'OR/IR/ball · 3 sizes · 0–3 hp', redist: 'link', appStatus: 'live',
     note: { es: 'El benchmark canónico; Smith & Randall (2015) gradúan la dificultad de cada registro.', en: 'The canonical benchmark; Smith & Randall (2015) grade record difficulty.' },
   },
   {
@@ -20,8 +24,8 @@ const DATASETS: DatasetRow[] = [
     note: { es: 'Corriente + vibración; daño realista, múltiples puntos de operación.', en: 'Current + vibration; realistic damage, multiple operating points.' },
   },
   {
-    name: 'MFPT', fit: 'diagnosis', faults: 'OR/IR · carga variable', redist: 'link',
-    note: { es: 'Baseline + pista externa/interna bajo carga.', en: 'Baseline + outer/inner under load.' },
+    name: 'MFPT', fit: 'diagnosis', faults: 'OR/IR · otro banco', redist: 'link', appStatus: 'crosseval',
+    note: { es: 'Integrado REAL como el test de generalización cross-dataset (domain-shift): el WDCNN entrenado en CWRU se evalúa sobre MFPT en la página Benchmark. Sin falla de bola.', en: 'Integrated REAL as the cross-dataset (domain-shift) test: the CWRU-trained WDCNN is evaluated on MFPT on the Benchmark page. No ball fault.' },
   },
   {
     name: 'MAFAULDA', fit: 'diagnosis', faults: 'desbalance/desalineamiento/rodamiento', redist: 'link',
@@ -296,11 +300,16 @@ export default function Experiments() {
             </thead>
             <tbody>
               {DATASETS.map((d) => {
-                const live = d.name.startsWith('CWRU');
+                const st = d.appStatus ?? 'planned';
+                const chip = st === 'live'
+                  ? { bg: 'color-mix(in oklab,#3fb950 22%,transparent)', fg: '#3fb950', bd: 'transparent', lbl: es ? 'EN VIVO + benchmark' : 'LIVE + benchmarked' }
+                  : st === 'crosseval'
+                    ? { bg: 'color-mix(in oklab,#6e5cff 20%,transparent)', fg: '#6e5cff', bd: 'transparent', lbl: es ? 'cross-dataset (real)' : 'cross-dataset (real)' }
+                    : { bg: 'transparent', fg: 'var(--color-fg-faint)', bd: 'var(--color-border)', lbl: es ? 'roadmap' : 'planned' };
                 return (
                 <tr key={d.name}>
                   <td style={{ textAlign: 'left' }}>{d.name}</td>
-                  <td><span className="chip" style={{ background: live ? 'color-mix(in oklab,#3fb950 22%,transparent)' : 'transparent', color: live ? '#3fb950' : 'var(--color-fg-faint)', borderColor: live ? 'transparent' : 'var(--color-border)' }}>{live ? (es ? 'EN VIVO + benchmark' : 'LIVE + benchmarked') : (es ? 'roadmap' : 'planned')}</span></td>
+                  <td><span className="chip" style={{ background: chip.bg, color: chip.fg, borderColor: chip.bd }}>{chip.lbl}</span></td>
                   <td>{d.fit}</td>
                   <td style={{ textAlign: 'left' }}>{d.faults}</td>
                   <td>{d.redist === 'mirror' ? (es ? 'espejo + atribución' : 'mirror + attribution') : (es ? 'solo-enlace' : 'link-only')}</td>
@@ -310,8 +319,8 @@ export default function Experiments() {
             </tbody>
           </table>
           <p className="muted small">{es
-            ? 'Estado honesto: hoy SÓLO CWRU está integrado — entrena el WDCNN + el deep-AE y corre en vivo en la página Benchmark (diagnóstico interactivo sobre segmentos reales + los números held-out). Los demás conjuntos son el roadmap (descarga + tooling aún no implementados); no se afirma cobertura de engranaje/velocidad-variable hasta integrarlos.'
-            : 'Honest status: today ONLY CWRU is integrated — it trains the WDCNN + deep-AE and runs live on the Benchmark page (interactive diagnosis on real segments + the held-out numbers). The others are the roadmap (download + tooling not yet implemented); no gear/variable-speed coverage is claimed until they are integrated.'}</p>
+            ? 'Estado honesto: hoy hay DOS conjuntos reales integrados. CWRU es el benchmark entrenado — entrena el WDCNN + el deep-AE + los clásicos y corre en vivo en la página Benchmark (diagnóstico interactivo sobre segmentos reales + los números held-out). MFPT está integrado como el test de generalización cross-dataset (domain-shift): el WDCNN entrenado en CWRU se evalúa sobre MFPT real, sin haber visto un solo registro suyo. Los demás seis conjuntos son el roadmap (descarga + tooling aún no implementados); no se afirma cobertura de engranaje/velocidad-variable hasta integrarlos.'
+            : 'Honest status: today there are TWO real integrated sets. CWRU is the trained benchmark — it trains the WDCNN + deep-AE + the classical models and runs live on the Benchmark page (interactive diagnosis on real segments + the held-out numbers). MFPT is integrated as the cross-dataset (domain-shift) generalization test: the CWRU-trained WDCNN is evaluated on real MFPT data it never saw. The other six sets are the roadmap (download + tooling not yet implemented); no gear/variable-speed coverage is claimed until they are integrated.'}</p>
 
           <p>{es
             ? 'El generador sintético está fundamentado físicamente, no es cosmético: deposita un tren de impulsos cuasi-periódico en la frecuencia de falla cinemática, cada impulso excitando una resonancia estructural amortiguada (resonancia fₙ y amortiguamiento ζ especificados), añade jitter de deslizamiento por intervalo (~0.5 % de un período) para que el peine quede levemente difuminado en vez de perfectamente periódico, aplica la modulación de amplitud físicamente correcta (las fallas de pista interna modulan a la frecuencia de eje f_r; las de bola a la frecuencia de jaula FTF; las de pista externa, ninguna), superpone armónicos de eje y añade ruido gaussiano para alcanzar un SNR objetivo. Las relaciones de frecuencia de falla que planta son exactas y transferibles a rodamientos reales — eso legitima las celdas sintéticas como conjunto de auto-validación.'

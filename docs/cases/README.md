@@ -17,9 +17,10 @@ prognostics cases are clearly labelled.
 
 ## Honesty / roadmap
 
-* **Only CWRU is a live real dataset.** The training loads (0/1/2 HP) feed the model but only the held-out **3 HP**
-  segments are committed as replayable live cases. The synthetic + run-to-failure cases are **labelled synthetic** —
-  they are NOT presented as real benchmark numbers.
+* **Two real datasets are wired: CWRU (trained benchmark) + MFPT (cross-dataset eval).** CWRU is the trained
+  benchmark — the training loads (0/1/2 HP) feed the model but only the held-out **3 HP** segments are committed as
+  replayable live cases; MFPT is the held-out cross-DATASET domain-shift test (next bullet). The synthetic +
+  run-to-failure cases are **labelled synthetic** — they are NOT presented as real benchmark numbers.
 * **MFPT is wired (T13)** as a real cross-DATASET eval (see below) — a second rig, live. **Roadmap (still not
   wired):** XJTU-SY / FEMTO / IMS (real run-to-failure → replace the synthetic RUL trend), Ottawa-TVS
   (variable-speed → only then claim variable-speed), a gear rig (→ only then claim gear), Paderborn (more bearing
