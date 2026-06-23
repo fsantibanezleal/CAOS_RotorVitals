@@ -65,10 +65,21 @@ ALERT setpoint and **C/D** the DANGER / trip setpoint.
 ## The decision layer (`recommend.ts`, App `rec` tab)
 
 Diagnosis, ISO severity, and RUL are three pieces of evidence; a technician acts on **one** decision. The
-recommendation fuses them and takes the **WORST of the three** on a priority ladder (ok → watch → plan → alarm →
-trip; trip only when a severe fault, Zone D, and a short RUL all agree). The key honesty: when the broadband ISO
-screen looks calm (Zone A/B) but the envelope confirms a real bearing fault — its energy lives in the high-frequency
-resonance, **outside** the 10–1000 Hz ISO band — the engine surfaces the disagreement and trusts the envelope.
+recommendation maps each piece onto a five-step priority ladder **`ok → watch → plan → alarm → trip`** and takes the
+**WORST of the three** (`recommend.ts:111`). The three mappings are explicit constants, not vibes:
+
+| Evidence | → ok | → watch | → plan | → alarm |
+|---|---|---|---|---|
+| **ISO zone** (`ZONE_PRIORITY`, line 58) | A | B | C | D |
+| **Fault severity state** (`faultStateOf`, lines 51-55 — aligned with the App gauge zones **3/6/9** of the 0–12 scale) | sev < 3 (healthy) | sev < 6 (incipient) | sev < 9 (developed) | sev ≥ 9 (severe) |
+| **RUL fraction** `frac = RUL / life` (`rulPriority`, line 108) | frac ≥ 0.5 | frac < 0.5 | frac < 0.2 | frac < 0.05 |
+
+**Escalation to `trip`** happens only when the three worst indicators agree: `state = severe` **AND** `zone = D`
+**AND** `rulPriority = alarm` (`recommend.ts:113`). The **honest disagreement** flag fires when the broadband ISO
+screen looks calm (Zone A or B) but the envelope confirms a real fault with `sev ≥ 6` (`recommend.ts:116`) — the fault
+energy lives in the high-frequency resonance, **outside** the 10–1000 Hz ISO band, so the engine surfaces the
+mismatch and trusts the envelope, which is exactly why envelope analysis exists. The decision exports as structured
+JSON, a Markdown report, or a printable PDF (the deliverable attached to the work order).
 
 ## What it is NOT
 
