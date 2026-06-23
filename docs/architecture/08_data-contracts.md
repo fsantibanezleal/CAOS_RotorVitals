@@ -1,5 +1,9 @@
 # 08 — The two data contracts
 
+**The two contracts at a glance** — Contract 1 (ingestion gate) and Contract 2 (the manifest/trace replay schema):
+
+![The two data contracts — Contract 1 ingestion gate + Contract 2 manifest/trace replay schema](../diagrams/05-data-contracts.svg)
+
 The full schemas live in [`../../data/README.md`](../../data/README.md); this is the architecture-level summary.
 
 ## Contract 1 — ingestion (raw vibration → pipeline)
