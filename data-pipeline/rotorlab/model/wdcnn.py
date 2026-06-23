@@ -27,3 +27,9 @@ class WDCNN(nn.Module):
 
     def forward(self, x):
         return self.head(self.f(x))
+
+    def embed(self, x):
+        """The 100-D penultimate LEARNED feature (after the ReLU, before the final 4-class layer) — the WDCNN's
+        learned representation of a window, used for the feature-space embedding (T14). head[:3] = Flatten →
+        Linear(256,100) → ReLU."""
+        return self.head[:3](self.f(x))

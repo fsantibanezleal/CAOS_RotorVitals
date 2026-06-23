@@ -80,6 +80,7 @@ def run(model: dict, raw_dir: str, cwru_classes: list[str]) -> dict:
         Xw = np.array(ws, np.float32)
         with torch.no_grad():
             wpred = net(torch.tensor(Xw).unsqueeze(1)).argmax(1).numpy()
+            wemb = net.embed(torch.tensor(Xw).unsqueeze(1)).numpy()    # 100-D learned feature (T14 embedding)
         wlabels = [cwru_classes[k] for k in wpred]
         wd_pred[cls].extend(wlabels)
         cpred = _mfpt_classical_predict(x, fs, rate, bpfo, bpfi)
@@ -92,7 +93,8 @@ def run(model: dict, raw_dir: str, cwru_classes: list[str]) -> dict:
         samples.append({"cls": cls, "dataset": "MFPT", "file": rel.split("/")[-1].replace(".mat", ""),
                         "seg": 1, "caseId": f"mfpt-{cls}-{len(samples) + 1}",
                         "raw": [round(float(v), 4) for v in Xw[k]],
-                        "feat": [round(float(v), 4) for v in fz]})
+                        "feat": [round(float(v), 4) for v in fz],
+                        "emb": [round(float(v), 4) for v in wemb[k]]})
 
     def _recall(pred_map):
         out = {}

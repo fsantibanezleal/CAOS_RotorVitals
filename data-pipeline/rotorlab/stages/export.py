@@ -92,6 +92,9 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
     # feature vector + label + provenance) — so the WDCNN, deep-AE AND the SVM/RF all run live on the SAME segment.
     from ..io.fetch_cwru import FILES
     src_file = {cls: n for n, (cls, load, _rpm) in FILES.items() if load == 3}  # the held-out 3 HP file per class
+    # the WDCNN's 100-D penultimate LEARNED feature per held-out window (T14 — the feature-space embedding)
+    with torch.no_grad():
+        teEmb = net.embed(torch.tensor(teX).unsqueeze(1)).numpy()
     samples = []
     rngsel = np.random.RandomState(1)
     for c in range(4):
@@ -100,7 +103,8 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
             samples.append({"cls": classes[c], "file": int(src_file.get(classes[c], 0)), "seg": seg,
                             "raw": [round(float(v), 4) for v in teX[k]],
                             "feat": [round(float(v), 4) for v in teFz[k]],
-                            "clsFeat": [round(float(v), 5) for v in teF[k]]})
+                            "clsFeat": [round(float(v), 5) for v in teF[k]],
+                            "emb": [round(float(v), 4) for v in teEmb[k]]})
     # cross-severity (T4) + cross-dataset (T13) committed segments: real unseen-size + real MFPT (diff-rig) windows
     # for the live App severity / MFPT cases.
     from ..io.fetch_cwru import SEVERITY_FILES
