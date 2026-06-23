@@ -3,6 +3,30 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.30.000] — 2026-06-22
+
+Recommendation / decision engine + exportable report (T5) — the "what do I do about it?" surface. Frontend only
+(engine unchanged at `rotorlab 0.28.000`).
+
+### Added
+- **A real condition-based-maintenance decision engine** (`dsp/recommend.ts`): fuses the envelope diagnosis, the
+  **ISO 20816 / 10816-1 broadband-velocity severity zone** (A/B/C/D) and the **RUL** projection into one prioritised
+  recommendation on the ladder **ok → watch → plan → alarm → trip** (trip only when a severe fault, Zone D and a
+  short RUL all agree). Every factor is returned with its value + assessment — explainable, not a black box.
+- **Honesty built in:** when the coarse broadband ISO screen looks calm (Zone A/B) but the envelope confirms a real
+  bearing fault (its energy sits in the HF resonance OUTSIDE the 10–1000 Hz band), the engine **surfaces the
+  disagreement and trusts the envelope** instead of hiding it — the textbook reason envelope analysis exists.
+- **App tab "Recommendation · report"** (`viz/RecommendationPanel.tsx`, reacts to the selected case): a decision
+  card (priority badge + action + next-inspection cadence + confidence), the honest-disagreement callout, the
+  evidence/rationale table, and **exports** — a structured **JSON**, a human-readable **Markdown** report, and a
+  **Print / Save-as-PDF** (clean print window) — the deliverable a technician attaches to the work order.
+- **Tests:** 5 new `recommend()` unit tests (`test/dsp.test.ts`) across the priority ladder + the ISO zone
+  boundaries + the honest-disagreement path (13 frontend dsp tests pass).
+
+### Fixed
+- **The footer version no longer drifts.** It was hardcoded (`0.26.001`, three releases stale); `vite.config` now
+  injects the `package.json` version via `define: __APP_VERSION__`, so the displayed version is always the build's.
+
 ## [0.29.000] — 2026-06-22
 
 Cross-DATASET generalization (T13) — a second real rig (MFPT). The domain-shift test that completes the

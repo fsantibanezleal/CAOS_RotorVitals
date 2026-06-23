@@ -81,3 +81,52 @@ test('a healthy signal is not called a fault', () => {
   const dx = diagnose(env, defectFreqs(bearing, 1772 / 60));
   assert.equal(dx.top, 'healthy');
 });
+
+// ---- T5: the condition-based-maintenance decision engine ----
+import { recommend, isoZoneOf } from '../src/dsp/recommend.ts';
+import type { Diagnosis } from '../src/dsp/diagnose.ts';
+import type { RulResult } from '../src/dsp/health.ts';
+
+const noRul: RulResult = { onset: null, threshold: 1, failTime: null, rul: null, curve: [] };
+const diag = (top: Diagnosis['top'], score: number, conf = 0.9): Diagnosis => ({
+  top, confidence: conf,
+  scores: [{ kind: top, freq: 100, score }, { kind: 'inner', freq: 90, score: 1.2 }, { kind: 'ball', freq: 80, score: 1.1 }],
+});
+
+test('ISO 20816 zone boundaries (Class I)', () => {
+  assert.equal(isoZoneOf(0.5), 'A');
+  assert.equal(isoZoneOf(1.0), 'B');
+  assert.equal(isoZoneOf(3.0), 'C');
+  assert.equal(isoZoneOf(6.0), 'D');
+});
+
+test('healthy + calm → OK, no fault', () => {
+  const r = recommend({ diag: diag('healthy', 1.2), velocityRms: 0.4, rul: noRul, lifeH: 60, lang: 'en' });
+  assert.equal(r.priority, 'ok');
+  assert.equal(r.faultState, 'healthy');
+  assert.equal(r.disagreement, false);
+});
+
+test('severe fault + Zone D + short RUL → TRIP', () => {
+  const rul: RulResult = { ...noRul, failTime: 61, rul: 1 };   // 1 h of 60 → frac 0.017 → alarm
+  const r = recommend({ diag: diag('outer', 11, 0.97), velocityRms: 6.0, rul, lifeH: 60, lang: 'en' });
+  assert.equal(r.isoZone, 'D');
+  assert.equal(r.faultState, 'severe');
+  assert.equal(r.priority, 'trip');
+});
+
+test('developed fault but Zone A → PLAN + honest disagreement surfaced', () => {
+  const r = recommend({ diag: diag('inner', 7, 0.9), velocityRms: 0.5, rul: noRul, lifeH: 60, lang: 'en' });
+  assert.equal(r.isoZone, 'A');
+  assert.equal(r.faultState, 'developed');
+  assert.equal(r.priority, 'plan');       // driven by the envelope, not the calm broadband ISO
+  assert.equal(r.disagreement, true);
+  assert.ok(r.factors.find((f) => f.key === 'iso')?.note, 'the ISO factor must carry the disagreement note');
+});
+
+test('finite mid RUL escalates to PLAN even with a mild fault', () => {
+  const rul: RulResult = { ...noRul, failTime: 70, rul: 6 };   // 6 h of 60 → frac 0.10 → plan
+  const r = recommend({ diag: diag('outer', 4, 0.8), velocityRms: 0.5, rul, lifeH: 60, lang: 'en' });
+  assert.equal(r.priority, 'plan');
+  assert.equal(r.rulHours, 6);
+});
