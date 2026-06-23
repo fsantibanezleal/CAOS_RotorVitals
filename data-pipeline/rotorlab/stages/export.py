@@ -61,7 +61,7 @@ def build_replay(case: Any, *, derived_dir: str, manifests_dir: str,
 
 def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, classical_benchmark: dict,
                   cml_models: dict, cml_metrics: dict, cross_severity: dict, cross_dataset: dict,
-                  teX, teY, teFz, classes: list[str], derived_dir: str) -> None:
+                  teX, teY, teFz, classes: list[str], derived_dir: str, leakage: dict | None = None) -> None:
     """HEAVY: write the ONNX models + committed held-out samples + the learned-metrics + classical-benchmark JSON."""
     import json
     import os
@@ -143,6 +143,10 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
         # T13: cross-DATASET generalization — the CWRU-trained WDCNN vs unsupervised envelope/SES on MFPT (a
         # different rig). The domain-shift test: learned features are rig-specific, physics is rig-agnostic.
         "crossDataset": cross_dataset,
+        # T15: leakage demonstration — random-window vs honest grouped (split-by-recording) split on a frozen pool.
+        # How much the headline accuracy INFLATES when overlapping windows leak across train/test. Omitted (None) on
+        # a light rebuild that doesn't carry it forward; the frontend guards on its presence.
+        **({"leakage": leakage} if leakage is not None else {}),
         "honesty": "Trained on REAL CWRU recordings. CWRU reuses one physical bearing across loads, so a true "
                    "independent-bearing split is impossible; we hold out an entire load condition instead. CWRU is "
                    "a clean lab rig (Smith & Randall 2015) — accuracy is optimistic vs field data.",

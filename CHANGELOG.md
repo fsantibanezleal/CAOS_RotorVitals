@@ -3,6 +3,50 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.36.000] — 2026-06-23
+
+Window-overlap leakage demonstration (T15) — an honesty feature that quantifies the documented CWRU window-overlap
+trap (Hendriks, Dumond & Knox 2022) **two ways, deliberately kept apart so it does not overclaim**. Engine
+`rotorlab 0.30.000` (new `stages/leakage.py`). The first build conflated overlap leakage with a load shift; an
+adversarial review caught it and the demo was reworked into an honest decomposition before ship.
+
+### Added
+- **`stages/leakage.py`** — windows all 16 CWRU recordings into one frozen pool (WIN 2048 / HOP 1024, 50% overlap)
+  and measures the leak two ways with REAL fitted models (FRESH WDCNN + SVM-RBF + Random Forest):
+  - **(1) Isolated overlap leak — the clean number.** A purge/embargo control: on the SAME random test set (a
+    4-load mix, so load and class are held constant), a with-overlap train is compared against a **purged** train
+    with every order±1 same-recording neighbour of a test window removed. Removing windows can only HURT, so the
+    residual gain isolates the overlap. Mean over 10 seeds: **+0.3 pts (SVM) / +1.6 pts (RF)** — small, near split
+    noise, exactly as expected on this clean largely-separable 0.007″ pool.
+  - **(2) Naive-vs-production — an UPPER BOUND.** The naive random split vs the production grouped split (held-out
+    3 HP): RF **+5.9 / SVM +5.1 pts**. This is NOT pure leakage — the grouped arm also pays a 3 HP
+    load-generalization penalty. The decomposition shows **most of the gap is the load penalty, not overlap**.
+  - Wired into `pipeline.retrain` after the cross-dataset stage; emitted as the `leakage` block in
+    `rv-learned-metrics.json`.
+- **Four integrity controls** (so a plumbing bug surfaces, not a fake gap): a **shuffled-label plumbing check** (both
+  arms collapse to ~chance — leaky 0.267 / honest 0.238, rules out an index/label bug; it does NOT by itself
+  attribute the gap to overlap — the purge control does), a literal **overlap-window count** (random split 438
+  shared train↔test, grouped 0), a **class-balance** check (matched within 0.024; its note states load still differs,
+  hence the upper-bound framing), and a **production cross-check** (the honest-T15 WDCNN reproduces the production
+  hold-out-3HP accuracy exactly — its confusions are byte-identical).
+- **Benchmark — "Window-overlap leakage — isolated vs the naive-split upper bound"** (`LeakageBlock`): a horizontal
+  **decomposition bar** splitting each model's naive-vs-production gap into {isolated overlap leak (red)} + {load
+  penalty (amber)} + a table (production / random±std / gap / isolated overlap / healthy-recall) + the controls strip
+  + an honest callout + the verified citation. The WDCNN saturates (1.0) and is shown as uninformative here, not as
+  "hiding a leak".
+- **Tests:** `tests/test_leakage.py` (7) lock the shipped block, the isolated-overlap clean number (≥ ~0, ≤ 20 pts),
+  the upper-bound ordering (gap ≥ isolated overlap), all four controls, the verified DOI, and the overlap/purge
+  bookkeeping. 29 Python tests pass; 28 frontend dsp tests pass.
+
+### Honesty
+- The two measurements are kept separate so the demo does not pass a load-confounded gap off as pure leakage. On this
+  clean 0.007″ pool the demonstrable overlap leak is modest (~0–1.6 classical pts) — NOT the dramatic published
+  collapse, which is driven by the deeper **bearing-identity** leak: even the production grouped split is
+  leave-recording-out, NOT leave-bearing-out (CWRU reuses one physical bearing per condition across loads), so even
+  the honest number is optimistic vs field data. Inflated numbers are do-not-cite; the headline diagnosis ALWAYS uses
+  the production grouped split. The deep-AE (one-class) and envelope/SES (unsupervised) are leakage-immune by
+  construction and excluded. Citation DOI verified (`10.1016/j.ymssp.2021.108732`).
+
 ## [0.35.000] — 2026-06-23
 
 Learned-feature embedding (T14) — one picture that ties the whole learned story together. Engine `rotorlab
