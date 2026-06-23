@@ -3,6 +3,33 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.33.000] — 2026-06-22
+
+Fast Spectral Correlation (T9) — a true phase-retaining cyclic coherence, replacing the magnitude-only CMS.
+Frontend only (engine `rotorlab 0.28.000`).
+
+### Added / Changed
+- **`dsp/csc.ts` `fastSpectralCoherence`** — a genuine **Fast-SC** (Antoni, Xin & Hamzaoui 2017): AR prewhitening
+  (Levinson-Durbin) removes the deterministic shaft/gear lines, then the **complex** STFT cross-spectrum
+  `S(i,p)·S*(i,q)` is averaged over frames and FFT'd over the frame index → the cyclic frequency α (fine, Δα≈0.7 Hz),
+  **retaining the cross-carrier phase the CMS threw away**. Normalized to the cyclic spectral coherence |γ|∈[0,1].
+- **Exact Carter-Knapp-Nuttall significance mask** (`cohThreshold`, `overlapCorrectedK`): under H0 |γ|²~Beta(1,K_eff−1),
+  threshold `1−p^{1/(K_eff−1)}` with K_eff overlap-corrected from the window autocorrelation — a real statistical
+  test replacing the median+3·MAD heuristic.
+- **Enhanced Envelope Spectrum (EES)** marginal `⟨|γ|⟩_f` + a new `viz/EesStrip.tsx` canvas subplot under the
+  heatmap (shares the α axis; defect-frequency markers). The classical SES is its band-restricted special case.
+- **`viz/CscPanel.tsx`**: swapped to Fast-SC, real CKN mask (default ON), EES strip; the note reports the live
+  K_eff/|γ|²_thr. **Methodology**: the honest callout rewritten (it now DOES compute a spectral correlation),
+  the CMS equation replaced by the Fast-SC + CKN + EES equations, symbols updated, Carter-Knapp-Nuttall 1973
+  reference added.
+- **Rigorously validated before shipping:** a design panel (3 expert specs → synthesis) flagged a de-aliasing
+  error in the naive lag→α mapping; numerical harnesses then confirmed the clean estimator localizes planted
+  cyclostationary content to the correct α (<1 Hz), and on the App's own signals outer→BPFO / inner→BPFI /
+  ball→2·BSF ridges + harmonics appear while healthy shows none. An adversarial review then caught a real
+  overlap-correction bug in K_eff (Bartlett taper over the wrong index) that inflated the false-alarm rate; fixed,
+  the white-noise FAR is now a calibrated ~4–5% at nominal p=0.05, and the EES strip uses the proper carrier-mean
+  significance floor (not the per-pixel threshold). 5 committed acceptance-gate tests (22 frontend dsp tests pass).
+
 ## [0.32.000] — 2026-06-22
 
 Configurable analysis parameters (T7) — the analysis is now parametrised, not fixed. Frontend only (engine
