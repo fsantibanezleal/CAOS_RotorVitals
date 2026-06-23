@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" class="arch-svg" role="img" aria-label="RotorVitals — vibration signal to a bearing-fault diagnosis + RUL">
+  <style>
+    .arch-svg text { font-family: var(--font-sans, Inter, "Segoe UI", system-ui, sans-serif); }
+    .arch-svg .mono { font-family: var(--font-mono, ui-monospace, Consolas, monospace); }
+    .arch-svg .bx { fill: var(--color-surface-2); stroke: var(--color-border, #d0d7de); stroke-width: 1.2; }
+    .arch-svg .bx-hi { stroke: var(--color-accent, #6e5cff); }
+    .arch-svg .bx-good { stroke: var(--color-good, #1a7f37); }
+    .arch-svg .bx-warn { stroke: var(--color-warn, #9a6700); }
+    .arch-svg .ttl { fill: var(--color-fg, #1f2328); font-size: 13px; font-weight: 700; }
+    .arch-svg .sub { fill: var(--color-fg-subtle, #656d76); font-size: 10px; }
+    .arch-svg .it { fill: var(--color-fg, #1f2328); font-size: 11px; font-weight: 600; }
+    .arch-svg .cd { fill: var(--color-accent, #6e5cff); font-size: 9.5px; }
+    .arch-svg .mu { fill: var(--color-fg-subtle, #656d76); font-size: 10px; }
+    .arch-svg .flow { fill: none; stroke: var(--color-fg-faint, #8b949e); stroke-width: 1.6; }
+    .arch-svg .sig { fill: none; stroke: var(--color-accent, #6e5cff); stroke-width: 1.3; }
+    .arch-svg .peak { stroke: var(--color-good, #1a7f37); stroke-width: 1.6; }
+    .arch-svg .axis { stroke: var(--color-border, #d0d7de); stroke-width: 1; }
+    .arch-svg .hi { fill: none; stroke: var(--color-warn, #9a6700); stroke-width: 2; }
+  </style>
+  <defs>
+    <marker id="ta-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L8,4 L0,8 z" fill="var(--color-fg-faint, #8b949e)"/>
+    </marker>
+  </defs>
+
+  <text class="ttl" x="22" y="30">RotorVitals — what bearing fault is this, and how long until it fails?</text>
+  <text class="sub" x="22" y="47">a rotating-machinery health product: a vibration signal → envelope/cyclostationary diagnosis at the defect frequencies + a WDCNN class + a remaining-useful-life projection</text>
+
+  <!-- 1. The question -->
+  <rect class="bx bx-hi" x="20" y="74" width="196" height="150" rx="11"/>
+  <text class="it" x="34" y="98">The question</text>
+  <text class="mu" x="34" y="118">Is the bearing</text>
+  <text class="mu" x="34" y="134">healthy or faulted</text>
+  <text class="mu" x="34" y="150">(outer / inner /</text>
+  <text class="mu" x="34" y="166">ball)? How severe?</text>
+  <text class="mu" x="34" y="182">How long is left?</text>
+  <text class="cd mono" x="34" y="206">real CWRU data</text>
+
+  <!-- 2. The input: vibration -->
+  <rect class="bx" x="244" y="74" width="196" height="150" rx="11"/>
+  <text class="it" x="258" y="98">The input</text>
+  <line class="axis" x1="258" y1="160" x2="426" y2="160"/>
+  <path class="sig" d="M258,160 q6,-28 12,0 q6,26 12,0 q6,-34 12,0 q6,30 12,0 q6,-22 12,0 q6,24 12,0 q6,-30 12,0 q6,26 12,0 q6,-20 12,0 q6,22 12,0 q6,-28 12,0 q6,24 12,0 q6,-18 12,0"/>
+  <text class="mu" x="258" y="190">an accelerometer signal</text>
+  <text class="cd mono" x="258" y="216">raw vibration · fs · rpm</text>
+
+  <!-- 3. The method -->
+  <rect class="bx bx-hi" x="468" y="74" width="196" height="150" rx="11"/>
+  <text class="it" x="482" y="98">The method</text>
+  <text class="mu" x="482" y="118">• kurtogram band</text>
+  <text class="mu" x="482" y="134">• envelope → SES</text>
+  <text class="mu" x="482" y="150">• match BPFO/BPFI/BSF</text>
+  <text class="mu" x="482" y="166">• WDCNN + cyclostat.</text>
+  <text class="cd mono" x="482" y="190">dsp/ · wdcnn.onnx (live)</text>
+  <text class="mu" x="482" y="210">all in the browser</text>
+
+  <!-- 4. The value -->
+  <rect class="bx bx-warn" x="692" y="74" width="188" height="150" rx="11"/>
+  <text class="it" x="706" y="98">The value</text>
+  <line class="axis" x1="712" y1="190" x2="862" y2="190"/>
+  <line class="axis" x1="712" y1="118" x2="712" y2="190"/>
+  <path class="hi" d="M716,126 C760,134 800,160 862,186"/>
+  <text class="mu" x="788" y="150" style="font-size:8.5px">HI → RUL</text>
+  <text class="mu" x="820" y="206">time →</text>
+  <text class="cd mono" x="706" y="218">fault class · severity · RUL</text>
+
+  <path class="flow" d="M216,149 H242" marker-end="url(#ta-arrow)"/>
+  <path class="flow" d="M440,149 H466" marker-end="url(#ta-arrow)"/>
+  <path class="flow" d="M664,149 H690" marker-end="url(#ta-arrow)"/>
+
+  <!-- bottom band -->
+  <rect class="bx" x="20" y="252" width="860" height="184" rx="11"/>
+  <text class="it" x="36" y="278">It is a real system, not a demo:</text>
+  <text class="mu" x="36" y="302">• the diagnostics engine (frontend/src/dsp/) recomputes the kurtogram, envelope spectrum, cyclostationary CMS and the RUL live on every control;</text>
+  <text class="mu" x="36" y="324">• it keys on the physical defect frequencies (BPFO/BPFI/2·BSF) and confirms a real fault by its cyclostationary α-ridge family (not a coincidental peak);</text>
+  <text class="mu" x="36" y="346">• a WDCNN classifies the raw signal and a deep autoencoder gives a health index — both ONNX, client-side, trained on REAL CWRU bearing data (held-out files);</text>
+  <text class="mu" x="36" y="368">• the remaining-useful-life is projected from the health-index trend to an ISO threshold, with a credibility band;</text>
+  <text class="mu" x="36" y="390">• Contract 1 accepts your own vibration recording; six documented pages; the inputs are real, the planted-fault severities labelled.</text>
+  <text class="cd mono" x="36" y="418">vibration  →  kurtogram band → Hilbert envelope → SES @ BPFO/BPFI/BSF + WDCNN  →  fault class · severity · RUL</text>
+</svg>
