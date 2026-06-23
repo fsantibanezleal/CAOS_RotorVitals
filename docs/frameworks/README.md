@@ -26,6 +26,8 @@ cards cover the algorithm + its provenance.
 | [Real cepstrum](11_cepstrum/cepstrum.md) | Randall & Antoni 2011; Borghesani et al. 2013, MSSP 36:370–384 |
 | [STFT spectrogram](12_spectrogram/spectrogram.md) | Randall & Antoni 2011 (time-frequency view) |
 | [Learned-feature embedding (WDCNN 2-D PCA)](13_feature-embedding/feature-embedding.md) | representation analysis of the WDCNN; Smith & Randall 2015 (eval) |
+| [Prognostics / RUL + ISO 20816 severity zones](14_prognostics-rul/prognostics-rul.md) | Lei et al. 2018; Wang et al. 2020 (XJTU); Saxena et al. 2010 (α-λ); ISO 20816-1/-3, ISO 10816-1 |
+| [Diagnosis decision rule (harmonic prominence + two gates 4.5/1.7)](15_diagnosis-decision/diagnosis-decision.md) | Randall & Antoni 2011; Smith & Randall 2015 |
 
 Architecture-level method docs: the [window-overlap leakage demo](../architecture/09_leakage-demo.md) (T15, Hendriks
 et al. 2022).

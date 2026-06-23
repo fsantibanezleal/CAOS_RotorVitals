@@ -68,7 +68,9 @@ and cage) and choosing the strongest comb; it is weaker because it can latch ont
 
 * **Kurtosis ≠ periodicity.** The kurtogram measures impulsiveness only; it cannot tell a periodic fault train from a
   single transient. That is the motivation for the infogram/autogram/IESFOgram successors — and for the downstream
-  two-gate diagnosis, which rejects an impulsive-but-aperiodic band (no comb → fails both gates → reported healthy).
+  **two-gate diagnosis** (absolute gate 4.5, relative gate 1.7; see
+  [the diagnosis decision rule](../15_diagnosis-decision/diagnosis-decision.md)), which rejects an
+  impulsive-but-aperiodic band (no comb → fails both gates → reported healthy).
 * **Not the paper's exact IESFOgram.** Mauricio et al. integrate the cyclic spectral **coherence** over a
   constant-relative-bandwidth filterbank; this build scores fault-comb prominence on the plain per-band SES over the
   pragmatic dyadic `gramGrid`, with no IRLS regression. It is a spike-robust *surrogate* of the paper's targeted
