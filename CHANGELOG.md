@@ -3,6 +3,30 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.34.000] — 2026-06-23
+
+IESFOgram (T10) — a defect-frequency-TARGETED band selector. Frontend only (engine `rotorlab 0.28.000`).
+
+### Added
+- **The IESFOgram** (Mauricio, Smith, Randall, Antoni & Gryllias 2020) as a 6th band-selection metric in
+  `dsp/infogram.ts`: instead of scoring each band by general impulsiveness (kurtogram) or repetitiveness (infogram),
+  it scores it by how strongly the band's squared-envelope spectrum shows the harmonic comb of the **diagnosed**
+  fault frequency (BPFO/BPFI/2·BSF) — `combProminence` (median-normalized, spike-robust, on the SES amplitude scale)
+  with a **targeted** mode and a **blind** shaft-order sweep (≥1.5×fr). `gramGrid` takes a backward-compatible
+  `opts` 4th arg and shares one `sesPower(se)` per cell (the no-opts path is unchanged).
+- **App integration:** a new "Auto (IESFOgram)" option in the T7 Demod-band control (targets the diagnosed fault,
+  via a new band-INDEPENDENT `dx0` diagnosis that breaks the effBand→ses→dx→band cycle the panel flagged); the
+  Infogram tab gains the IESFO + IESFO·b metrics and a "targeted at α₀" readout. The **spike demo** now shows the
+  payoff: a non-fault Dirac makes the kurtogram's best cell jump while the targeted IESFOgram's stays identical.
+- **Methodology:** the kurtogram tab gains the IESFOgram paragraph + equation + an honest callout (targeted needs
+  the defect frequency; blind is weaker; the main simplification is that the paper integrates the cyclic spectral
+  *coherence* over each band while this build scores the plain per-band SES comb; our median-normalized comb is a
+  spike-robust surrogate of the paper's targeted feature; the dyadic paving ≠ the paper's filterbank) + the
+  `mauricio2020iesfo` reference.
+- **Tests:** 4 acceptance gates (targeted selects a band whose SES diagnoses the fault; **spike-robustness** — best
+  cell unchanged while the kurtogram jumps; blind rejects the shaft order; backward-compat). 26 dsp tests pass.
+- Designed via a 2-spec panel → synthesis (which caught the `dx0` acyclicity) per the ultracode process.
+
 ## [0.33.000] — 2026-06-22
 
 Fast Spectral Correlation (T9) — a true phase-retaining cyclic coherence, replacing the magnitude-only CMS.

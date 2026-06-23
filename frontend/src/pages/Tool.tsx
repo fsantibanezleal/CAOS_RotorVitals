@@ -4,6 +4,7 @@ import { Tabs, useShellLang } from '@fasl-work/caos-app-shell';
 import { synth, type SignalSpec } from '../dsp/signal';
 import { magSpectrum, envelopeSpectrum } from '../dsp/envelope';
 import { kurtogram } from '../dsp/kurtogram';
+import { gramGrid } from '../dsp/infogram';
 import { diagnose } from '../dsp/diagnose';
 import { ISO_CLASSES } from '../dsp/iso';
 import { defectFreqs, type FaultKind } from '../dsp/bearing';
@@ -48,7 +49,7 @@ const T = {
     rulNote: 'Health-indicator trend with onset, failure threshold and the RUL projection fan (±2σ).',
     onset: 'Onset', rul: 'RUL', fail: 'Proj. failure', h: 'h', freqs: 'Kinematic frequencies', replay: 'Replay degradation',
     anlys: 'Analysis', aBand: 'Demod band', aEnv: 'Envelope', aHarm: 'Harmonics (comb)', aIso: 'ISO scale',
-    bAuto: 'Auto (kurtogram)', bFixed: 'Fixed 2–4 kHz', bManual: 'Manual (pick/brush)', eSq: 'Squared (SES)', eMag: 'Magnitude' },
+    bAuto: 'Auto (kurtogram)', bFixed: 'Fixed 2–4 kHz', bManual: 'Manual (pick/brush)', bIesfo: 'Auto (IESFOgram)', eSq: 'Squared (SES)', eMag: 'Magnitude' },
   es: { bearing: 'Rodamiento', fault: 'Falla plantada', severity: 'Severidad', rpm: 'Velocidad eje (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnóstico', conf: 'confianza', sev: 'Índice de severidad', band: 'Banda demod', clickKg: 'Clic en una celda del kurtograma para fijar la banda → el SES se actualiza en vivo.',
     f_healthy: 'Sano', f_outer: 'Pista externa (BPFO)', f_inner: 'Pista interna (BPFI)', f_ball: 'Bola (2·BSF)',
@@ -58,7 +59,7 @@ const T = {
     rulNote: 'Tendencia del indicador de salud con onset, umbral de falla y el abanico de proyección de RUL (±2σ).',
     onset: 'Onset', rul: 'RUL', fail: 'Falla proy.', h: 'h', freqs: 'Frecuencias cinemáticas', replay: 'Reproducir degradación',
     anlys: 'Análisis', aBand: 'Banda demod', aEnv: 'Envolvente', aHarm: 'Armónicos (peine)', aIso: 'Escala ISO',
-    bAuto: 'Auto (kurtograma)', bFixed: 'Fija 2–4 kHz', bManual: 'Manual (clic/pincel)', eSq: 'Cuadrática (SES)', eMag: 'Magnitud' },
+    bAuto: 'Auto (kurtograma)', bFixed: 'Fija 2–4 kHz', bManual: 'Manual (clic/pincel)', bIesfo: 'Auto (IESFOgrama)', eSq: 'Cuadrática (SES)', eMag: 'Magnitud' },
 };
 
 export default function Tool() {
@@ -72,7 +73,7 @@ export default function Tool() {
   const [band, setBand] = useState<[number, number] | null>(null);
   const [fund, setFund] = useState<number | null>(null);
   // T7 — configurable analysis parameters (drive the always-visible sidebar diagnosis + the relevant tabs)
-  const [bandMethod, setBandMethod] = useState<'auto' | 'fixed' | 'manual'>('auto'); // demod-band selection
+  const [bandMethod, setBandMethod] = useState<'auto' | 'fixed' | 'manual' | 'iesfo'>('auto'); // demod-band selection
   const [envSquared, setEnvSquared] = useState(false);  // magnitude envelope (the diagnosis gates are tuned on it) vs squared (SES)
   const [nHarm, setNHarm] = useState(5);                 // harmonics averaged in the comb prominence
   const [isoClass, setIsoClass] = useState('classI');   // ISO severity scale (class/group)
@@ -94,17 +95,32 @@ export default function Tool() {
     const raw = magSpectrum(sig.x, FS);
     const kg = kurtogram(sig.x, FS, 5);
     const f = defectFreqs(bearing, fr);
-    return { sig, raw, kg, f };
+    // band-INDEPENDENT diagnosis (from the kurtogram band) — seeds the IESFOgram target without the
+    // effBand→ses→dx→α₀→effBand cycle that using the live dx would create.
+    const kgBand: [number, number] = [Math.max(kg.best.f1, 0.02 * FS), kg.best.f2];
+    const dx0 = diagnose(envelopeSpectrum(sig.x, FS, kgBand, false), f, 5);
+    return { sig, raw, kg, f, dx0 };
   }, [bearingId, fault, severity, rpm, snr, seed, fr]);
 
   useEffect(() => { setBand(null); setFund(null); }, [base]);
 
-  // demod band: fixed 2–4 kHz resonance, manual brush/kurtogram pick, or auto (kurtogram max-kurtosis band)
+  // the diagnosed fault's cyclic frequency (BPFO/BPFI/2·BSF) — the IESFOgram target. From the band-independent dx0.
+  const faultAlpha = useMemo(() => {
+    const t = base.dx0.top;
+    return t === 'inner' ? base.f.bpfi : t === 'ball' ? 2 * base.f.bsf : base.f.bpfo;   // default BPFO
+  }, [base]);
+  // T10: the IESFOgram targeted best band (only computed when that method is selected)
+  const iesfoBest = useMemo(() => bandMethod === 'iesfo'
+    ? gramGrid(base.sig.x, FS, 5, { targetAlpha: faultAlpha, fr, blind: false }).best.iesfo : null,
+    [bandMethod, base, faultAlpha, fr]);
+
+  // demod band: fixed 2–4 kHz · manual brush/pick · auto (kurtogram) · IESFOgram (targeted at the diagnosed fault)
   const effBand = useMemo<[number, number]>(() => {
     if (bandMethod === 'fixed') return [2000, 4000];
     if (bandMethod === 'manual' && band) return band;
+    if (bandMethod === 'iesfo' && iesfoBest) return [Math.max(iesfoBest.f1, 0.02 * FS), iesfoBest.f2];
     return [Math.max(base.kg.best.f1, 0.02 * FS), base.kg.best.f2];
-  }, [bandMethod, band, base]);
+  }, [bandMethod, band, base, iesfoBest]);
   const ses = useMemo(() => envelopeSpectrum(base.sig.x, FS, effBand, envSquared), [base, effBand, envSquared]);
   const dx = useMemo(() => diagnose(ses, base.f, nHarm), [ses, base, nHarm]);
   const sev = dx.scores[0]?.score ?? 0;
@@ -239,7 +255,7 @@ export default function Tool() {
     { id: 'kur', label: t.tKur, content: (
       <div className="rv-vizstack"><Kurtogram kg={base.kg} fs={FS} onPick={onPickBand} /><p className="hint">{t.clickKg}</p></div>) },
     { id: 'gram', label: t.tGram, content: (
-      <GramPanel x={base.sig.x} fs={FS} onPick={onPickBand} lang={lang} />) },
+      <GramPanel x={base.sig.x} fs={FS} onPick={onPickBand} lang={lang} f={base.f} fr={fr} faultAlpha={faultAlpha} />) },
     { id: 'cam', label: t.tCam, content: (
       <CampbellPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} seed={seed} rpm={rpm} lang={lang} />) },
     { id: 'wat', label: t.tWat, content: (
@@ -274,7 +290,7 @@ export default function Tool() {
             They drive the always-visible diagnosis + the Envelope·SES / ISO trend / Recommendation tabs. */}
         <div className="rv-analysis" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
           <div className="muted small" style={{ fontWeight: 700, letterSpacing: '0.03em', marginBottom: '0.2rem' }}>{t.anlys}</div>
-          <label className="rv-ctl">{t.aBand}<select className="select" value={bandMethod} onChange={(e) => setBandMethod(e.target.value as 'auto' | 'fixed' | 'manual')}><option value="auto">{t.bAuto}</option><option value="fixed">{t.bFixed}</option><option value="manual">{t.bManual}</option></select></label>
+          <label className="rv-ctl">{t.aBand}<select className="select" value={bandMethod} onChange={(e) => setBandMethod(e.target.value as 'auto' | 'fixed' | 'manual' | 'iesfo')}><option value="auto">{t.bAuto}</option><option value="iesfo">{t.bIesfo}</option><option value="fixed">{t.bFixed}</option><option value="manual">{t.bManual}</option></select></label>
           <label className="rv-ctl">{t.aEnv}<select className="select" value={envSquared ? 'sq' : 'mag'} onChange={(e) => setEnvSquared(e.target.value === 'sq')}><option value="sq">{t.eSq}</option><option value="mag">{t.eMag}</option></select></label>
           <label className="rv-ctl">{t.aHarm}: {nHarm}<input className="range" type="range" min={3} max={8} step={1} value={nHarm} onChange={(e) => setNHarm(+e.target.value)} /></label>
           <label className="rv-ctl">{t.aIso}<select className="select" value={isoClass} onChange={(e) => setIsoClass(e.target.value)}>{Object.entries(ISO_CLASSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
