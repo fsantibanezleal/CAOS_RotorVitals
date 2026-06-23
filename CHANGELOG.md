@@ -3,6 +3,13 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.37.002] — 2026-06-23
+
+Honesty fix (patch) — removed the only two internal-path references in a user-facing string (ADR-0017 §3 "zero
+internal references in any visible string"): the Methodology ML tab said the models are trained "(offline, in
+data-pipeline/rotorlab)" → "(offline, in the precompute pipeline)" in both EN and ES. Surfaced while auditing
+CutoffGrade against the same rule; the 0.37.000 audit's internal-refs check was not exhaustive over visible strings.
+
 ## [0.37.001] — 2026-06-23
 
 Honesty fix (patch) — the Experiments datasets table and `docs/cases/README.md` claimed "only CWRU is integrated"
