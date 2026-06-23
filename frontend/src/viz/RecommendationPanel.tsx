@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { synth } from '../dsp/signal';
-import { velocityRmsMmps } from '../dsp/iso';
+import { velocityRmsMmps, type IsoBounds } from '../dsp/iso';
 import { recommend, reportObject, reportMarkdown, type Priority } from '../dsp/recommend';
 import { type Diagnosis } from '../dsp/diagnose';
 import { type RulResult } from '../dsp/health';
@@ -35,9 +35,9 @@ function printReport(titleHtml: string, bodyHtml: string) {
   w.document.close(); w.focus(); setTimeout(() => w.print(), 250);
 }
 
-export function RecommendationPanel({ bearing, bearingLabel, fault, severity, rpm, snr, sigX, diag, rul, lifeH, lang }: {
+export function RecommendationPanel({ bearing, bearingLabel, fault, severity, rpm, snr, sigX, diag, rul, lifeH, isoBounds, lang }: {
   bearing: Bearing; bearingLabel: string; fault: string; severity: number; rpm: number; snr: number;
-  sigX: Float64Array; diag: Diagnosis; rul: RulResult; lifeH: number; lang: 'en' | 'es';
+  sigX: Float64Array; diag: Diagnosis; rul: RulResult; lifeH: number; isoBounds?: IsoBounds; lang: 'en' | 'es';
 }) {
   const es = lang === 'es';
   // calibrate the synthetic velocity exactly like the ISO trend panel: as-new healthy → mid Zone A (≈0.45 mm/s)
@@ -47,7 +47,7 @@ export function RecommendationPanel({ bearing, bearingLabel, fault, severity, rp
     return velocityRmsMmps(sigX, FS) * cal;
   }, [bearing, rpm, snr, sigX]);
 
-  const rec = useMemo(() => recommend({ diag, velocityRms: vrms, rul, lifeH, lang }), [diag, vrms, rul, lifeH, lang]);
+  const rec = useMemo(() => recommend({ diag, velocityRms: vrms, rul, lifeH, isoBounds, lang }), [diag, vrms, rul, lifeH, isoBounds, lang]);
   const ctx = { bearing: bearingLabel, rpm, fault, severity };
 
   const onJson = () => download('rotorvitals-report.json', JSON.stringify(reportObject(rec, ctx), null, 2), 'application/json');
