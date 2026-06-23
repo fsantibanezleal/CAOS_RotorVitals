@@ -222,3 +222,57 @@ test('Fast-SC: white-noise false-alarm rate is near the nominal p (overlap-corre
   const far = above / tot;
   assert.ok(far > 0.02 && far < 0.08, `white-noise FAR=${(100 * far).toFixed(1)}% (nominal 5%)`);  // calibrated ~4-5%
 });
+
+// ---- T10: IESFOgram (Mauricio 2020) targeted/blind band selector ----
+import { gramGrid } from '../src/dsp/infogram.ts';
+
+function sesAt(x: Float64Array, fs: number, f1: number, f2: number, fdef: ReturnType<typeof defectFreqs>) {
+  const env = envelopeSpectrum(x, fs, [Math.max(f1, 0.02 * fs), f2]);
+  return diagnose(env, fdef);    // reuse the diagnosis prominence on the band's SES
+}
+function spiked(x: Float64Array) {
+  const y = Float64Array.from(x);
+  let p = 0; for (let i = 0; i < y.length; i++) p += y[i] * y[i]; const rms = Math.sqrt(p / y.length) || 1;
+  for (const fp of [0.13, 0.37, 0.61, 0.84]) y[Math.floor(fp * y.length)] += 8 * rms;
+  return y;
+}
+
+test('IESFOgram targeted: selects a band whose SES shows the BPFO comb (outer fault)', () => {
+  const bearing = bearingById('skf6205'), fr = 1772 / 60, f = defectFreqs(bearing, fr);
+  const sig = synth({ fs: 12000, dur: 1, rpm: 1772, bearing, fault: 'outer', severity: 1, resonance: 3400, zeta: 0.04, snrDb: 2, seed: 202 });
+  const g = gramGrid(sig.x, 12000, 5, { targetAlpha: f.bpfo, fr });
+  const cell = g.best.iesfo;
+  assert.ok(cell.f2 > 2400 && cell.f1 < 4400, `IESFO band [${cell.f1.toFixed(0)},${cell.f2.toFixed(0)}] overlaps the 3.4 kHz resonance`);
+  const dx = sesAt(sig.x, 12000, cell.f1, cell.f2, f);
+  assert.equal(dx.top, 'outer');                                  // the selected band's SES diagnoses outer
+});
+
+test('IESFOgram targeted: spike-robust — best band UNCHANGED while the kurtogram jumps', () => {
+  const bearing = bearingById('skf6205'), fr = 1772 / 60, f = defectFreqs(bearing, fr);
+  const sig = synth({ fs: 12000, dur: 1, rpm: 1772, bearing, fault: 'outer', severity: 1, resonance: 3400, zeta: 0.04, snrDb: 3, seed: 202 });
+  const clean = gramGrid(sig.x, 12000, 5, { targetAlpha: f.bpfo, fr });
+  const dirty = gramGrid(spiked(sig.x), 12000, 5, { targetAlpha: f.bpfo, fr });
+  // targeted IESFO best cell identical (a non-fault spike enters neither the comb peak nor its median baseline)
+  assert.equal(dirty.best.iesfo.level, clean.best.iesfo.level);
+  assert.equal(dirty.best.iesfo.band, clean.best.iesfo.band);
+  // the kurtogram best cell moves to the spike band (it is fooled by the lone impulse)
+  const kgMoved = dirty.best.kurt.level !== clean.best.kurt.level || dirty.best.kurt.band !== clean.best.kurt.band;
+  assert.ok(kgMoved, 'kurtogram best cell should jump under the injected spike');
+});
+
+test('IESFOgram blind: rejects the shaft order on an imbalanced healthy signal', () => {
+  const bearing = bearingById('skf6205'), fr = 1772 / 60;
+  const sig = synth({ fs: 12000, dur: 1, rpm: 1772, bearing, fault: 'healthy', severity: 0, resonance: 3400, zeta: 0.04, snrDb: 6, seed: 50 });
+  const g = gramGrid(sig.x, 12000, 5, { fr, blind: true });
+  const a0 = g.best.iesfoBlind.iesfoBlindAlpha;
+  for (let m = 1; m <= 3; m++) assert.ok(Math.abs(a0 - m * fr) > 0.5, `blind α0*=${a0.toFixed(1)} should not be the shaft order ${(m * fr).toFixed(1)}`);
+});
+
+test('IESFOgram backward-compat: gramGrid(x,fs,5) unchanged + IESFO fields zero', () => {
+  const sig = synth({ fs: 12000, dur: 1, rpm: 1772, bearing: bearingById('skf6205'), fault: 'inner', severity: 1, resonance: 3400, zeta: 0.04, snrDb: 2, seed: 7 });
+  const g = gramGrid(sig.x, 12000, 5);                            // no opts
+  assert.ok(g.best.kurt.kurt > 0 && isFinite(g.best.iSES.iSES));  // kurtogram/infogram still work
+  assert.equal(g.best.iesfo.iesfo, -Infinity === g.best.iesfo.iesfo ? g.best.iesfo.iesfo : 0);  // no target → 0 (seed never beaten)
+  assert.equal(g.cells[0][0].iesfo, 0);                          // per-cell IESFO is 0 with no target
+  assert.equal(g.cells[0][0].iesfoBlind, 0);
+});
