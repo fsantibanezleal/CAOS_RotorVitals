@@ -3,6 +3,22 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.37.001] — 2026-06-23
+
+Honesty fix (patch) — the Experiments datasets table and `docs/cases/README.md` claimed "only CWRU is integrated"
+and marked **MFPT as `planned`**, but MFPT is in fact wired as a REAL dataset: `data-pipeline/rotorlab/io/fetch_mfpt.py`
+downloads the MFPT Society set and `stages/cross_dataset.py` evaluates the CWRU-trained WDCNN on it (the Benchmark page
+already shows it as "MFPT, real"). The Experiments page contradicted the Benchmark page + the code.
+
+### Fixed
+- **Experiments datasets table** (`Experiments.tsx`): added an explicit `appStatus` (`live` / `crosseval` / roadmap);
+  CWRU → **LIVE + benchmarked**, **MFPT → cross-dataset (real)** (the held-out domain-shift test), the other six stay
+  roadmap. The honest-status callout now states **two** real integrated sets (CWRU trained + MFPT cross-dataset), not one.
+- **`docs/cases/README.md`**: line 20 said "Only CWRU is a live real dataset" while line 23 said "MFPT is wired … a
+  second rig, live" — an internal contradiction; line 20 corrected to name both wired sets.
+- Caught by Felipe by eye; the 0.37.000 adversarial audit verified algorithmic-constant consistency (gates/RUL/ISO)
+  but did not cross the dataset-status table against the data-pipeline — a gap now folded into the audit checklist.
+
 ## [0.37.000] — 2026-06-23
 
 At-bar pass — reference integrity, the docs/ wiki brought in sync with the shipped App, and release tags. No
