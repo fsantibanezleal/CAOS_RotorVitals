@@ -46,7 +46,9 @@ This build computes a **true Fast Spectral Correlation**, not the magnitude-only
    was immune to that, so the prewhitening restores that robustness.
 2. **Complex Hann STFT** — `N = 256`, `hop = 16` (75 % overlap), keeping the **complex** coefficients. The frame
    rate is `Fr = fs/hop = 750 Hz` (at `fs = 12 kHz`), so the cyclic Nyquist `Fr/2 = 375 Hz` covers
-   BPFO/BPFI/2·BSF/FTF and their first harmonics with **no bin-lag de-aliasing**.
+   BPFO/BPFI/2·BSF/FTF and their first harmonics with **no bin-lag de-aliasing**. (The default requested span
+   `alphaMax = 380 Hz` in `csc.ts` is clamped to this `Fr/2 − Δα ≈ 375 Hz` ceiling at `csc.ts:104`, so the resolved
+   `alphaMaxHz` is always ≈ 375, never 380.)
 3. **Cross-spectrum over carrier pairs** `(p, q = p − m)`, averaged over frames, then Fourier-transformed over the
    frame index → the `α` axis at fine resolution `Δα = Fr/Nα ≈ 0.7 Hz`. The bin-lag `m = round(α/Δf)` supplies the
    cross-carrier phase that `|STFT|²` discards.
