@@ -73,6 +73,7 @@ def run(model: dict, cml_models: dict, raw_dir: str, classes: list[str], fs: int
 
         with torch.no_grad():                              # deep WDCNN on the raw 2048 windows
             wpred = net(torch.tensor(Xw).unsqueeze(1)).argmax(1).numpy()
+            wemb = net.embed(torch.tensor(Xw).unsqueeze(1)).numpy()   # 100-D learned feature (T14 embedding)
         # classical-ML on the 10-D physics feature vector (same as T12), at the 3 HP shaft rate
         F = classical_ml.features_matrix(Xw, np.full(len(Xw), RPM_3HP), fs)
         svm_pred = cml_models["svm"].predict(F)
@@ -100,6 +101,7 @@ def run(model: dict, cml_models: dict, raw_dir: str, classes: list[str], fs: int
                     "raw": [round(float(v), 4) for v in Xw[k]],
                     "feat": [round(float(v), 4) for v in fz],
                     "clsFeat": [round(float(v), 5) for v in F[k]],
+                    "emb": [round(float(v), 4) for v in wemb[k]],
                 })
 
     by_size: dict[str, dict[str, float]] = {}
