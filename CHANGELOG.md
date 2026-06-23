@@ -3,6 +3,27 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.32.000] — 2026-06-22
+
+Configurable analysis parameters (T7) — the analysis is now parametrised, not fixed. Frontend only (engine
+`rotorlab 0.28.000`).
+
+### Added
+- **An "Analysis" control group in the App sidebar** (drives the always-visible diagnosis + the Envelope·SES / ISO
+  trend / Recommendation tabs):
+  - **Demod band** — Auto (kurtogram max-kurtosis band) · Fixed 2–4 kHz resonance · Manual (click a kurtogram cell
+    or brush the spectrum; picking auto-switches to Manual). The envelope/SES + diagnosis react live.
+  - **Envelope** — Magnitude envelope (the diagnosis gates are tuned on it) · **Squared (SES)** — squaring sharpens
+    the cyclostationary comb (Randall & Antoni). `envelopeSpectrum(..., squared)`.
+  - **Harmonics (comb)** — 3–8, the number of harmonics the comb prominence averages over; raising it widens the
+    evidence and changes the severity index (e.g. 5→8 moved a case 13.6×→9.9×). `diagnose(..., nHarm)`.
+  - **ISO scale** — ISO 10816-1 Class I (≤15 kW) · ISO 20816-3 Group 2 (15–300 kW) · Group 1 (>300 kW); changes the
+    A/B/C/D zone boundaries in the ISO trend AND the T5 recommendation. `ISO_CLASSES` + `isoZoneOf(v, bounds)`.
+
+### Changed
+- `envelopeSpectrum`, `diagnose`, `recommend`/`isoZoneOf` and the ISO/Recommendation panels now take these
+  parameters (all back-compatible defaults — existing behaviour unchanged until a control is moved).
+
 ## [0.31.000] — 2026-06-22
 
 Bring-your-own-data ingest (T6) — run the real pipeline on YOUR signal. Frontend only (engine `rotorlab 0.28.000`).

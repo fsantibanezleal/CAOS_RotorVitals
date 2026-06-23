@@ -82,9 +82,12 @@ export function magSpectrum(x: Float64Array, fs: number): Spectrum {
   return { freq, mag, df };
 }
 
-/** Full envelope-spectrum pipeline: band-pass → Hilbert envelope → spectrum. */
-export function envelopeSpectrum(x: Float64Array, fs: number, band: [number, number]): Spectrum {
+/** Full envelope-spectrum pipeline: band-pass → Hilbert envelope → spectrum. With `squared`, the SQUARED envelope
+ * is transformed (the squared-envelope spectrum, SES) — squaring sharpens the cyclostationary defect comb and is
+ * the form recommended by Randall & Antoni; the plain magnitude envelope is the softer alternative. */
+export function envelopeSpectrum(x: Float64Array, fs: number, band: [number, number], squared = false): Spectrum {
   const bp = bandpass(x, fs, band[0], band[1]);
   const env = hilbertEnvelope(bp);
+  if (squared) for (let i = 0; i < env.length; i++) env[i] = env[i] * env[i];
   return magSpectrum(env, fs);
 }

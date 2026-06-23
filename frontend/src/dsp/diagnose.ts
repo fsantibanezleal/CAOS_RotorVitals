@@ -49,13 +49,13 @@ function lineProminence(spec: Spectrum, f0: number, nHarm = 5): number {
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
-export function diagnose(env: Spectrum, f: DefectFreqs): Diagnosis {
+export function diagnose(env: Spectrum, f: DefectFreqs, nHarm = 5): Diagnosis {
   const scores: FaultScore[] = [
     { kind: 'outer', freq: f.bpfo },
     { kind: 'inner', freq: f.bpfi },
     { kind: 'ball', freq: 2 * f.bsf },
   ]
-    .map((c) => ({ kind: c.kind as FaultKind, freq: c.freq, score: lineProminence(env, c.freq) }))
+    .map((c) => ({ kind: c.kind as FaultKind, freq: c.freq, score: lineProminence(env, c.freq, nHarm) }))
     .sort((a, b) => b.score - a.score);
 
   const top = scores[0];
