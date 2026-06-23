@@ -3,6 +3,41 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.37.000] — 2026-06-23
+
+At-bar pass — reference integrity, the docs/ wiki brought in sync with the shipped App, and release tags. No
+behaviour change to the engine; this release closes the documentation/citation debt that an adversarial audit
+(against the persisted plan + ADR-0016/0017/0056/0057/0058) flagged as keeping the product below bar.
+
+### Reference integrity (ADR-0017 §4)
+- **~76 inline `<Cite id paren />`** added across all five pages (Introduction 10 · Methodology 30 · Implementation
+  21 · Experiments 14 · Benchmark 1): every technical claim now carries an inline citation that resolves to a
+  **DOI/url link**, not just an end-of-section `<Refs>` list. All 25 ids resolve against `src/data/citations.ts` via
+  `CitationsProvider` (verified: 0 `[id]` fallbacks rendered).
+
+### Docs (the `docs/` wiki, ADR-0056 — authored to match the shipped App)
+- **6 new method cards** for App tabs that shipped in 0.34–0.36 without a doc:
+  `frameworks/09_cyclostationary` (Fast-SC + EES + Carter–Knapp–Nuttall significance), `10_band-selection-grams`
+  (kurtogram/infogram/autogram/IESFOgram), `11_cepstrum`, `12_spectrogram`, `13_feature-embedding` (WDCNN 2-D PCA),
+  and `architecture/09_leakage-demo` (T15 window-overlap, honest decomposition). Each carries provenance (DOIs) /
+  what-it-is-and-isn't / equations / code-chain / data-contract+outliers / tool-usage-on-other-data / honest reading.
+- **5 themed pipeline SVGs** copied into `docs/diagrams/` (with CSS-var colour fallbacks so they render on GitHub)
+  and linked into the architecture markdowns (01_overview, 04_the-live-lane, 05_precompute-pipeline, 08_data-contracts).
+- `frameworks/README.md` + `architecture/README.md` indexes updated to link every new card.
+
+### Released
+- **Annotated git tags** backfilled for the 0.10.000 → 0.36.000 release history (the "tag every release" archetype
+  rule, ADR-0057 §1) so the CHANGELOG and the tag graph agree.
+
+### Notes
+- **Linked-brushing:** the meaningful coordinated views already exist (the spectrum **band-brush → SES** recompute,
+  and the replay scrubber across SES/waterfall/RUL). A same-x-domain uPlot cursor sync was evaluated and **declined**:
+  the spectrum and the SES live in different tabs (never co-mounted), so it would be a no-op — not shipped.
+- **Deferred (not blockers):** a draggable snap-to-peak harmonic cursor on the SES (interactive-viz rubric Tier-B
+  SHOULD) and additional curated case scenarios beyond the four presets + sliders.
+- Screenshot-verified before release: 6 pages × light/dark × EN/ES + the ⓘ modal's 5 themed SVG tabs + the App
+  workbench — **0 console errors**. `tsc` clean, prod build clean, 28/28 frontend DSP tests pass.
+
 ## [0.36.000] — 2026-06-23
 
 Window-overlap leakage demonstration (T15) — an honesty feature that quantifies the documented CWRU window-overlap
