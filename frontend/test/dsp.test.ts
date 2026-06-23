@@ -162,3 +162,63 @@ test('parseSignal: flatline is rejected', () => {
   assert.equal(p.ok, false);
   assert.match(p.reason ?? '', /flat/);
 });
+
+// ---- T9: Fast Spectral Correlation (Fast-SC) + Carter-Knapp-Nuttall significance + EES ----
+import { fastSpectralCoherence, cohThreshold, overlapCorrectedK } from '../src/dsp/csc.ts';
+
+// a REALISTIC bearing-fault model: impacts at rate alpha0 (with small random jitter → cyclostationary) each
+// ringing a damped broadband resonance — what the App's synth() produces, and what AR prewhitening preserves
+// (unlike a pure-sine carrier, which is deterministic and correctly removed).
+function bearingTestSig(alpha0: number, fc = 3400, zeta = 0.04, n = 12000, fs = 12000, noise = 0.08, seed = 7) {
+  let s = seed >>> 0; const rng = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296 - 0.5; };
+  const x = new Float64Array(n);
+  const period = fs / alpha0, wn = 2 * Math.PI * fc, wd = wn * Math.sqrt(1 - zeta * zeta);
+  const ring = Math.min(n, Math.round(4 / (zeta * fc) * fs));
+  for (let k = 0; k * period < n + period; k++) {
+    const t0 = Math.round(k * period + rng() * 0.02 * period);   // <1% jitter → second-order cyclostationary
+    const amp = 1 + 0.3 * rng();
+    for (let i = Math.max(0, t0); i < Math.min(n, t0 + ring); i++) { const tt = (i - t0) / fs; x[i] += amp * Math.exp(-zeta * wn * tt) * Math.sin(wd * tt); }
+  }
+  for (let i = 0; i < n; i++) x[i] += noise * rng();
+  return x;
+}
+function eesPeakHz(r: ReturnType<typeof fastSpectralCoherence>) { let best = -1, ba = 0; for (let a = 1; a < r.alpha.length; a++) { if (r.alpha[a] > 5 && r.ees[a] > best) { best = r.ees[a]; ba = r.alpha[a]; } } return ba; }
+
+test('cohThreshold: exact Carter-Knapp-Nuttall null formula', () => {
+  assert.ok(Math.abs(cohThreshold(110, 0.05) - (1 - Math.pow(0.05, 1 / 109))) < 1e-12);
+  assert.ok(cohThreshold(110, 0.05) > 0 && cohThreshold(110, 0.05) < 0.1);   // ~0.027
+});
+
+test('overlapCorrectedK reduces the raw frame count (75% Hann overlap → K_eff < K)', () => {
+  const N = 256, hop = 16;
+  const w = new Float64Array(N); for (let i = 0; i < N; i++) w[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (N - 1));
+  const Keff = overlapCorrectedK(735, hop, N, w);
+  assert.ok(Keff < 735 && Keff > 50, `K_eff=${Keff}`);   // overlap correction active
+});
+
+test('Fast-SC: planted bearing fault → EES peak at the cyclic (defect) frequency', () => {
+  for (const a0 of [103.4, 139.2, 156.1]) {
+    const r = fastSpectralCoherence(bearingTestSig(a0), 12000);
+    const pk = eesPeakHz(r);
+    assert.ok(Math.abs(pk - a0) < 5, `defect α=${a0} → EES peak ${pk.toFixed(1)} Hz`);
+  }
+});
+
+test('Fast-SC: coherence is bounded [0,1], K_eff<K, α resolved finely', () => {
+  const r = fastSpectralCoherence(bearingTestSig(103.4), 12000);
+  let mx = 0; for (const c of r.cols) for (const v of c) if (v > mx) mx = v;
+  assert.ok(mx <= 1.0001, `max |γ|=${mx}`);
+  assert.ok(r.Keff < r.K && r.Keff >= 2);
+  assert.ok(r.alpha[1] > 0 && r.alpha[1] < 2, `Δα=${r.alpha[1]}`);     // fine ~0.7 Hz
+  assert.equal(r.cols[0].every((v) => v === 0), true);                  // α=0 zeroed (PSD, not CS)
+});
+
+test('Fast-SC: white-noise false-alarm rate is near the nominal p (overlap-corrected K_eff is sane)', () => {
+  let s = 99 >>> 0; const n = 12000; const x = new Float64Array(n);
+  for (let i = 0; i < n; i++) { s = (s * 1664525 + 1013904223) >>> 0; x[i] = (s / 4294967296 - 0.5) * Math.sqrt(12); }
+  const r = fastSpectralCoherence(x, 12000, 256, 16, 380, 0.05);
+  let above = 0, tot = 0;
+  for (let a = 1; a < r.alpha.length; a++) for (let f = 0; f < r.carriers.length; f++) { tot++; if (r.cols[a][f] ** 2 > r.gamma2Thr) above++; }
+  const far = above / tot;
+  assert.ok(far > 0.02 && far < 0.08, `white-noise FAR=${(100 * far).toFixed(1)}% (nominal 5%)`);  // calibrated ~4-5%
+});
