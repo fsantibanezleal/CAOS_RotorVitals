@@ -13,3 +13,4 @@ around it is the frozen archetype, instantiated here.
 | 06 | [model-evaluation](06_model-evaluation.md) | the leakage-safe held-out protocol + the SNR curve + the AE threshold |
 | 07 | [deploy](07_deploy.md) | GitHub Pages static deterministic-replay |
 | 08 | [data-contracts](08_data-contracts.md) | Contract 1 (ingestion) + Contract 2 (artifact) |
+| 09 | [leakage-demo](09_leakage-demo.md) | the window-overlap leakage demo (T15) — honest decomposition (isolated leak vs load penalty) |
