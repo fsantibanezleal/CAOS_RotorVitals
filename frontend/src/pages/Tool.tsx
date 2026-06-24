@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import type uPlot from 'uplot';
 import { Tabs, useShellLang } from '@fasl-work/caos-app-shell';
-import { synth, type SignalSpec } from '../dsp/signal';
+import { synth, type SignalSpec, type Signal } from '../dsp/signal';
 import { magSpectrum, envelopeSpectrum } from '../dsp/envelope';
 import { kurtogram } from '../dsp/kurtogram';
 import { gramGrid } from '../dsp/infogram';
@@ -11,6 +11,7 @@ import { defectFreqs, faultFreq, type FaultKind } from '../dsp/bearing';
 import { BEARINGS, bearingById } from '../data/bearings';
 import { SCENARIOS } from '../data/scenarios';
 import { runToFailure, loadFemtoRtf, femtoToRunToFailure, type FemtoTraj } from '../data/runtofailure';
+import { loadSamples, diagnoseRaw, type Samples, type DiagOut } from '../dsp/learned';
 import { projectRUL } from '../dsp/health';
 import { UPlotChart } from '../viz/UPlotChart';
 import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
@@ -87,24 +88,58 @@ export default function Tool() {
   const [rulSource, setRulSource] = useState('');
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
   useEffect(() => { loadFemtoRtf().then(setFemtoTrajs).catch(() => {}); }, []);
+  // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
+  // knobs) vs 'cwru' (a REAL held-out CWRU segment — the measured signal flows through the EXACT same tools; the
+  // scenario knobs become read-only sample metadata, the analysis knobs stay live).
+  const [source, setSource] = useState<'synthetic' | 'cwru'>('synthetic');
+  const [cwru, setCwru] = useState<Samples | null>(null);
+  const [cwruIdx, setCwruIdx] = useState(0);
+  const [realDx, setRealDx] = useState<DiagOut | null>(null); // the WDCNN prediction on the real segment (ONNX)
+  useEffect(() => { loadSamples().then(setCwru).catch(() => {}); }, []);
+  const realMode = source === 'cwru' && !!cwru;
+  // in real mode, sync the shaft-rate readout to the segment's rpm so fr/defect-freqs are consistent
+  useEffect(() => { if (source === 'cwru' && cwru) setRpm(cwru.rpm ?? 1730); }, [source, cwru]);
+  // run the trained WDCNN (ONNX) on the selected real segment — the learned diagnosis on real data
+  useEffect(() => {
+    if (source === 'cwru' && cwru) {
+      let dead = false;
+      diagnoseRaw(cwru.samples[cwruIdx].raw, cwru.classes).then((d) => { if (!dead) setRealDx(d); }).catch(() => {});
+      return () => { dead = true; };
+    }
+    setRealDx(null);
+  }, [source, cwru, cwruIdx]);
 
   const seed = useMemo(() => SCENARIOS.find((s) => s.fault === fault)?.spec.seed ?? 202, [fault]);
   const fr = rpm / 60;
 
   // base signal + raw spectrum + kurtogram (band-independent)
   const base = useMemo(() => {
-    const bearing = bearingById(bearingId);
-    const spec: SignalSpec = { fs: FS, dur: 1, rpm, bearing, fault, severity: fault === 'healthy' ? 0 : severity, resonance: 3400, zeta: 0.04, snrDb: snr, seed };
-    const sig = synth(spec);
+    let sig: Signal;
+    let bearing = bearingById(bearingId);
+    let useFr = fr;
+    let trueCls: string | null = null;
+    if (source === 'cwru' && cwru) {
+      // REAL: a measured held-out CWRU segment (2048 samples @ 12 kHz). The exact same tools run on the measured
+      // signal — nothing is generated. The scenario knobs (fault/severity/snr) don't apply; only the analysis ones do.
+      const sm = cwru.samples[cwruIdx];
+      const x = Float64Array.from(sm.raw);
+      sig = { x, t: Float64Array.from(x, (_, i) => i / (cwru.fs || FS)), fs: cwru.fs || FS };
+      bearing = bearingById('skf6205'); // CWRU 6205 drive-end
+      useFr = (cwru.rpm ?? 1730) / 60;
+      trueCls = sm.cls;
+    } else {
+      const spec: SignalSpec = { fs: FS, dur: 1, rpm, bearing, fault, severity: fault === 'healthy' ? 0 : severity, resonance: 3400, zeta: 0.04, snrDb: snr, seed };
+      sig = synth(spec);
+    }
     const raw = magSpectrum(sig.x, FS);
     const kg = kurtogram(sig.x, FS, 5);
-    const f = defectFreqs(bearing, fr);
+    const f = defectFreqs(bearing, useFr);
     // band-INDEPENDENT diagnosis (from the kurtogram band) — seeds the IESFOgram target without the
     // effBand→ses→dx→α₀→effBand cycle that using the live dx would create.
     const kgBand: [number, number] = [Math.max(kg.best.f1, 0.02 * FS), kg.best.f2];
     const dx0 = diagnose(envelopeSpectrum(sig.x, FS, kgBand, false), f, 5);
-    return { sig, raw, kg, f, dx0 };
-  }, [bearingId, fault, severity, rpm, snr, seed, fr]);
+    return { sig, raw, kg, f, dx0, trueCls, real: source === 'cwru' && !!cwru };
+  }, [source, cwru, cwruIdx, bearingId, fault, severity, rpm, snr, seed, fr]);
 
   useEffect(() => { setBand(null); setFund(null); }, [base]);
 
@@ -312,14 +347,36 @@ export default function Tool() {
   return (
     <div className="page-body rv-layout">
       <aside className="rv-side">
-        <div className="rv-scenarios">
-          {SCENARIOS.map((s) => <button key={s.id} className={`chip ${fault === s.fault ? 'on' : ''}`} onClick={() => { setFault(s.fault); setSeverity(s.spec.severity || 1); setRpm(s.spec.rpm); setSnr(s.spec.snrDb); }}>{faultLabel(s.fault)}</button>)}
+        {/* SOURCE — the first-level decision of the workbench: a fabricated synthetic case (scenario knobs) vs a REAL
+            measured CWRU segment (the analysis tools run on the measured signal; scenario knobs become read-only). */}
+        <div className="rv-source" style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.5rem' }}>
+          <button className={`chip ${source === 'synthetic' ? 'on' : ''}`} onClick={() => setSource('synthetic')}>{lang === 'es' ? 'Sintético' : 'Synthetic'}</button>
+          <button className={`chip ${source === 'cwru' ? 'on' : ''}`} onClick={() => setSource('cwru')} disabled={!cwru} title={!cwru ? 'cargando…' : 'real CWRU 12 kHz segment'}>{lang === 'es' ? 'Real: CWRU' : 'Real: CWRU'}</button>
         </div>
-        <label className="rv-ctl">{t.bearing}<select className="select" value={bearingId} onChange={(e) => setBearingId(e.target.value)}>{BEARINGS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}</select></label>
-        <label className="rv-ctl">{t.fault}<select className="select" value={fault} onChange={(e) => setFault(e.target.value as FaultKind)}>{FAULTS.map((k) => <option key={k} value={k}>{faultLabel(k)}</option>)}</select></label>
-        <label className="rv-ctl">{t.severity}: {severity.toFixed(2)}<input className="range" type="range" min={0} max={1.5} step={0.05} value={severity} disabled={fault === 'healthy'} onChange={(e) => setSeverity(+e.target.value)} /></label>
-        <label className="rv-ctl">{t.rpm}: {rpm}<input className="range" type="range" min={600} max={3600} step={1} value={rpm} onChange={(e) => setRpm(+e.target.value)} /></label>
-        <label className="rv-ctl">{t.snr}: {snr}<input className="range" type="range" min={-8} max={12} step={1} value={snr} onChange={(e) => setSnr(+e.target.value)} /></label>
+        {realMode ? (
+          <>
+            <label className="rv-ctl">{lang === 'es' ? 'Segmento real (CWRU)' : 'Real segment (CWRU)'}
+              <select className="select" value={cwruIdx} onChange={(e) => setCwruIdx(+e.target.value)}>
+                {cwru!.samples.map((sm, i) => <option key={i} value={i}>{faultLabel(sm.cls)} · {sm.file} #{sm.seg}</option>)}
+              </select>
+            </label>
+            <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
+              {lang === 'es' ? 'señal medida' : 'measured signal'} · CWRU 6205 · {cwru!.rpm} rpm · {lang === 'es' ? 'verdad' : 'truth'}: <b>{faultLabel(base.trueCls || '')}</b><br />
+              <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'perillas de escenario inactivas (el dato está medido); las de análisis siguen vivas ↓' : 'scenario knobs inactive (the datum is measured); the analysis knobs stay live ↓'}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="rv-scenarios">
+              {SCENARIOS.map((s) => <button key={s.id} className={`chip ${fault === s.fault ? 'on' : ''}`} onClick={() => { setFault(s.fault); setSeverity(s.spec.severity || 1); setRpm(s.spec.rpm); setSnr(s.spec.snrDb); }}>{faultLabel(s.fault)}</button>)}
+            </div>
+            <label className="rv-ctl">{t.bearing}<select className="select" value={bearingId} onChange={(e) => setBearingId(e.target.value)}>{BEARINGS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}</select></label>
+            <label className="rv-ctl">{t.fault}<select className="select" value={fault} onChange={(e) => setFault(e.target.value as FaultKind)}>{FAULTS.map((k) => <option key={k} value={k}>{faultLabel(k)}</option>)}</select></label>
+            <label className="rv-ctl">{t.severity}: {severity.toFixed(2)}<input className="range" type="range" min={0} max={1.5} step={0.05} value={severity} disabled={fault === 'healthy'} onChange={(e) => setSeverity(+e.target.value)} /></label>
+            <label className="rv-ctl">{t.rpm}: {rpm}<input className="range" type="range" min={600} max={3600} step={1} value={rpm} onChange={(e) => setRpm(+e.target.value)} /></label>
+            <label className="rv-ctl">{t.snr}: {snr}<input className="range" type="range" min={-8} max={12} step={1} value={snr} onChange={(e) => setSnr(+e.target.value)} /></label>
+          </>
+        )}
 
         {/* T7 — analysis parameters: change HOW the signal is analysed (band, envelope, harmonics, ISO scale).
             They drive the always-visible diagnosis + the Envelope·SES / ISO trend / Recommendation tabs. */}
@@ -332,9 +389,15 @@ export default function Tool() {
         </div>
 
         <div className="rv-diag card" data-fault={dx.top}>
-          <div className="rv-diag-top"><span className="muted small">{t.diag}</span><strong>{faultLabel(dx.top)}</strong><span className="muted small">{(dx.confidence * 100).toFixed(0)}% {t.conf}</span></div>
+          <div className="rv-diag-top"><span className="muted small">{realMode ? (lang === 'es' ? 'Envolvente/SES (clásico)' : 'Envelope/SES (classical)') : t.diag}</span><strong>{faultLabel(dx.top)}</strong><span className="muted small">{(dx.confidence * 100).toFixed(0)}% {t.conf}</span></div>
           {dx.scores.map((s) => <div key={s.kind} className="rv-bar"><span>{faultLabel(s.kind)}</span><div className="rv-bar-t"><i style={{ width: `${Math.min(100, (s.score / (dx.scores[0].score || 1)) * 100)}%` }} /></div><span className="mono">{s.score.toFixed(1)}×</span></div>)}
         </div>
+        {realMode && realDx && (
+          <div className="rv-diag card" style={{ marginTop: '0.4rem' }} data-fault={realDx.predClass}>
+            <div className="rv-diag-top"><span className="muted small">WDCNN (ONNX)</span><strong>{faultLabel(realDx.predClass)}</strong><span className="muted small">{(Math.max(...realDx.probs) * 100).toFixed(0)}%</span></div>
+            <div className="muted small">{lang === 'es' ? 'modelo aprendido, en vivo sobre el segmento real' : 'learned model, live on the real segment'} · {realDx.predClass === base.trueCls ? '✓' : '✗'} {lang === 'es' ? 'vs verdad' : 'vs truth'} <b>{faultLabel(base.trueCls || '')}</b></div>
+          </div>
+        )}
         <Gauge title={t.sev} value={sev} max={12} unit="×" zones={[{ upTo: 3, color: '#3fb950', label: 'Healthy' }, { upTo: 6, color: '#58a6ff', label: 'Watch' }, { upTo: 9, color: '#d29922', label: 'Alarm' }, { upTo: 12, color: '#f85149', label: 'Trip' }]} />
         <div className="rv-freqs small"><div className="muted">{t.freqs} · fr = {fr.toFixed(1)} Hz</div><span style={{ color: C.outer }}>BPFO {base.f.bpfo.toFixed(1)}</span> · <span style={{ color: C.inner }}>BPFI {base.f.bpfi.toFixed(1)}</span> · <span style={{ color: C.ball }}>2·BSF {(2 * base.f.bsf).toFixed(1)}</span> · FTF {base.f.ftf.toFixed(1)} Hz</div>
       </aside>
