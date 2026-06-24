@@ -17,7 +17,7 @@ export const architecture: ArchitectureConfig = {
         '(healthy / outer race / inner race / ball), its severity, and projects the remaining useful life — answering ' +
         '"what fault is this, and how long until it fails?". You pick a bearing, a planted fault and a severity (on REAL ' +
         'CWRU data) and the kurtogram, envelope spectrum, cyclostationary map and RUL recompute live.\n\n' +
-        'It is a real system, not a demo. The diagnostics engine (frontend/src/dsp/) recomputes in the browser on every ' +
+        'It is a real system, not a demo. The in-browser diagnostics engine recomputes on every ' +
         'control; it keys on the physical defect frequencies (BPFO/BPFI/2·BSF) and confirms a real fault by its ' +
         'cyclostationary α-ridge family. A WDCNN classifies the raw signal and a deep autoencoder gives a health index — ' +
         'both ONNX, client-side, trained on real held-out CWRU recordings.',
@@ -27,7 +27,7 @@ export const architecture: ArchitectureConfig = {
         'respondiendo "¿qué fallo es este, y cuánto falta para que falle?". Eliges un rodamiento, un fallo plantado y una ' +
         'severidad (sobre datos REALES CWRU) y el kurtograma, el espectro de envolvente, el mapa cicloestacionario y la ' +
         'RUL recalculan en vivo.\n\n' +
-        'Es un sistema real, no un demo. El motor de diagnóstico (frontend/src/dsp/) recalcula en el navegador con cada ' +
+        'Es un sistema real, no un demo. El motor de diagnóstico recalcula en el navegador con cada ' +
         'control; se ancla en las frecuencias físicas de defecto (BPFO/BPFI/2·BSF) y confirma un fallo real por su ' +
         'familia de α-ridges cicloestacionaria. Un WDCNN clasifica la señal cruda y un autoencoder profundo da un índice ' +
         'de salud — ambos ONNX, en el cliente, entrenados sobre grabaciones CWRU reales held-out.',
@@ -39,20 +39,20 @@ export const architecture: ArchitectureConfig = {
       svg: 'svg/tech/02-lanes.svg',
       body_en:
         'Three lanes, and the split is the point. WEB (live, in the browser): the TypeScript diagnostics engine ' +
-        '(frontend/src/dsp/) re-runs on every control and onnxruntime-web runs wdcnn.onnx + rv-ae.onnx — no server. ' +
-        'OFFLINE / COMPUTE (your machine, isolated .venv): the Python pipeline bakes the canonical case artifacts (the ' +
-        'real CWRU segments + the diagnoses + RUL) and the heavy lane (--retrain, .venv-precompute, torch) trains the ' +
+        're-runs on every control and onnxruntime-web runs the WDCNN + the autoencoder as ONNX models — no server. ' +
+        'OFFLINE / COMPUTE (your machine, an isolated Python environment): the Python pipeline bakes the canonical case artifacts (the ' +
+        'real CWRU segments + the diagnoses + RUL) and the heavy lane (the precompute/retrain step, torch) trains the ' +
         'WDCNN + the deep autoencoder on held-out CWRU files and exports them to ONNX. REPLAY: the small, committed ' +
-        'artifacts in data/derived are overlaid into the SPA by copy-data.mjs and loaded live; the typed mirror ' +
-        '(contract.types.ts) fails the build if the web and the pipeline shapes ever diverge.',
+        'artifacts are overlaid into the SPA at build and loaded live; a typed contract mirror ' +
+        'fails the build if the web and the pipeline shapes ever diverge.',
       body_es:
         'Tres carriles, y la división es lo central. WEB (en vivo, en el navegador): el motor de diagnóstico en ' +
-        'TypeScript (frontend/src/dsp/) re-corre con cada control y onnxruntime-web ejecuta wdcnn.onnx + rv-ae.onnx — sin ' +
-        'servidor. OFFLINE / CÓMPUTO (tu máquina, .venv aislado): el pipeline Python hornea los artefactos canónicos por ' +
-        'caso (los segmentos CWRU reales + los diagnósticos + RUL) y el carril pesado (--retrain, .venv-precompute, ' +
+        'TypeScript re-corre con cada control y onnxruntime-web ejecuta el WDCNN + el autoencoder como modelos ONNX — sin ' +
+        'servidor. OFFLINE / CÓMPUTO (tu máquina, un entorno Python aislado): el pipeline Python hornea los artefactos canónicos por ' +
+        'caso (los segmentos CWRU reales + los diagnósticos + RUL) y el carril pesado (el paso de precómputo/reentrenamiento, ' +
         'torch) entrena el WDCNN + el autoencoder profundo sobre archivos CWRU held-out y los exporta a ONNX. REPLAY: ' +
-        'los artefactos pequeños y versionados en data/derived se superponen al SPA con copy-data.mjs y se cargan en ' +
-        'vivo; el espejo tipado (contract.types.ts) rompe el build si la web y el pipeline divergen.',
+        'los artefactos pequeños y versionados se superponen al SPA en el build y se cargan en ' +
+        'vivo; un contrato tipado espejo rompe el build si la web y el pipeline divergen.',
     },
     {
       id: 'web-flow',
@@ -65,7 +65,7 @@ export const architecture: ArchitectureConfig = {
         'feed the interactive viz — the signal/spectrum, envelope SES, kurtogram, cyclostationary map, spectrogram, ' +
         'Campbell, the 3-D waterfall and the RUL trend, each reading values back on hover. The six sibling pages (App · ' +
         'Introduction · Methodology · Implementation · Experiments · Benchmark) are identical across every CAOS ' +
-        'product. The build is gated by the contract-type mirror, the artifacts are overlaid by copy-data, vite builds ' +
+        'product. The build is gated by the contract-type mirror, the artifacts are overlaid by a build step, vite builds ' +
         'the static output, and GitHub Pages serves it at rotorvitals.fasl-work.com.',
       body_es:
         'La página App recalcula en vivo: las entradas (el selector de casos o tu propia grabación, más los controles de ' +
@@ -74,7 +74,7 @@ export const architecture: ArchitectureConfig = {
         'kurtograma, el mapa cicloestacionario, el espectrograma, Campbell, la cascada 3-D y la tendencia de RUL, cada ' +
         'uno devolviendo valores al pasar el cursor. Las seis páginas hermanas (App · Introducción · Metodología · ' +
         'Implementación · Experimentos · Benchmark) son idénticas en todos los productos CAOS. El build lo controla el ' +
-        'espejo de tipos del contrato, los artefactos los superpone copy-data, vite construye el estático y GitHub Pages ' +
+        'espejo de tipos del contrato, los artefactos los superpone un paso del build, vite construye el estático y GitHub Pages ' +
         'lo sirve en rotorvitals.fasl-work.com.',
     },
     {
@@ -116,17 +116,17 @@ export const architecture: ArchitectureConfig = {
         '— the sample rate, shaft speed, bearing geometry and the signal itself, with range/NaN guards — so the app ' +
         'accepts your data, not just the built-in CWRU cases. Contract 2 (artifact) defines the output the web reads ' +
         '(per-case diagnoses + SES + RUL + the source CWRU file provenance, the learned metrics, the model index), ' +
-        'mirrored exactly by contract.types.ts. Between them the staged, deterministic pipeline runs the lane gate ' +
-        '(numpy-light by default, --retrain for the heavy torch lane) and writes a provenance manifest, so every result ' +
+        'mirrored exactly by a typed contract. Between them the staged, deterministic pipeline runs the lane gate ' +
+        '(numpy-light by default, the heavy torch retrain step on demand) and writes a provenance manifest, so every result ' +
         'is reproducible and the web can never silently drift.',
       body_es:
         'Dos contratos de datos validados encierran el pipeline. El Contrato 1 (ingesta) define una grabación de ' +
         'vibración válida — la tasa de muestreo, velocidad del eje, geometría del rodamiento y la señal misma, con ' +
         'guardas de rango/NaN — para que la app acepte tus datos, no sólo los casos CWRU incluidos. El Contrato 2 ' +
         '(artefacto) define la salida que lee la web (diagnósticos + SES + RUL por caso + la procedencia del archivo ' +
-        'CWRU fuente, las métricas aprendidas, el índice de modelos), espejada exactamente por contract.types.ts. Entre ' +
-        'ambos, el pipeline por etapas y determinista corre el lane gate (numpy-light por defecto, --retrain para el ' +
-        'carril pesado de torch) y escribe un manifest de procedencia, de modo que cada resultado es reproducible y la ' +
+        'CWRU fuente, las métricas aprendidas, el índice de modelos), espejada exactamente por un contrato tipado. Entre ' +
+        'ambos, el pipeline por etapas y determinista corre el lane gate (numpy-light por defecto, el paso de reentrenamiento ' +
+        'pesado de torch a demanda) y escribe un manifest de procedencia, de modo que cada resultado es reproducible y la ' +
         'web nunca diverge en silencio.',
     },
   ],
