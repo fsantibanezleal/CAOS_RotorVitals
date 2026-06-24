@@ -74,8 +74,8 @@ export function LiveDiagnosisPanel() {
         : 'Pick a real CWRU segment (12 kHz drive-end, 3 HP load — held out from training) and the trained WDCNN runs IN THE BROWSER (ONNX) to diagnose it. The true label is shown so you see whether it’s right.'}</p>
 
       <p className="rv-note" style={{ marginTop: 0 }}>{es
-        ? 'Las clases base (0.007″) tienen 3 ventanas held-out cada una, de su grabación CWRU de carga 3 HP. Las filas marcadas "tamaño no visto" son la prueba de generalización por severidad: fallas reales de 0.014″/0.021″ que el modelo NUNCA vio (entrenó solo con 0.007″) — un error ahí es la brecha honesta, no un bug.'
-        : 'The base classes (0.007″) have 3 held-out windows each, from their CWRU 3 HP recording. The rows tagged "unseen size" are the severity-generalization test: real 0.014″/0.021″ faults the model NEVER saw (it trained only on 0.007″) — a miss there is the honest gap, not a bug.'}</p>
+        ? 'Las clases base (0.007″) tienen 3 ventanas held-out cada una, de su grabación CWRU de carga 3 HP. A la derecha de cada fila, los botones numerados #1 / #2 / #3 son esas ventanas (cada una un segmento de 2048 muestras @ 12 kHz) — clic en uno para diagnosticarlo en vivo. Las filas marcadas "tamaño no visto" son la prueba de generalización por severidad: fallas reales de 0.014″/0.021″ que el modelo NUNCA vio (entrenó solo con 0.007″) — un error ahí es la brecha honesta, no un bug.'
+        : 'The base classes (0.007″) have 3 held-out windows each, from their CWRU 3 HP recording. To the right of each row, the numbered buttons #1 / #2 / #3 are those windows (each a 2048-sample @ 12 kHz segment) — click one to diagnose it live. The rows tagged "unseen size" are the severity-generalization test: real 0.014″/0.021″ faults the model NEVER saw (it trained only on 0.007″) — a miss there is the honest gap, not a bug.'}</p>
 
       {/* action: choose a real segment, grouped by (dataset, class, size); severity = "unseen size", MFPT = "different rig" */}
       {groups.map((g) => {

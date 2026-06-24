@@ -3,6 +3,14 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.37.004] — 2026-06-24
+
+UX (patch) — **Benchmark page reorganized into 5 tabs** (En vivo · Métodos · Generalización · Fuga · Espacio de
+features), matching the tabbed pattern of the other content pages instead of one 13-section flat scroll. The
+"bring your own data" panel now lives under "En vivo". Also clarified the **#1 / #2 / #3 buttons** in the live
+diagnosis panel: the preceding paragraph now states they are the held-out signal windows (2048 samples @ 12 kHz)
+of that recording — click one to diagnose it. No content removed, no behavior change beyond layout.
+
 ## [0.37.003] — 2026-06-23
 
 Consistency fix (patch) — abstracted internal paths out of the ⓘ Architecture-modal PROSE bodies (ADR-0017 §3
