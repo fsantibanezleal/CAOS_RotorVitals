@@ -46,3 +46,29 @@ export function runToFailure(opts?: { seed?: number; fault?: FaultKind; severity
   }
   return { id: `rtf-${fault}`, label: 'Run-to-failure (synthetic, XJTU-SY-like)', points, threshold, trueFail };
 }
+
+// ---- REAL run-to-failure: FEMTO/PRONOSTIA (IEEE PHM 2012) ----------------------------------------------------------
+// The complete FEMTO trajectories (learning + full-test), reduced offline to HI(t) = per-snapshot RMS of horizontal
+// acceleration, with a real first-passage trueFail at the 2 g RMS alarm. Lets the RUL page run the SAME projectRUL on
+// REAL bearing life, not only the synthetic trend. Artifact: public/rv-femto-rtf.json (link-only redistribution).
+export interface FemtoTraj {
+  id: string; condition: string; rpm: number; loadN: number; lifeHours: number;
+  threshold: number; trueFail: number | null; points: HIPoint[];
+}
+let _femto: Promise<FemtoTraj[]> | null = null;
+export function loadFemtoRtf(): Promise<FemtoTraj[]> {
+  const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL || '/';
+  return (_femto ??= fetch(`${base}rv-femto-rtf.json`)
+    .then((r) => (r.ok ? r.json() : { trajectories: [] }))
+    .then((d) => (d.trajectories ?? []) as FemtoTraj[])
+    .catch(() => []));
+}
+export function femtoToRunToFailure(t: FemtoTraj): RunToFailure {
+  return {
+    id: `femto-${t.id}`,
+    label: `FEMTO real — ${t.id} (C${t.condition}, ${t.rpm} rpm / ${t.loadN} N)`,
+    points: t.points,
+    threshold: t.threshold,
+    trueFail: t.trueFail ?? Infinity,
+  };
+}
