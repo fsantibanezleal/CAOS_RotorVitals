@@ -10,7 +10,7 @@ import { ISO_CLASSES } from '../dsp/iso';
 import { defectFreqs, faultFreq, type FaultKind } from '../dsp/bearing';
 import { BEARINGS, bearingById } from '../data/bearings';
 import { SCENARIOS } from '../data/scenarios';
-import { runToFailure } from '../data/runtofailure';
+import { runToFailure, loadFemtoRtf, femtoToRunToFailure, type FemtoTraj } from '../data/runtofailure';
 import { projectRUL } from '../dsp/health';
 import { UPlotChart } from '../viz/UPlotChart';
 import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
@@ -83,6 +83,10 @@ export default function Tool() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [bandBrush, setBandBrush] = useState(false); // spectrum drag selects the demod band → live SES
+  // REAL run-to-failure source for the RUL tab: '' = synthetic; else a FEMTO bearing id (real degradation data)
+  const [rulSource, setRulSource] = useState('');
+  const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
+  useEffect(() => { loadFemtoRtf().then(setFemtoTrajs).catch(() => {}); }, []);
 
   const seed = useMemo(() => SCENARIOS.find((s) => s.fault === fault)?.spec.seed ?? 202, [fault]);
   const fr = rpm / 60;
@@ -203,6 +207,14 @@ export default function Tool() {
   const bearingHash = useMemo(() => bearingId.split('').reduce((a, ch) => a + ch.charCodeAt(0), 0), [bearingId]);
   const rtf = useMemo(() => runToFailure({ seed: seed + bearingHash, fault, severity }), [seed, bearingHash, fault, severity]);
   const rul = useMemo(() => projectRUL(rtf.points, rtf.threshold), [rtf]);
+  // the trajectory ACTUALLY shown in the RUL tab — synthetic (reacts to the case) or a REAL FEMTO bearing life.
+  // The SAME projectRUL (onset → exp fit → first-passage) runs on whichever is selected; on FEMTO we can show the
+  // predicted RUL next to the dataset's REAL failure time.
+  const rtfShown = useMemo(() => {
+    if (rulSource) { const ft = femtoTrajs.find((t) => t.id === rulSource); if (ft) return femtoToRunToFailure(ft); }
+    return rtf;
+  }, [rulSource, femtoTrajs, rtf]);
+  const rulShown = useMemo(() => projectRUL(rtfShown.points, rtfShown.threshold), [rtfShown]);
   // replay-derived 'now' position fed to the RUL chart + 3D waterfall while replay is engaged
   const replayLifeH = isFinite(rtf.trueFail) ? rtf.trueFail : 60;
   const nowT = replayOn ? lifePos * replayLifeH : undefined;
@@ -270,8 +282,22 @@ export default function Tool() {
     { id: 'wat', label: t.tWat, content: (
       <div className="rv-vizstack">{replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} lifeRow={replayOn ? lifePos : null} /></Suspense><p className="hint">{t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
-      <div className="rv-vizstack">{replayBar()}<RulChart points={rtf.points} rul={rul} nowT={nowT} nowHi={nowHi} /><p className="hint">{t.rulNote}</p>
-        <div className="rv-rul-read"><span>{t.onset}: <b>{rul.onset != null ? `${rul.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rul.rul != null ? `${rul.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rul.failTime != null ? `${rul.failTime.toFixed(0)} ${t.h}` : '—'}</b></span></div>
+      <div className="rv-vizstack">
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
+          <span className="muted small">{lang === 'es' ? 'Trayectoria' : 'Trajectory'}:</span>
+          <button className={`chip ${rulSource === '' ? 'on' : ''}`} onClick={() => setRulSource('')}>{lang === 'es' ? 'Sintética' : 'Synthetic'}</button>
+          {femtoTrajs.filter((ft) => ft.trueFail != null).map((ft) => (
+            <button key={ft.id} className={`chip ${rulSource === ft.id ? 'on' : ''}`} onClick={() => setRulSource(ft.id)} title={`FEMTO real · C${ft.condition} · ${ft.rpm} rpm / ${ft.loadN} N`}>{ft.id}</button>
+          ))}
+        </div>
+        {rulSource === '' && replayBar()}
+        <RulChart points={rtfShown.points} rul={rulShown} nowT={rulSource === '' ? nowT : undefined} nowHi={rulSource === '' ? nowHi : undefined} />
+        <p className="hint">{rulSource === ''
+          ? t.rulNote
+          : (lang === 'es'
+            ? `FEMTO real (${rtfShown.label}) — datos de degradación REALES (run-to-failure, RMS @ 25.6 kHz). El MISMO projectRUL corre sobre ellos; falla real del experimento a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
+            : `FEMTO real (${rtfShown.label}) — REAL degradation data (run-to-failure, RMS @ 25.6 kHz). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
+        <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{rulSource !== '' && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
       <PrognosticEvalPanel rtf={rtf} fault={fault} severity={severity} lang={lang} />) },
