@@ -7,7 +7,7 @@ import { kurtogram } from '../dsp/kurtogram';
 import { gramGrid } from '../dsp/infogram';
 import { diagnose } from '../dsp/diagnose';
 import { ISO_CLASSES } from '../dsp/iso';
-import { defectFreqs, type FaultKind } from '../dsp/bearing';
+import { defectFreqs, faultFreq, type FaultKind } from '../dsp/bearing';
 import { BEARINGS, bearingById } from '../data/bearings';
 import { SCENARIOS } from '../data/scenarios';
 import { runToFailure } from '../data/runtofailure';
@@ -44,7 +44,7 @@ const T = {
     diag: 'Diagnosis', conf: 'confidence', sev: 'Fault severity index', band: 'Demod band', clickKg: 'Click a kurtogram cell to set the band → SES updates live.',
     f_healthy: 'Healthy', f_outer: 'Outer race (BPFO)', f_inner: 'Inner race (BPFI)', f_ball: 'Ball (2·BSF)',
     tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tGram: 'Infogram', tCam: 'Campbell / order', tRul: 'Prognostics · RUL', tEval: 'RUL eval', tIso: 'ISO trend', tFeat: 'Feature space', tWat: '3D waterfall', tSpec: 'Spectrogram', tRec: 'Recommendation · report', cep: 'Cepstrum (1/fr · 1/BPFO rahmonics marked)', spectroT: 'STFT spectrogram (dB) — hover reads (t,f,dB); box = demod band', spectroNote: 'Time-frequency: WHEN and in which band the impulsive fault energy appears (confirms stationarity).', tCsc: 'Cyclostationary', cscT: 'Fast Spectral Correlation (Fast-SC) — vertical α-ridges at the fault frequencies', cscNote: 'Carrier f × cyclic frequency α. A real bearing fault is cyclostationary: it forms a vertical α-ridge family at BPFO/BPFI/2·BSF (independent of carrier), separating it from coincidental peaks. Phase-retaining Fast-SC + exact CKN significance + EES marginal.',
-    waveform: 'Vibration waveform — drag to zoom, hover to read; ▼=outliers, shaded=BPFO windows', spectrum: 'Raw spectrum (dB) — drag to zoom; click to set a harmonic comb; shaded=demod band',
+    waveform: 'Vibration waveform — drag to zoom, hover to read; ▼=impact at the fault frequency, shaded=fault-frequency windows', spectrum: 'Raw spectrum (dB) — drag to zoom; click to set a harmonic comb; shaded=demod band',
     ses: 'Squared-envelope spectrum — defect-frequency combs (BPFO/BPFI/2·BSF/fr)', watNote: 'Run-to-failure spectral waterfall (synthetic): each row is a life snapshot, height is amplitude. Watch the BPFO ridge emerge and grow. Drag to rotate.',
     rulNote: 'Health-indicator trend with onset, failure threshold and the RUL projection fan (±2σ).',
     onset: 'Onset', rul: 'RUL', fail: 'Proj. failure', h: 'h', freqs: 'Kinematic frequencies', replay: 'Replay degradation',
@@ -54,7 +54,7 @@ const T = {
     diag: 'Diagnóstico', conf: 'confianza', sev: 'Índice de severidad', band: 'Banda demod', clickKg: 'Clic en una celda del kurtograma para fijar la banda → el SES se actualiza en vivo.',
     f_healthy: 'Sano', f_outer: 'Pista externa (BPFO)', f_inner: 'Pista interna (BPFI)', f_ball: 'Bola (2·BSF)',
     tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tGram: 'Infograma', tCam: 'Campbell / orden', tRul: 'Prognóstico · RUL', tEval: 'Eval RUL', tIso: 'Tendencia ISO', tFeat: 'Espacio features', tWat: 'Waterfall 3D', tSpec: 'Espectrograma', tRec: 'Recomendación · reporte', cep: 'Cepstrum (rahmónicos 1/fr · 1/BPFO marcados)', spectroT: 'Espectrograma STFT (dB) — hover lee (t,f,dB); caja = banda demod', spectroNote: 'Tiempo-frecuencia: CUÁNDO y en qué banda aparece la energía impulsiva de falla (confirma estacionariedad).', tCsc: 'Cicloestacionario', cscT: 'Correlación espectral rápida (Fast-SC) — crestas α verticales en las frecuencias de falla', cscNote: 'Portadora f × frecuencia cíclica α. Una falla real es cicloestacionaria: forma una familia de crestas α verticales en BPFO/BPFI/2·BSF (independiente de la portadora), separándola de picos casuales. Fast-SC con fase + significancia CKN exacta + marginal EES.',
-    waveform: 'Forma de onda — arrastra para zoom, hover para leer; ▼=outliers, sombreado=ventanas BPFO', spectrum: 'Espectro crudo (dB) — arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
+    waveform: 'Forma de onda — arrastra para zoom, hover para leer; ▼=impacto en la frecuencia de falla, sombreado=ventanas de frecuencia de falla', spectrum: 'Espectro crudo (dB) — arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
     ses: 'Espectro de envolvente al cuadrado — peines de frecuencias de falla (BPFO/BPFI/2·BSF/fr)', watNote: 'Waterfall espectral run-to-failure (sintético): cada fila es una instantánea de vida, la altura es amplitud. Observa la cresta BPFO emerger y crecer. Arrastra para rotar.',
     rulNote: 'Tendencia del indicador de salud con onset, umbral de falla y el abanico de proyección de RUL (±2σ).',
     onset: 'Onset', rul: 'RUL', fail: 'Falla proy.', h: 'h', freqs: 'Frecuencias cinemáticas', replay: 'Reproducir degradación',
@@ -147,14 +147,23 @@ export default function Tool() {
   const cep = useMemo(() => realCepstrum(base.sig.x, FS), [base]);
   const cepData = useMemo<uPlot.AlignedData>(() => { const q = cep.quef, a = cep.amp; const xs: number[] = [], ys: number[] = []; for (let i = 1; i < q.length; i++) { if (q[i] > 0.05) break; xs.push(q[i]); ys.push(a[i]); } return [xs, ys]; }, [cep]);
 
-  // outliers + BPFO detection windows on the waveform (first 0.08 s)
+  // impact markers + fault-frequency detection windows on the waveform (first 0.08 s)
   const waveMarks = useMemo(() => {
-    const x = base.sig.x, ts = base.sig.t; let p = 0, n = 0;
-    for (let i = 0; i < ts.length && ts[i] <= 0.08; i++) { p += x[i] * x[i]; n++; }
-    const rms = Math.sqrt(p / Math.max(1, n)); const outliers: number[] = [];
-    for (let i = 0; i < ts.length && ts[i] <= 0.08; i++) if (Math.abs(x[i]) > 5 * rms && outliers.length < 60) outliers.push(ts[i]);
+    const x = base.sig.x, ts = base.sig.t;
+    // ▼ marks the impact peak inside each predicted defect-frequency window. PHYSICS-anchored: the windows come from
+    // the bearing's defect frequency for the selected fault (BPFO/BPFI/2·BSF), so it shows exactly the impacts a real
+    // fault produces, gives ONE mark per impact (not one per resonance-ring cycle), never fires on a healthy signal
+    // (no defect frequency → no windows), and never marks noise (it takes the max inside a narrow physics window — a
+    // raw |accel| threshold can't separate impacts from noise/rings at realistic SNR, which is why nothing ever showed).
+    const fdef = faultFreq(base.f, fault);
     const windows: [number, number][] = [];
-    if (fault !== 'healthy' && base.f.bpfo > 0) { const per = 1 / base.f.bpfo; for (let k = 0; k * per < 0.08; k++) windows.push([k * per, k * per + Math.min(0.0015, per * 0.2)]); }
+    if (fault !== 'healthy' && fdef > 0) { const per = 1 / fdef; for (let k = 0; k * per < 0.08; k++) windows.push([k * per, k * per + Math.min(0.0015, per * 0.2)]); }
+    const outliers: number[] = [];
+    for (const [a, b] of windows) {
+      let bt = -1, bv = -1;
+      for (let i = 0; i < ts.length && ts[i] <= b; i++) { if (ts[i] < a) continue; const v = Math.abs(x[i]); if (v > bv) { bv = v; bt = ts[i]; } }
+      if (bt >= 0) outliers.push(bt);
+    }
     return { outliers, windows };
   }, [base, fault]);
 
