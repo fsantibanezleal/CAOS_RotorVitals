@@ -3,6 +3,15 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.37.003] — 2026-06-23
+
+Consistency fix (patch) — abstracted internal paths out of the ⓘ Architecture-modal PROSE bodies (ADR-0017 §3
+"zero internal references"; the SVG monospace labels remain ADR-0058-exempt). Replaced `frontend/src/dsp/`,
+`.venv`, `--retrain`, `.venv-precompute`, `copy-data(.mjs)`, `contract.types.ts`, `data/derived` and the bare
+`.onnx` filenames in the modal description text with abstract equivalents ("the in-browser DSP engine", "an
+isolated Python environment", "the precompute/retrain step", "a typed contract mirror", "the WDCNN + the
+autoencoder as ONNX models"). Matches the ChargeCascade modal-prose standard; no behavior change.
+
 ## [0.37.002] — 2026-06-23
 
 Honesty fix (patch) — removed the only two internal-path references in a user-facing string (ADR-0017 §3 "zero
