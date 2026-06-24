@@ -147,7 +147,7 @@ export default function Tool() {
   const cep = useMemo(() => realCepstrum(base.sig.x, FS), [base]);
   const cepData = useMemo<uPlot.AlignedData>(() => { const q = cep.quef, a = cep.amp; const xs: number[] = [], ys: number[] = []; for (let i = 1; i < q.length; i++) { if (q[i] > 0.05) break; xs.push(q[i]); ys.push(a[i]); } return [xs, ys]; }, [cep]);
 
-  // outliers + BPFO detection windows on the waveform (first 0.08 s)
+  // impact markers + fault-frequency detection windows on the waveform (first 0.08 s)
   const waveMarks = useMemo(() => {
     const x = base.sig.x, ts = base.sig.t;
     // ▼ marks the impact peak inside each predicted defect-frequency window. PHYSICS-anchored: the windows come from
