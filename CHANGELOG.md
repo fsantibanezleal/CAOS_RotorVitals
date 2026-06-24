@@ -3,6 +3,20 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.38.000] — 2026-06-24
+
+Feature — **REAL run-to-failure data integrated** (the RUL page was previously driven only by a synthetic forward
+model). Downloaded the FEMTO / PRONOSTIA (IEEE PHM 2012) dataset, processed its **17 complete trajectories** into
+health-indicator curves HI(t) = per-snapshot RMS of horizontal acceleration (`rotorlab/io/femto.py`, link-only
+redistribution — the raw archive is gitignored), and emit a compact `public/rv-femto-rtf.json` with a real
+first-passage trueFail at the 2 g RMS alarm. The **Prognostics · RUL** tab now has a **Synthetic | FEMTO-real**
+selector (the 7 trajectories that reach the alarm): the SAME `projectRUL` (onset → exponential fit → first-passage
+± 2σ) runs on the real bearing life, with the predicted RUL shown next to the dataset's true failure time. On
+Bearing1_3 the projection lands at ~6 h vs the experiment's real 6.3 h. Screenshot-verified on the App. This is
+the first of the planned real datasets actually downloaded + integrated, not listed as roadmap; IMS/NASA + Ottawa
+are downloaded and XJTU + MAFAULDA downloading for the same treatment (Paderborn's host is unreachable from this
+network — documented).
+
 ## [0.37.005] — 2026-06-24
 
 Fix (real bug Felipe caught) — the waveform's **"▼=outliers" marker never appeared in any case or configuration**.

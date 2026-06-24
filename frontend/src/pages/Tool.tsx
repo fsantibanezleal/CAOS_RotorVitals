@@ -295,8 +295,8 @@ export default function Tool() {
         <p className="hint">{rulSource === ''
           ? t.rulNote
           : (lang === 'es'
-            ? `FEMTO real (${rtfShown.label}) — datos de degradación REALES (run-to-failure, RMS @ 25.6 kHz). El MISMO projectRUL corre sobre ellos; falla real del experimento a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
-            : `FEMTO real (${rtfShown.label}) — REAL degradation data (run-to-failure, RMS @ 25.6 kHz). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
+            ? `${rtfShown.label} — datos de degradación REALES (run-to-failure, RMS @ 25.6 kHz). El MISMO projectRUL corre sobre ellos; la falla real del experimento es a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
+            : `${rtfShown.label} — REAL degradation data (run-to-failure, RMS @ 25.6 kHz). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{rulSource !== '' && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
