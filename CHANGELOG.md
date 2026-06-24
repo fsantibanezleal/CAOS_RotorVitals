@@ -3,6 +3,18 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.37.005] — 2026-06-24
+
+Fix (real bug Felipe caught) — the waveform's **"▼=outliers" marker never appeared in any case or configuration**.
+Root cause: it flagged a sample only if `|accel| > 5×RMS`, with the RMS computed over the same window that already
+contains the impacts — that average inflates with the very impacts it should detect, so the gate practically never
+fired. Deeper issue: a raw-amplitude outlier on the *crude waveform* is the wrong tool (at realistic SNR it can't
+separate impacts from noise, and each damped resonance ring trips it many times per impact). **Re-anchored to the
+physics:** the ▼ now marks the impact peak inside each predicted **defect-frequency window** (BPFO / BPFI / 2·BSF
+per the selected fault) — one mark per impact, shown for every fault, never on a healthy signal, never on noise.
+Legend updated from "▼=outliers / BPFO windows" to "▼=impact at the fault frequency / fault-frequency windows".
+Verified by screenshot that the marks now render on the default outer-race case.
+
 ## [0.37.004] — 2026-06-24
 
 UX (patch) — **Benchmark page reorganized into 5 tabs** (En vivo · Métodos · Generalización · Fuga · Espacio de
