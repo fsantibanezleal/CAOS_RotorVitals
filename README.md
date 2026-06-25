@@ -20,12 +20,15 @@ analyse it live, or drive the synthetic signal generator + the classical chain w
   reacts to the kind of data loaded:
   - **Synthetic** — the full signal generator: every scenario knob (fault, severity, rpm, SNR) and every one of
     the 13 tools, to explore the space.
-  - **Real: CWRU (diagnosis)** — a real held-out CWRU 12 kHz segment. The 6 signal-analysis tools run on the
-    measured window; the **WDCNN (ONNX)** prediction vs the true label and the classical envelope/SES diagnosis run
-    live. Scenario knobs become read-only metadata (a measured datum can't be re-dialed); the analysis knobs (band,
-    envelope, harmonics) stay live — you really can re-process real data.
-  - **Real: RUL (prognosis)** — a real run-to-failure trajectory from **FEMTO/PRONOSTIA, XJTU-SY or IMS** (23 in
-    total); the same `projectRUL` runs on the measured HI(t) curve against the experiment's true failure time.
+  - **Real: segment (diagnosis)** — a measured segment from **CWRU** (12 kHz, the WDCNN's native domain),
+    **Ottawa** (time-varying speed, computed-**order-tracked** → defect frequencies are constant orders) or
+    **MaFaulDa** (50 kHz; outer/ball/cage). The signal-analysis tools run on the measured window; the **WDCNN (ONNX)**
+    runs live — in-domain on CWRU, cross-domain on Ottawa/MaFaulDa (labelled, the honest domain-gap test). Scenario
+    knobs become read-only metadata; the analysis knobs stay live — you really can re-process real data.
+  - **Real: RUL (prognosis)** — a real run-to-failure trajectory from **FEMTO/PRONOSTIA, XJTU-SY or IMS** (23 total).
+    A life-instant slider scrubs ~8 measured raw windows (healthy→failure): the full signal suite runs on each
+    instant, the **3D waterfall is the real degradation surface**, the **feature space is the measured degradation
+    trajectory**, and `projectRUL` runs on the HI(t) curve against the experiment's true failure time.
 - **Introduction** — problem, who it's for, approach, honest scope.
 - **Methodology** — term-by-term math per family (band selection, envelope, kurtosis, cyclostationarity, RUL,
   learned tier) with SVG figures + DOI refs.
