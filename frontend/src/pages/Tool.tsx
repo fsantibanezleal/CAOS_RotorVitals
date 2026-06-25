@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import type uPlot from 'uplot';
 import { Tabs, useShellLang } from '@fasl-work/caos-app-shell';
-import { synth, type SignalSpec } from '../dsp/signal';
+import { synth, type SignalSpec, type Signal } from '../dsp/signal';
 import { magSpectrum, envelopeSpectrum } from '../dsp/envelope';
 import { kurtogram } from '../dsp/kurtogram';
 import { gramGrid } from '../dsp/infogram';
@@ -10,7 +10,8 @@ import { ISO_CLASSES } from '../dsp/iso';
 import { defectFreqs, faultFreq, type FaultKind } from '../dsp/bearing';
 import { BEARINGS, bearingById } from '../data/bearings';
 import { SCENARIOS } from '../data/scenarios';
-import { runToFailure, loadFemtoRtf, femtoToRunToFailure, type FemtoTraj } from '../data/runtofailure';
+import { runToFailure, loadRealRtf, femtoToRunToFailure, RTF_SETS, type FemtoTraj } from '../data/runtofailure';
+import { loadSamples, diagnoseRaw, type Samples, type DiagOut } from '../dsp/learned';
 import { projectRUL } from '../dsp/health';
 import { UPlotChart } from '../viz/UPlotChart';
 import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
@@ -86,25 +87,60 @@ export default function Tool() {
   // REAL run-to-failure source for the RUL tab: '' = synthetic; else a FEMTO bearing id (real degradation data)
   const [rulSource, setRulSource] = useState('');
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
-  useEffect(() => { loadFemtoRtf().then(setFemtoTrajs).catch(() => {}); }, []);
+  useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
+  // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
+  // knobs) vs 'cwru' (a REAL held-out CWRU segment — the measured signal flows through the EXACT same tools; the
+  // scenario knobs become read-only sample metadata, the analysis knobs stay live).
+  const [source, setSource] = useState<'synthetic' | 'cwru' | 'femto'>('synthetic');
+  const [cwru, setCwru] = useState<Samples | null>(null);
+  const [cwruIdx, setCwruIdx] = useState(0);
+  const [realDx, setRealDx] = useState<DiagOut | null>(null); // the WDCNN prediction on the real segment (ONNX)
+  useEffect(() => { loadSamples().then(setCwru).catch(() => {}); }, []);
+  const realMode = source === 'cwru' && !!cwru; // a measured DIAGNOSIS segment
+  const trajMode = source === 'femto';           // a REAL run-to-failure TRAJECTORY (prognostics)
+  // in real mode, sync the shaft-rate readout to the segment's rpm so fr/defect-freqs are consistent
+  useEffect(() => { if (source === 'cwru' && cwru) setRpm(cwru.rpm ?? 1730); }, [source, cwru]);
+  // run the trained WDCNN (ONNX) on the selected real segment — the learned diagnosis on real data
+  useEffect(() => {
+    if (source === 'cwru' && cwru) {
+      let dead = false;
+      diagnoseRaw(cwru.samples[cwruIdx].raw, cwru.classes).then((d) => { if (!dead) setRealDx(d); }).catch(() => {});
+      return () => { dead = true; };
+    }
+    setRealDx(null);
+  }, [source, cwru, cwruIdx]);
 
   const seed = useMemo(() => SCENARIOS.find((s) => s.fault === fault)?.spec.seed ?? 202, [fault]);
   const fr = rpm / 60;
 
   // base signal + raw spectrum + kurtogram (band-independent)
   const base = useMemo(() => {
-    const bearing = bearingById(bearingId);
-    const spec: SignalSpec = { fs: FS, dur: 1, rpm, bearing, fault, severity: fault === 'healthy' ? 0 : severity, resonance: 3400, zeta: 0.04, snrDb: snr, seed };
-    const sig = synth(spec);
+    let sig: Signal;
+    let bearing = bearingById(bearingId);
+    let useFr = fr;
+    let trueCls: string | null = null;
+    if (source === 'cwru' && cwru) {
+      // REAL: a measured held-out CWRU segment (2048 samples @ 12 kHz). The exact same tools run on the measured
+      // signal — nothing is generated. The scenario knobs (fault/severity/snr) don't apply; only the analysis ones do.
+      const sm = cwru.samples[cwruIdx];
+      const x = Float64Array.from(sm.raw);
+      sig = { x, t: Float64Array.from(x, (_, i) => i / (cwru.fs || FS)), fs: cwru.fs || FS };
+      bearing = bearingById('skf6205'); // CWRU 6205 drive-end
+      useFr = (cwru.rpm ?? 1730) / 60;
+      trueCls = sm.cls;
+    } else {
+      const spec: SignalSpec = { fs: FS, dur: 1, rpm, bearing, fault, severity: fault === 'healthy' ? 0 : severity, resonance: 3400, zeta: 0.04, snrDb: snr, seed };
+      sig = synth(spec);
+    }
     const raw = magSpectrum(sig.x, FS);
     const kg = kurtogram(sig.x, FS, 5);
-    const f = defectFreqs(bearing, fr);
+    const f = defectFreqs(bearing, useFr);
     // band-INDEPENDENT diagnosis (from the kurtogram band) — seeds the IESFOgram target without the
     // effBand→ses→dx→α₀→effBand cycle that using the live dx would create.
     const kgBand: [number, number] = [Math.max(kg.best.f1, 0.02 * FS), kg.best.f2];
     const dx0 = diagnose(envelopeSpectrum(sig.x, FS, kgBand, false), f, 5);
-    return { sig, raw, kg, f, dx0 };
-  }, [bearingId, fault, severity, rpm, snr, seed, fr]);
+    return { sig, raw, kg, f, dx0, trueCls, real: source === 'cwru' && !!cwru };
+  }, [source, cwru, cwruIdx, bearingId, fault, severity, rpm, snr, seed, fr]);
 
   useEffect(() => { setBand(null); setFund(null); }, [base]);
 
@@ -211,9 +247,9 @@ export default function Tool() {
   // The SAME projectRUL (onset → exp fit → first-passage) runs on whichever is selected; on FEMTO we can show the
   // predicted RUL next to the dataset's REAL failure time.
   const rtfShown = useMemo(() => {
-    if (rulSource) { const ft = femtoTrajs.find((t) => t.id === rulSource); if (ft) return femtoToRunToFailure(ft); }
+    if (trajMode && rulSource) { const ft = femtoTrajs.find((t) => `${t.set}:${t.id}` === rulSource); if (ft) return femtoToRunToFailure(ft); }
     return rtf;
-  }, [rulSource, femtoTrajs, rtf]);
+  }, [trajMode, rulSource, femtoTrajs, rtf]);
   const rulShown = useMemo(() => projectRUL(rtfShown.points, rtfShown.threshold), [rtfShown]);
   // replay-derived 'now' position fed to the RUL chart + 3D waterfall while replay is engaged
   const replayLifeH = isFinite(rtf.trueFail) ? rtf.trueFail : 60;
@@ -283,21 +319,14 @@ export default function Tool() {
       <div className="rv-vizstack">{replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} lifeRow={replayOn ? lifePos : null} /></Suspense><p className="hint">{t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
       <div className="rv-vizstack">
-        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
-          <span className="muted small">{lang === 'es' ? 'Trayectoria' : 'Trajectory'}:</span>
-          <button className={`chip ${rulSource === '' ? 'on' : ''}`} onClick={() => setRulSource('')}>{lang === 'es' ? 'Sintética' : 'Synthetic'}</button>
-          {femtoTrajs.filter((ft) => ft.trueFail != null).map((ft) => (
-            <button key={ft.id} className={`chip ${rulSource === ft.id ? 'on' : ''}`} onClick={() => setRulSource(ft.id)} title={`FEMTO real · C${ft.condition} · ${ft.rpm} rpm / ${ft.loadN} N`}>{ft.id}</button>
-          ))}
-        </div>
-        {rulSource === '' && replayBar()}
-        <RulChart points={rtfShown.points} rul={rulShown} nowT={rulSource === '' ? nowT : undefined} nowHi={rulSource === '' ? nowHi : undefined} />
-        <p className="hint">{rulSource === ''
+        {!trajMode && replayBar()}
+        <RulChart points={rtfShown.points} rul={rulShown} nowT={!trajMode ? nowT : undefined} nowHi={!trajMode ? nowHi : undefined} />
+        <p className="hint">{!trajMode
           ? t.rulNote
           : (lang === 'es'
-            ? `${rtfShown.label} — datos de degradación REALES (run-to-failure, RMS @ 25.6 kHz). El MISMO projectRUL corre sobre ellos; la falla real del experimento es a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
-            : `${rtfShown.label} — REAL degradation data (run-to-failure, RMS @ 25.6 kHz). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
-        <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{rulSource !== '' && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
+            ? `${rtfShown.label} — datos de degradación REALES (run-to-failure, RMS de aceleración). El MISMO projectRUL corre sobre ellos; la falla real del experimento es a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
+            : `${rtfShown.label} — REAL degradation data (run-to-failure, acceleration RMS). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
+        <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
       <PrognosticEvalPanel rtf={rtf} fault={fault} severity={severity} lang={lang} />) },
@@ -309,20 +338,68 @@ export default function Tool() {
       <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={rul} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} isoBounds={isoBounds} lang={lang} />) },
   ];
 
+  // Tools available per source KIND. A measured CWRU window is a DIAGNOSIS artifact: the signal-analysis tools run on
+  // it for real (waveform/envelope/spectrum/cyclostationary/kurtogram/SK-gram). A FEMTO run-to-failure is a PROGNOSIS
+  // artifact: only the RUL projection runs on the measured HI(t) curve. Synthetic mode keeps every tool (the full
+  // simulator). Tools that need a synthetic ground truth (Campbell run-up, feature-cloud, synthetic prognosis) are
+  // hidden in real modes rather than shown fed by fabricated data — honesty over breadth.
+  const SEGMENT_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram'];
+  const TRAJ_TABS = ['rul'];
+  const tabsShown = realMode ? tabs.filter((tb) => SEGMENT_TABS.includes(tb.id))
+    : trajMode ? tabs.filter((tb) => TRAJ_TABS.includes(tb.id))
+    : tabs;
+
   return (
     <div className="page-body rv-layout">
       <aside className="rv-side">
-        <div className="rv-scenarios">
-          {SCENARIOS.map((s) => <button key={s.id} className={`chip ${fault === s.fault ? 'on' : ''}`} onClick={() => { setFault(s.fault); setSeverity(s.spec.severity || 1); setRpm(s.spec.rpm); setSnr(s.spec.snrDb); }}>{faultLabel(s.fault)}</button>)}
+        {/* SOURCE — the first-level decision of the workbench: a fabricated synthetic case (scenario knobs) vs a REAL
+            measured CWRU segment (the analysis tools run on the measured signal; scenario knobs become read-only). */}
+        <div className="rv-source" style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+          <button className={`chip ${source === 'synthetic' ? 'on' : ''}`} onClick={() => setSource('synthetic')}>{lang === 'es' ? 'Sintético' : 'Synthetic'}</button>
+          <button className={`chip ${source === 'cwru' ? 'on' : ''}`} onClick={() => setSource('cwru')} disabled={!cwru} title={!cwru ? 'cargando…' : 'real CWRU 12 kHz segment'}>{lang === 'es' ? 'Real: CWRU (diag.)' : 'Real: CWRU (diag.)'}</button>
+          <button className={`chip ${source === 'femto' ? 'on' : ''}`} onClick={() => { setSource('femto'); if (!rulSource) { const f = femtoTrajs.find((t) => t.trueFail != null); if (f) setRulSource(`${f.set}:${f.id}`); } }} disabled={!femtoTrajs.length} title={!femtoTrajs.length ? 'cargando…' : 'real run-to-failure (FEMTO / XJTU / IMS)'}>{lang === 'es' ? 'Real: RUL' : 'Real: RUL'}</button>
         </div>
-        <label className="rv-ctl">{t.bearing}<select className="select" value={bearingId} onChange={(e) => setBearingId(e.target.value)}>{BEARINGS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}</select></label>
-        <label className="rv-ctl">{t.fault}<select className="select" value={fault} onChange={(e) => setFault(e.target.value as FaultKind)}>{FAULTS.map((k) => <option key={k} value={k}>{faultLabel(k)}</option>)}</select></label>
-        <label className="rv-ctl">{t.severity}: {severity.toFixed(2)}<input className="range" type="range" min={0} max={1.5} step={0.05} value={severity} disabled={fault === 'healthy'} onChange={(e) => setSeverity(+e.target.value)} /></label>
-        <label className="rv-ctl">{t.rpm}: {rpm}<input className="range" type="range" min={600} max={3600} step={1} value={rpm} onChange={(e) => setRpm(+e.target.value)} /></label>
-        <label className="rv-ctl">{t.snr}: {snr}<input className="range" type="range" min={-8} max={12} step={1} value={snr} onChange={(e) => setSnr(+e.target.value)} /></label>
+        {realMode ? (
+          <>
+            <label className="rv-ctl">{lang === 'es' ? 'Segmento real (CWRU)' : 'Real segment (CWRU)'}
+              <select className="select" value={cwruIdx} onChange={(e) => setCwruIdx(+e.target.value)}>
+                {cwru!.samples.map((sm, i) => <option key={i} value={i}>{faultLabel(sm.cls)} · {sm.file} #{sm.seg}</option>)}
+              </select>
+            </label>
+            <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
+              {lang === 'es' ? 'señal medida' : 'measured signal'} · CWRU 6205 · {cwru!.rpm} rpm · {lang === 'es' ? 'verdad' : 'truth'}: <b>{faultLabel(base.trueCls || '')}</b><br />
+              <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'perillas de escenario inactivas (el dato está medido); las de análisis siguen vivas ↓' : 'scenario knobs inactive (the datum is measured); the analysis knobs stay live ↓'}</span>
+            </div>
+          </>
+        ) : trajMode ? (
+          <>
+            <label className="rv-ctl">{lang === 'es' ? 'Trayectoria real (run-to-failure)' : 'Real trajectory (run-to-failure)'}
+              <select className="select" value={rulSource} onChange={(e) => setRulSource(e.target.value)}>
+                {RTF_SETS.map((s) => { const items = femtoTrajs.filter((ft) => ft.set === s.set && ft.trueFail != null); return items.length ? <optgroup key={s.set} label={s.label}>{items.map((ft) => <option key={`${ft.set}:${ft.id}`} value={`${ft.set}:${ft.id}`}>{ft.id} · {ft.condition} · {ft.rpm} rpm</option>)}</optgroup> : null; })}
+              </select>
+            </label>
+            <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
+              {lang === 'es' ? 'run-to-failure medido' : 'measured run-to-failure'} · {lang === 'es' ? 'RMS de aceleración' : 'acceleration RMS'} · {lang === 'es' ? 'verdad' : 'truth'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} h` : '—'}</b><br />
+              <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'solo aplica el pronóstico (RUL) sobre la curva HI medida' : 'only the prognosis (RUL) applies on the measured HI curve'}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="rv-scenarios">
+              {SCENARIOS.map((s) => <button key={s.id} className={`chip ${fault === s.fault ? 'on' : ''}`} onClick={() => { setFault(s.fault); setSeverity(s.spec.severity || 1); setRpm(s.spec.rpm); setSnr(s.spec.snrDb); }}>{faultLabel(s.fault)}</button>)}
+            </div>
+            <label className="rv-ctl">{t.bearing}<select className="select" value={bearingId} onChange={(e) => setBearingId(e.target.value)}>{BEARINGS.map((b) => <option key={b.id} value={b.id}>{b.label}</option>)}</select></label>
+            <label className="rv-ctl">{t.fault}<select className="select" value={fault} onChange={(e) => setFault(e.target.value as FaultKind)}>{FAULTS.map((k) => <option key={k} value={k}>{faultLabel(k)}</option>)}</select></label>
+            <label className="rv-ctl">{t.severity}: {severity.toFixed(2)}<input className="range" type="range" min={0} max={1.5} step={0.05} value={severity} disabled={fault === 'healthy'} onChange={(e) => setSeverity(+e.target.value)} /></label>
+            <label className="rv-ctl">{t.rpm}: {rpm}<input className="range" type="range" min={600} max={3600} step={1} value={rpm} onChange={(e) => setRpm(+e.target.value)} /></label>
+            <label className="rv-ctl">{t.snr}: {snr}<input className="range" type="range" min={-8} max={12} step={1} value={snr} onChange={(e) => setSnr(+e.target.value)} /></label>
+          </>
+        )}
 
-        {/* T7 — analysis parameters: change HOW the signal is analysed (band, envelope, harmonics, ISO scale).
-            They drive the always-visible diagnosis + the Envelope·SES / ISO trend / Recommendation tabs. */}
+        {/* Analysis params + classical/learned diagnosis + severity gauge + fault frequencies describe a measured or
+            synthetic SIGNAL — they apply to synthetic and real-segment (CWRU) modes. A FEMTO run-to-failure is a pure
+            HI(t) curve, so they are hidden in trajectory mode (only the RUL projection applies there). */}
+        {!trajMode && (<>
         <div className="rv-analysis" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
           <div className="muted small" style={{ fontWeight: 700, letterSpacing: '0.03em', marginBottom: '0.2rem' }}>{t.anlys}</div>
           <label className="rv-ctl">{t.aBand}<select className="select" value={bandMethod} onChange={(e) => setBandMethod(e.target.value as 'auto' | 'fixed' | 'manual' | 'iesfo')}><option value="auto">{t.bAuto}</option><option value="iesfo">{t.bIesfo}</option><option value="fixed">{t.bFixed}</option><option value="manual">{t.bManual}</option></select></label>
@@ -332,14 +409,21 @@ export default function Tool() {
         </div>
 
         <div className="rv-diag card" data-fault={dx.top}>
-          <div className="rv-diag-top"><span className="muted small">{t.diag}</span><strong>{faultLabel(dx.top)}</strong><span className="muted small">{(dx.confidence * 100).toFixed(0)}% {t.conf}</span></div>
+          <div className="rv-diag-top"><span className="muted small">{realMode ? (lang === 'es' ? 'Envolvente/SES (clásico)' : 'Envelope/SES (classical)') : t.diag}</span><strong>{faultLabel(dx.top)}</strong><span className="muted small">{(dx.confidence * 100).toFixed(0)}% {t.conf}</span></div>
           {dx.scores.map((s) => <div key={s.kind} className="rv-bar"><span>{faultLabel(s.kind)}</span><div className="rv-bar-t"><i style={{ width: `${Math.min(100, (s.score / (dx.scores[0].score || 1)) * 100)}%` }} /></div><span className="mono">{s.score.toFixed(1)}×</span></div>)}
         </div>
+        {realMode && realDx && (
+          <div className="rv-diag card" style={{ marginTop: '0.4rem' }} data-fault={realDx.predClass}>
+            <div className="rv-diag-top"><span className="muted small">WDCNN (ONNX)</span><strong>{faultLabel(realDx.predClass)}</strong><span className="muted small">{(Math.max(...realDx.probs) * 100).toFixed(0)}%</span></div>
+            <div className="muted small">{lang === 'es' ? 'modelo aprendido, en vivo sobre el segmento real' : 'learned model, live on the real segment'} · {realDx.predClass === base.trueCls ? '✓' : '✗'} {lang === 'es' ? 'vs verdad' : 'vs truth'} <b>{faultLabel(base.trueCls || '')}</b></div>
+          </div>
+        )}
         <Gauge title={t.sev} value={sev} max={12} unit="×" zones={[{ upTo: 3, color: '#3fb950', label: 'Healthy' }, { upTo: 6, color: '#58a6ff', label: 'Watch' }, { upTo: 9, color: '#d29922', label: 'Alarm' }, { upTo: 12, color: '#f85149', label: 'Trip' }]} />
         <div className="rv-freqs small"><div className="muted">{t.freqs} · fr = {fr.toFixed(1)} Hz</div><span style={{ color: C.outer }}>BPFO {base.f.bpfo.toFixed(1)}</span> · <span style={{ color: C.inner }}>BPFI {base.f.bpfi.toFixed(1)}</span> · <span style={{ color: C.ball }}>2·BSF {(2 * base.f.bsf).toFixed(1)}</span> · FTF {base.f.ftf.toFixed(1)} Hz</div>
+        </>)}
       </aside>
       <div className="rv-main">
-        <Tabs tabs={tabs} ariaLabel="analysis" />
+        <Tabs key={source} tabs={tabsShown} ariaLabel="analysis" />
       </div>
     </div>
   );
