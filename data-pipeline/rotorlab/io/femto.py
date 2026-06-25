@@ -17,7 +17,6 @@ Source: IEEE PHM 2012 Prognostic Challenge (FEMTO-ST). Download: the wkzs111 Git
 """
 from __future__ import annotations
 
-import io
 import json
 import zipfile
 from pathlib import Path
