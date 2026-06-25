@@ -29,7 +29,7 @@ export function PeakTable({ ses, f, lang }: { ses: Spectrum; f: DefectFreqs; lan
   ];
   const rows: Row[] = [];
   for (const fam of fams) {
-    if (fam.freq <= 0) continue;
+    if (!(fam.freq > 0)) continue; // skip ≤0 AND NaN (unknown geometry, e.g. FEMTO/IMS) — NaN<=0 is false, would crash
     for (let k = 1; k <= 4; k++) {
       const expected = fam.freq * k;
       const tol = Math.max(2 * ses.df, 0.02 * fam.freq);
