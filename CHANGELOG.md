@@ -3,6 +3,20 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.41.002] — 2026-06-25
+
+Fix (honesty/consistency) — **the docs pages now match what the App actually does.** A pre-share validation found the
+docs still described the old single-dataset build while the App runs 6 real sources:
+- **Experiments → Coverage + datasets**: FEMTO/XJTU/IMS/Ottawa/MAFAULDA were still tagged `planned/roadmap` ("today
+  there are TWO real integrated sets… the other six are roadmap") — false now. Re-tagged: CWRU `live`, MFPT
+  `cross-dataset`, Ottawa/MaFaulDa `real segment (App)`, FEMTO/XJTU/IMS `real RUL (App)`; only Paderborn stays
+  roadmap (host unreachable). The status note rewritten to "SEVEN real integrated sets".
+- **Introduction honest-framing**: it claimed "the run-to-failure trajectories shown in the app are synthetic" —
+  now distinguishes REAL mode (measured CWRU/Ottawa/MaFaulDa segments + FEMTO/XJTU/IMS trajectories) from SYNTHETIC mode.
+- **Benchmark lede**: notes the App also operates live on the five further real sources (the page quantifies CWRU +
+  the MFPT cross-dataset transfer).
+No fabricated metrics added — only the integration status corrected to the truth.
+
 ## [0.41.001] — 2026-06-25
 
 Fix — **Envelope·SES (and any tool) no longer blanks the page on a geometry-less real source.** In RUL mode with
