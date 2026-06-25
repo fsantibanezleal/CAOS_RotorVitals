@@ -7,8 +7,9 @@ type DatasetRow = {
   redist: 'mirror' | 'link';
   // What is actually wired in the app today: 'live' = trained + benchmarked (CWRU);
   // 'crosseval' = real data used for the held-out cross-dataset domain-shift test (MFPT);
-  // undefined = roadmap (not yet integrated). Keeps this table consistent with the Benchmark page.
-  appStatus?: 'live' | 'crosseval';
+  // 'rul-real' = real run-to-failure data integrated into the Prognostics·RUL tab (FEMTO; IMS/XJTU as they land);
+  // undefined = roadmap (not yet integrated). Keeps this table consistent with the App + Benchmark pages.
+  appStatus?: 'live' | 'crosseval' | 'rul-real';
   note: { es: string; en: string };
 };
 

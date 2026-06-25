@@ -3,6 +3,31 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.39.000] — 2026-06-24
+
+Feature — **first-level source selector (the corrected Faena workbench pattern)**. The App no longer buries data
+choice inside a tab; a top-of-sidebar selector decides what the whole workbench operates on, and the tool set
+reacts to the **kind** of data:
+
+- **Synthetic** — unchanged full simulator (all scenario knobs + all 13 tools).
+- **Real: CWRU (diagnosis)** — a measured held-out CWRU segment. The 6 signal-analysis tools (waveform, spectrum,
+  envelope·SES, cyclostationary, kurtogram, SK-gram) run on the real window; the **WDCNN (ONNX)** prediction vs
+  the true label and the classical diagnosis run live. Scenario knobs (fault/severity/rpm/SNR) become read-only
+  metadata — a measured datum can't be re-dialed — while the **analysis** knobs (band/envelope/harmonics) stay
+  live, because you genuinely can re-process real data. Trajectory/Campbell/feature tools (which need a synthetic
+  ground truth) are hidden rather than shown fed by fabricated data.
+- **Real: RUL (prognosis)** — merges **FEMTO/PRONOSTIA (7) + XJTU-SY (14) + IMS (2 outer-race) = 23** real
+  run-to-failure trajectories under one selector grouped by dataset; the same `projectRUL` runs on each measured
+  HI(t) curve against the experiment's real failure time. Only the RUL projection is shown (the one tool that
+  applies to a pure HI curve).
+
+Adds the **XJTU-SY** (`rotorlab/io/xjtu.py`) and **IMS/NASA** (`rotorlab/io/ims.py`) parsers — each reduces the
+complete run-to-failure set offline to a compact HI(t) artifact (`public/rv-{xjtu,ims}-rtf.json`, link-only
+redistribution; raw archives gitignored) with a real first-passage failure marker (XJTU 2 g; IMS adaptive
+per-trajectory, with real elapsed time parsed from snapshot timestamps). Drops the in-tab RUL parche. All three
+modes screenshot-verified live. Ottawa + MaFaulDa are downloaded; Ottawa is a **variable-speed** set (needs order
+tracking / cross-domain treatment) and lands as a Benchmark transfer experiment, not a drop-in segment source.
+
 ## [0.38.000] — 2026-06-24
 
 Feature — **REAL run-to-failure data integrated** (the RUL page was previously driven only by a synthetic forward
