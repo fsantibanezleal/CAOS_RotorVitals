@@ -324,8 +324,8 @@ export default function Tool() {
         <p className="hint">{!trajMode
           ? t.rulNote
           : (lang === 'es'
-            ? `${rtfShown.label} — datos de degradación REALES (run-to-failure, RMS @ 25.6 kHz). El MISMO projectRUL corre sobre ellos; la falla real del experimento es a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
-            : `${rtfShown.label} — REAL degradation data (run-to-failure, RMS @ 25.6 kHz). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
+            ? `${rtfShown.label} — datos de degradación REALES (run-to-failure, RMS de aceleración). El MISMO projectRUL corre sobre ellos; la falla real del experimento es a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
+            : `${rtfShown.label} — REAL degradation data (run-to-failure, acceleration RMS). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
@@ -379,7 +379,7 @@ export default function Tool() {
               </select>
             </label>
             <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
-              {lang === 'es' ? 'run-to-failure medido' : 'measured run-to-failure'} · RMS @ 25.6 kHz · {lang === 'es' ? 'verdad' : 'truth'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} h` : '—'}</b><br />
+              {lang === 'es' ? 'run-to-failure medido' : 'measured run-to-failure'} · {lang === 'es' ? 'RMS de aceleración' : 'acceleration RMS'} · {lang === 'es' ? 'verdad' : 'truth'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} h` : '—'}</b><br />
               <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'solo aplica el pronóstico (RUL) sobre la curva HI medida' : 'only the prognosis (RUL) applies on the measured HI curve'}</span>
             </div>
           </>

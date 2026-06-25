@@ -11,16 +11,21 @@ Live: **https://rotorvitals.fasl-work.com**
 
 The condition-monitoring lane for rotating machinery (bearings first). It pairs **two heavy learned models**
 trained on the real **Case Western Reserve University** 12 kHz drive-end bearing data with a deep classical DSP
-toolbox, in one interactive workbench. The user has real action capability: choose a real held-out recording and
-diagnose it live, or drive the synthetic signal generator + the classical chain with the sidebar controls.
+toolbox, in one interactive workbench. The user has real action capability: load a real measured artifact and
+analyse it live, or drive the synthetic signal generator + the classical chain with the sidebar controls.
 
 ## The six pages
 
-- **App** — control sidebar + tabbed view set. The first tab, **Real diagnosis (WDCNN)**, runs the trained
-  models live (onnxruntime-web) on real held-out CWRU segments (prediction vs the true label + per-class probs +
-  deep-AE health indicator). The rest are the classical chain (signal & spectrum, envelope·SES, spectrogram,
-  cyclostationary CMS, kurtogram, infogram, Campbell/order, 3-D waterfall, prognostics·RUL, RUL eval, ISO trend,
-  feature space).
+- **App** — a **first-level source selector** decides what the whole workbench operates on, and the tool set
+  reacts to the kind of data loaded:
+  - **Synthetic** — the full signal generator: every scenario knob (fault, severity, rpm, SNR) and every one of
+    the 13 tools, to explore the space.
+  - **Real: CWRU (diagnosis)** — a real held-out CWRU 12 kHz segment. The 6 signal-analysis tools run on the
+    measured window; the **WDCNN (ONNX)** prediction vs the true label and the classical envelope/SES diagnosis run
+    live. Scenario knobs become read-only metadata (a measured datum can't be re-dialed); the analysis knobs (band,
+    envelope, harmonics) stay live — you really can re-process real data.
+  - **Real: RUL (prognosis)** — a real run-to-failure trajectory from **FEMTO/PRONOSTIA, XJTU-SY or IMS** (23 in
+    total); the same `projectRUL` runs on the measured HI(t) curve against the experiment's true failure time.
 - **Introduction** — problem, who it's for, approach, honest scope.
 - **Methodology** — term-by-term math per family (band selection, envelope, kurtosis, cyclostationarity, RUL,
   learned tier) with SVG figures + DOI refs.
@@ -68,9 +73,11 @@ cd frontend && npm run build  # tsc --noEmit && vite build (+ copy-data overlay 
 
 The learned models are trained on **real CWRU recordings**; the held-out split holds out an entire load (3 HP) so
 no test recording is seen in training. CWRU is a clean lab rig (Smith & Randall 2015), so clean accuracy is
-optimistic — Benchmark reports the **noise-robustness curve**, not a bare 100%. The classical-chain demo signal (a
-damped-resonance impulse train) and the run-to-failure RUL trend are **labelled synthetic**; the kinematic fault
-frequencies and the DSP outputs are exact. No fabricated benchmark numbers.
+optimistic — Benchmark reports the **noise-robustness curve**, not a bare 100%. The synthetic source's demo signal
+(a damped-resonance impulse train) and its run-to-failure trend are **labelled synthetic**; the real sources are
+**measured data** — CWRU segments for diagnosis, and FEMTO/XJTU/IMS run-to-failure curves for prognosis, each
+reduced offline to a compact artifact with the dataset's real first-passage failure time (raw archives are
+link-only, gitignored). The kinematic fault frequencies and all DSP outputs are exact. No fabricated numbers.
 
 ## License
 
