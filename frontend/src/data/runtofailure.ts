@@ -76,6 +76,37 @@ export function loadRealRtf(): Promise<FemtoTraj[]> {
 }
 // Back-compat: FEMTO-only loader (kept for any caller that still wants a single set).
 export function loadFemtoRtf(): Promise<FemtoTraj[]> { return loadOneRtf('rv-femto-rtf.json', 'femto'); }
+
+// ---- REAL raw life-snapshots (the run-to-failure FRAMES) ----------------------------------------------------------
+// Each selectable trajectory carries ~8 raw vibration windows sampled along its life (healthy → failure). These let
+// the FULL signal suite + the REAL degradation waterfall + the feature-space trajectory run on measured data in the
+// RUL mode — not only the HI curve. Artifacts: public/rv-{femto,xjtu,ims}-frames.json (link-only). Keyed by `set:id`
+// to match the trajectory selector. XJTU carries real fault-frequency orders; FEMTO/IMS have no published geometry.
+export interface LifeFrame { t: number; frac: number; rms: number; raw: number[] }
+export interface FrameSet { fs: number; win: number; frames: LifeFrame[]; faultOrders?: { bpfo: number; bpfi: number; bsf: number; ftf: number } }
+// XJTU-SY bearing LDK UER204 fault orders (× shaft rate); FEMTO/IMS publish no geometry → no order markers.
+const XJTU_ORDERS = { bpfo: 3.072, bpfi: 4.928, bsf: 2.022, ftf: 0.384 };
+let _frames: Promise<Record<string, FrameSet>> | null = null;
+function loadOneFrames(file: string, set: RtfSet, orders?: FrameSet['faultOrders']): Promise<Record<string, FrameSet>> {
+  const base = (import.meta as { env?: { BASE_URL?: string } }).env?.BASE_URL || '/';
+  return fetch(`${base}${file}`)
+    .then((r) => (r.ok ? r.json() : { frames: {} }))
+    .then((d) => {
+      const fs = d.fs as number, win = (d.win as number) ?? 2048;
+      const out: Record<string, FrameSet> = {};
+      for (const [id, frames] of Object.entries((d.frames ?? {}) as Record<string, LifeFrame[]>)) out[`${set}:${id}`] = { fs, win, frames, faultOrders: orders };
+      return out;
+    })
+    .catch(() => ({}));
+}
+// Merge every dataset's frames into one map keyed by `set:id` (the same key the trajectory selector uses).
+export function loadRealFrames(): Promise<Record<string, FrameSet>> {
+  return (_frames ??= Promise.all([
+    loadOneFrames('rv-femto-frames.json', 'femto'),
+    loadOneFrames('rv-xjtu-frames.json', 'xjtu', XJTU_ORDERS),
+    loadOneFrames('rv-ims-frames.json', 'ims'),
+  ]).then((maps) => Object.assign({}, ...maps)));
+}
 export function femtoToRunToFailure(t: FemtoTraj): RunToFailure {
   const set = (t.set ?? 'femto').toUpperCase();
   return {

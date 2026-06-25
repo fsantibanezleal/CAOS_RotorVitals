@@ -3,6 +3,31 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.40.000] — 2026-06-25
+
+Feature — **the FULL analysis suite now runs on real data; every downloaded dataset is integrated** (answering
+"why does Real:RUL show only one tab, and Real:CWRU only six?"). The limit was the artifacts, not the data:
+
+- **Real raw windows shipped.** Each run-to-failure trajectory carries ~8 raw life-snapshots (rv-{femto,xjtu,ims}-frames.json);
+  each diagnosis dataset carries measured segments. The full suite reads them — nothing synthetic where real exists.
+- **RUL mode: 1 → 9 tabs.** A *life-instant* slider scrubs the measured windows (healthy→failure); the signal suite
+  (waveform/spectrum/envelope·SES/cyclostationary/kurtogram/infogram) runs on each instant; the **3D waterfall is
+  the REAL degradation surface** (envelope vs measured life, selected instant highlighted); the **feature space is
+  the measured degradation trajectory** through the healthy 95% Mahalanobis ellipse. (Campbell excluded — constant rpm.)
+- **Two new diagnosis sources.** The 'Real: segment' source gains a dataset sub-selector:
+  - **Ottawa** — time-VARYING speed, **computed-order-tracked**: kinematic frequencies are constant ORDERS
+    (BPFO 3.57×) immune to the speed sweep; the readout switches to 'orders (×rev)'.
+  - **MaFaulDa** — 50 kHz, classes outer/ball/cage.
+  Both run the CWRU-trained **WDCNN cross-domain** on a 12 kHz window, labelled honestly (Ottawa healthy→outer ✗
+  shows the domain gap; MaFaulDa outer→outer ✓ transfers; cage has no CWRU counterpart).
+- **Multi-fs correctness.** Every spectrum/kurtogram/envelope now uses the active sample rate (12/20/25.6 kHz / order
+  domain), not the synthetic 12 kHz constant.
+- **Honest classifier in real mode.** The single-threshold verdict is calibrated on synthetic contrast and doesn't
+  transfer, so real modes surface the fault-frequency family with the strongest spectral evidence instead of a
+  misleading 'Healthy'.
+
+6 real sources total (3 diagnosis + 3 prognosis). Synthetic (13 tabs) intact. All modes screenshot-verified, 0 console errors.
+
 ## [0.39.000] — 2026-06-24
 
 Feature — **first-level source selector (the corrected Faena workbench pattern)**. The App no longer buries data
