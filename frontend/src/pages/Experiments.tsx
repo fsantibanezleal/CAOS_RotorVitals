@@ -7,9 +7,10 @@ type DatasetRow = {
   redist: 'mirror' | 'link';
   // What is actually wired in the app today: 'live' = trained + benchmarked (CWRU);
   // 'crosseval' = real data used for the held-out cross-dataset domain-shift test (MFPT);
-  // 'rul-real' = real run-to-failure data integrated into the Prognostics·RUL tab (FEMTO; IMS/XJTU as they land);
+  // 'diag-real' = real measured segments integrated as an App diagnosis source (Ottawa order-tracked / MaFaulDa);
+  // 'rul-real' = real run-to-failure data integrated as an App RUL source with raw life-frames (FEMTO/XJTU/IMS);
   // undefined = roadmap (not yet integrated). Keeps this table consistent with the App + Benchmark pages.
-  appStatus?: 'live' | 'crosseval' | 'rul-real';
+  appStatus?: 'live' | 'crosseval' | 'diag-real' | 'rul-real';
   note: { es: string; en: string };
 };
 
@@ -29,24 +30,24 @@ const DATASETS: DatasetRow[] = [
     note: { es: 'Integrado REAL como el test de generalización cross-dataset (domain-shift): el WDCNN entrenado en CWRU se evalúa sobre MFPT en la página Benchmark. Sin falla de bola.', en: 'Integrated REAL as the cross-dataset (domain-shift) test: the CWRU-trained WDCNN is evaluated on MFPT on the Benchmark page. No ball fault.' },
   },
   {
-    name: 'MAFAULDA', fit: 'diagnosis', faults: 'desbalance/desalineamiento/rodamiento', redist: 'link',
-    note: { es: 'Banco multi-falla de maquinaria rotativa.', en: 'Multi-fault rotating-machinery rig.' },
+    name: 'MAFAULDA', fit: 'diagnosis', faults: 'rodamiento: OR/bola/jaula', redist: 'link', appStatus: 'diag-real',
+    note: { es: 'Integrado REAL como fuente de segmento (App): 50 kHz, clases pista-externa/bola/jaula; el WDCNN entrenado en CWRU se evalúa cross-domain (outer→outer transfiere; la jaula no tiene contraparte CWRU).', en: 'Integrated REAL as an App segment source: 50 kHz, outer/ball/cage classes; the CWRU-trained WDCNN is evaluated cross-domain (outer→outer transfers; cage has no CWRU counterpart).' },
   },
   {
-    name: 'Ottawa (velocidad variable)', fit: 'diagnosis', faults: 'OR/IR · arranque/parada', redist: 'mirror',
-    note: { es: 'Order-tracking bajo velocidad variable; licencia abierta (CC BY 4.0).', en: 'Order-tracking under varying speed; open license (CC BY 4.0).' },
+    name: 'Ottawa (velocidad variable)', fit: 'diagnosis', faults: 'sano/OR/IR · velocidad variable', redist: 'mirror', appStatus: 'diag-real',
+    note: { es: 'Integrado REAL como fuente de segmento (App) con computed-order-tracking: las frecuencias de falla quedan en órdenes constantes pese a la velocidad variable, y habilita un Campbell/orden real. WDCNN cross-domain. Licencia abierta (CC BY 4.0).', en: 'Integrated REAL as an App segment source with computed-order-tracking: fault frequencies stay constant orders despite the varying speed, enabling a real Campbell/order map. Cross-domain WDCNN. Open license (CC BY 4.0).' },
   },
   {
-    name: 'IMS / NASA', fit: 'RUL', faults: 'run-to-failure', redist: 'mirror',
-    note: { es: 'Run-to-failure clásico para pronóstico; abierto (gobierno EE.UU.).', en: 'Classic run-to-failure for prognostics; open (US-gov).' },
+    name: 'IMS / NASA', fit: 'RUL', faults: 'run-to-failure', redist: 'mirror', appStatus: 'rul-real',
+    note: { es: 'Integrado REAL como fuente de RUL (App): 2 run-to-failure de pista externa con frames crudos de vida; abierto (gobierno EE.UU.).', en: 'Integrated REAL as an App RUL source: 2 outer-race run-to-failures with raw life-frames; open (US-gov).' },
   },
   {
-    name: 'XJTU-SY', fit: 'RUL', faults: 'run-to-failure · 3 condiciones', redist: 'mirror',
-    note: { es: 'Vida completa de vibración; benchmark de RUL (investigación con cita).', en: 'Full-life vibration; RUL benchmark (research-with-citation).' },
+    name: 'XJTU-SY', fit: 'RUL', faults: 'run-to-failure · 3 condiciones', redist: 'mirror', appStatus: 'rul-real',
+    note: { es: 'Integrado REAL como fuente de RUL (App): 14 trayectorias de vida completa con frames crudos + órdenes de falla (LDK UER204); benchmark de RUL (investigación con cita).', en: 'Integrated REAL as an App RUL source: 14 full-life trajectories with raw life-frames + fault orders (LDK UER204); RUL benchmark (research-with-citation).' },
   },
   {
-    name: 'FEMTO / PRONOSTIA', fit: 'RUL', faults: 'vida acelerada (PHM 2012)', redist: 'link',
-    note: { es: 'El conjunto del desafío de pronóstico PHM 2012.', en: 'The PHM 2012 prognostic challenge set.' },
+    name: 'FEMTO / PRONOSTIA', fit: 'RUL', faults: 'vida acelerada (PHM 2012)', redist: 'link', appStatus: 'rul-real',
+    note: { es: 'Integrado REAL como fuente de RUL (App): 7 trayectorias del desafío PHM 2012 con frames crudos de vida (sin geometría publicada → sin marcadores de falla).', en: 'Integrated REAL as an App RUL source: 7 PHM-2012-challenge trajectories with raw life-frames (no published geometry → no fault markers).' },
   },
 ];
 
@@ -306,7 +307,11 @@ export default function Experiments() {
                   ? { bg: 'color-mix(in oklab,#3fb950 22%,transparent)', fg: '#3fb950', bd: 'transparent', lbl: es ? 'EN VIVO + benchmark' : 'LIVE + benchmarked' }
                   : st === 'crosseval'
                     ? { bg: 'color-mix(in oklab,#6e5cff 20%,transparent)', fg: '#6e5cff', bd: 'transparent', lbl: es ? 'cross-dataset (real)' : 'cross-dataset (real)' }
-                    : { bg: 'transparent', fg: 'var(--color-fg-faint)', bd: 'var(--color-border)', lbl: es ? 'roadmap' : 'planned' };
+                    : st === 'diag-real'
+                      ? { bg: 'color-mix(in oklab,#58a6ff 20%,transparent)', fg: '#58a6ff', bd: 'transparent', lbl: es ? 'segmento real (App)' : 'real segment (App)' }
+                      : st === 'rul-real'
+                        ? { bg: 'color-mix(in oklab,#d29922 22%,transparent)', fg: '#d29922', bd: 'transparent', lbl: es ? 'RUL real (App)' : 'real RUL (App)' }
+                        : { bg: 'transparent', fg: 'var(--color-fg-faint)', bd: 'var(--color-border)', lbl: es ? 'roadmap' : 'planned' };
                 return (
                 <tr key={d.name}>
                   <td style={{ textAlign: 'left' }}>{d.name}</td>
@@ -320,8 +325,8 @@ export default function Experiments() {
             </tbody>
           </table>
           <p className="muted small">{es
-            ? 'Estado honesto: hoy hay DOS conjuntos reales integrados. CWRU es el benchmark entrenado — entrena el WDCNN + el deep-AE + los clásicos y corre en vivo en la página Benchmark (diagnóstico interactivo sobre segmentos reales + los números held-out). MFPT está integrado como el test de generalización cross-dataset (domain-shift): el WDCNN entrenado en CWRU se evalúa sobre MFPT real, sin haber visto un solo registro suyo. Los demás seis conjuntos son el roadmap (descarga + tooling aún no implementados); no se afirma cobertura de engranaje/velocidad-variable hasta integrarlos.'
-            : 'Honest status: today there are TWO real integrated sets. CWRU is the trained benchmark — it trains the WDCNN + deep-AE + the classical models and runs live on the Benchmark page (interactive diagnosis on real segments + the held-out numbers). MFPT is integrated as the cross-dataset (domain-shift) generalization test: the CWRU-trained WDCNN is evaluated on real MFPT data it never saw. The other six sets are the roadmap (download + tooling not yet implemented); no gear/variable-speed coverage is claimed until they are integrated.'}</p>
+            ? 'Estado honesto: hoy hay SIETE conjuntos reales integrados. CWRU es el benchmark entrenado — entrena el WDCNN + el deep-AE + los clásicos y corre en vivo (diagnóstico in-domain). MFPT es el test de generalización cross-dataset (el WDCNN CWRU evaluado sobre MFPT, nunca visto). En el App: Ottawa (segmento con order-tracking — Campbell/orden real bajo velocidad variable) y MaFaulDa (segmento 50 kHz, OR/bola/jaula) corren como fuentes de diagnóstico con el WDCNN cross-domain; FEMTO, XJTU e IMS corren como fuentes de RUL con frames crudos de vida (suite de señal + waterfall de degradación real + trayectoria de features + proyección de RUL vs la falla real). Solo Paderborn queda como roadmap (su host fue inalcanzable desde esta red); no se afirma cobertura de engranaje hasta integrarlo.'
+            : 'Honest status: today there are SEVEN real integrated sets. CWRU is the trained benchmark — it trains the WDCNN + deep-AE + the classical models and runs live (in-domain diagnosis). MFPT is the cross-dataset generalization test (the CWRU WDCNN evaluated on never-seen MFPT). In the App: Ottawa (an order-tracked segment source — a real Campbell/order map under varying speed) and MaFaulDa (a 50 kHz segment source, OR/ball/cage) run as diagnosis sources with the cross-domain WDCNN; FEMTO, XJTU and IMS run as RUL sources with raw life-frames (signal suite + real degradation waterfall + feature trajectory + RUL projection vs the real failure). Only Paderborn remains roadmap (its host was unreachable from this network); no gear coverage is claimed until it is integrated.'}</p>
 
           <p>{es
             ? 'El generador sintético está fundamentado físicamente, no es cosmético: deposita un tren de impulsos cuasi-periódico en la frecuencia de falla cinemática, cada impulso excitando una resonancia estructural amortiguada (resonancia fₙ y amortiguamiento ζ especificados), añade jitter de deslizamiento por intervalo (~0.5 % de un período) para que el peine quede levemente difuminado en vez de perfectamente periódico, aplica la modulación de amplitud físicamente correcta (las fallas de pista interna modulan a la frecuencia de eje f_r; las de bola a la frecuencia de jaula FTF; las de pista externa, ninguna), superpone armónicos de eje y añade ruido gaussiano para alcanzar un SNR objetivo. Las relaciones de frecuencia de falla que planta son exactas y transferibles a rodamientos reales — eso legitima las celdas sintéticas como conjunto de auto-validación.'

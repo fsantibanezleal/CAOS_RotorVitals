@@ -171,8 +171,8 @@ export default function Benchmark() {
       <div className="page-head">
         <h1>{es ? 'Benchmark (datos reales CWRU)' : 'Benchmark (real CWRU data)'}</h1>
         <p className="lede">{es
-          ? 'Modelos aprendidos (WDCNN, deep-AE) y el diagnóstico clásico de envolvente/SES, evaluados sobre el conjunto real de rodamientos de Case Western Reserve University — métricas calculadas, datos crudos nunca re-hospedados.'
-          : 'Learned models (WDCNN, deep-AE) and the classical envelope/SES diagnoser, evaluated on the real Case Western Reserve University bearing set — metrics computed, raw data never re-hosted.'}</p>
+          ? 'Modelos aprendidos (WDCNN, deep-AE) y el diagnóstico clásico de envolvente/SES, evaluados sobre el conjunto real de rodamientos de Case Western Reserve University — métricas calculadas, datos crudos nunca re-hospedados. Esta página cuantifica el conjunto entrenado (CWRU) y la transferencia cross-dataset (MFPT); el App, además, opera EN VIVO sobre otras cinco fuentes reales — segmentos de diagnóstico Ottawa (order-tracking) y MaFaulDa, y trayectorias run-to-failure FEMTO/XJTU/IMS (con el WDCNN cross-domain etiquetado).'
+          : 'Learned models (WDCNN, deep-AE) and the classical envelope/SES diagnoser, evaluated on the real Case Western Reserve University bearing set — metrics computed, raw data never re-hosted. This page quantifies the trained set (CWRU) and the cross-dataset transfer (MFPT); the App additionally operates LIVE on five more real sources — Ottawa (order-tracked) and MaFaulDa diagnosis segments, and FEMTO/XJTU/IMS run-to-failure trajectories (with the cross-domain WDCNN labelled).'}</p>
       </div>
       <Tabs tabs={tabs} ariaLabel={es ? 'benchmark' : 'benchmark'} />
     </div>
