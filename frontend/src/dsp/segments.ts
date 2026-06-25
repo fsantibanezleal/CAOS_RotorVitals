@@ -16,6 +16,7 @@ export interface SegSample {
   rawWdcnn?: number[];  // a 12–12.5 kHz time window for the WDCNN (in/cross-domain); falls back to raw for CWRU
   rpm?: number;
   meta?: string;        // a short metadata line for the sidebar
+  orderMap?: { rpmBins: number[]; orderBins: number[]; mag: number[][] }; // Ottawa: a REAL order-vs-rpm Campbell raster
 }
 
 export interface SegDataset {
@@ -69,6 +70,7 @@ async function ottawaDataset(): Promise<SegDataset | null> {
       rawWdcnn: sm.rawTime as number[],
       rpm: Math.round(((sm.rpmMin as number) + (sm.rpmMax as number)) / 2),
       meta: `Ottawa ER-16K · órdenes · ${Math.round(sm.rpmMin as number)}–${Math.round(sm.rpmMax as number)} rpm`,
+      orderMap: sm.orderMap as { rpmBins: number[]; orderBins: number[]; mag: number[][] } | undefined,
     })),
   };
 }
