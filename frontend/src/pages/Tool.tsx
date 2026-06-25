@@ -6,7 +6,7 @@ import { magSpectrum, envelopeSpectrum } from '../dsp/envelope';
 import { kurtogram } from '../dsp/kurtogram';
 import { gramGrid } from '../dsp/infogram';
 import { diagnose } from '../dsp/diagnose';
-import { ISO_CLASSES } from '../dsp/iso';
+import { ISO_CLASSES, framesToLifeFeats } from '../dsp/iso';
 import { defectFreqs, faultFreq, type FaultKind } from '../dsp/bearing';
 import { BEARINGS, bearingById } from '../data/bearings';
 import { SCENARIOS } from '../data/scenarios';
@@ -318,6 +318,10 @@ export default function Tool() {
     const label = fault === 'outer' ? 'BPFO' : fault === 'inner' ? 'BPFI' : fault === 'ball' ? '2·BSF' : '';
     return { hz, label };
   }, [fault, base]);
+  // REAL feature-space trajectory: RMS / envelope-kurtosis / SES-amp of each MEASURED life-frame (run-to-failure)
+  const realFeats = useMemo(() => (trajMode && activeFrames && activeFrames.frames.length >= 2)
+    ? framesToLifeFeats(activeFrames.frames, activeFrames.fs, base.noGeom ? 0 : base.f.bpfo, [2000, Math.min(4500, 0.35 * (activeFrames.fs / 2))])
+    : undefined, [trajMode, activeFrames, base]);
 
   const faultLabel = (k: string) => (t as Record<string, string>)[`f_${k}`] ?? k;
 
@@ -373,7 +377,7 @@ export default function Tool() {
     { id: 'iso', label: t.tIso, content: (
       <IsoTrendPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} bounds={isoBounds} isoLabel={ISO_CLASSES[isoClass].label} lang={lang} />) },
     { id: 'feat', label: t.tFeat, content: (
-      <FeatureSpacePanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} />) },
+      <FeatureSpacePanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} realFeats={realFeats} realLabel={activeTraj ? `${(activeTraj.set ?? '').toUpperCase()} ${activeTraj.id}` : undefined} />) },
     { id: 'rec', label: t.tRec, content: (
       <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={rul} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} isoBounds={isoBounds} lang={lang} />) },
   ];
@@ -388,7 +392,7 @@ export default function Tool() {
   // - trajectory (FEMTO/XJTU/IMS): each life-snapshot is a real window → signal suite + the REAL degradation
   //   waterfall + RUL/eval + ISO trend + feature trajectory. (Campbell needs an rpm sweep — excluded; constant rpm.)
   const SEGMENT_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram'];
-  const TRAJ_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'wat', 'rul'];
+  const TRAJ_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'wat', 'rul', 'feat'];
   const tabsShown = realMode ? tabs.filter((tb) => SEGMENT_TABS.includes(tb.id))
     : trajMode ? tabs.filter((tb) => TRAJ_TABS.includes(tb.id))
     : tabs;
