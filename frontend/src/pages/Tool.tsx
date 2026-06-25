@@ -366,7 +366,7 @@ export default function Tool() {
     { id: 'gram', label: t.tGram, content: (
       <GramPanel x={base.sig.x} fs={fsEff} onPick={onPickBand} lang={lang} f={base.f} fr={fr} faultAlpha={faultAlpha} />) },
     { id: 'cam', label: t.tCam, content: (
-      <CampbellPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} seed={seed} rpm={rpm} lang={lang} />) },
+      <CampbellPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} seed={seed} rpm={rpm} lang={lang} realOrderMap={realMode && activeSample?.orderMap ? activeSample.orderMap : undefined} realFaultOrders={base.orders ? { bpfo: base.f.bpfo, bpfi: base.f.bpfi, bsf: base.f.bsf } : undefined} realLabel={activeSample ? activeSample.label.split('·')[0].trim() : undefined} />) },
     { id: 'wat', label: t.tWat, content: (
       <div className="rv-vizstack">{!trajMode && replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={base.noGeom ? 0 : ridge.hz} ridgeLabel={base.noGeom ? '' : ridge.label} lifeH={trajMode ? (isFinite(rtfShown.trueFail) ? rtfShown.trueFail : 100) : (isFinite(rtf.trueFail) ? rtf.trueFail : 100)} lifeRow={trajMode && activeFrames && activeFrames.frames.length > 1 ? Math.min(frameIdx, activeFrames.frames.length - 1) / (activeFrames.frames.length - 1) : (replayOn ? lifePos : null)} /></Suspense><p className="hint">{trajMode && activeFrames ? (lang === 'es' ? `Waterfall de degradación REAL — ${(activeTraj?.set ?? '').toUpperCase()} ${activeTraj?.id ?? ''}: cada fila es una instantánea MEDIDA de la vida (envolvente). El instante seleccionado está resaltado. Arrastra para rotar.` : `REAL degradation waterfall — ${(activeTraj?.set ?? '').toUpperCase()} ${activeTraj?.id ?? ''}: each row is a MEASURED life-snapshot (envelope). The selected instant is highlighted. Drag to rotate.`) : t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
@@ -381,13 +381,13 @@ export default function Tool() {
         <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
-      <PrognosticEvalPanel rtf={rtf} fault={fault} severity={severity} lang={lang} />) },
+      <PrognosticEvalPanel rtf={trajMode ? { points: rtfShown.points, threshold: rtfShown.threshold, trueFail: rtfShown.trueFail } : rtf} fault={fault} severity={severity} lang={lang} />) },
     { id: 'iso', label: t.tIso, content: (
       <IsoTrendPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} bounds={isoBounds} isoLabel={ISO_CLASSES[isoClass].label} lang={lang} />) },
     { id: 'feat', label: t.tFeat, content: (
       <FeatureSpacePanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} realFeats={realFeats} realLabel={activeTraj ? `${(activeTraj.set ?? '').toUpperCase()} ${activeTraj.id}` : undefined} />) },
     { id: 'rec', label: t.tRec, content: (
-      <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={rul} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} isoBounds={isoBounds} lang={lang} />) },
+      <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={trajMode && activeTraj ? `${(activeTraj.set ?? '').toUpperCase()} ${activeTraj.id}` : bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={trajMode ? rulShown : rul} lifeH={trajMode ? (isFinite(rtfShown.trueFail) ? rtfShown.trueFail : 60) : (isFinite(rtf.trueFail) ? rtf.trueFail : 60)} isoBounds={isoBounds} lang={lang} />) },
   ];
 
   // Tools available per source KIND. A measured CWRU window is a DIAGNOSIS artifact: the signal-analysis tools run on
@@ -399,8 +399,10 @@ export default function Tool() {
   // - segment (CWRU): the measured window → signal suite + feature space (real point) + recommendation.
   // - trajectory (FEMTO/XJTU/IMS): each life-snapshot is a real window → signal suite + the REAL degradation
   //   waterfall + RUL/eval + ISO trend + feature trajectory. (Campbell needs an rpm sweep — excluded; constant rpm.)
-  const SEGMENT_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram'];
-  const TRAJ_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'wat', 'rul', 'feat'];
+  // Ottawa's varying speed uniquely enables a REAL Campbell/order map (it ships an order-vs-rpm raster); add it there.
+  const hasOrderMap = realMode && !!activeSample?.orderMap;
+  const SEGMENT_TABS = hasOrderMap ? ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'cam'] : ['sig', 'env', 'spec', 'csc', 'kur', 'gram'];
+  const TRAJ_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'wat', 'rul', 'eval', 'feat', 'rec'];
   const tabsShown = realMode ? tabs.filter((tb) => SEGMENT_TABS.includes(tb.id))
     : trajMode ? tabs.filter((tb) => TRAJ_TABS.includes(tb.id))
     : tabs;

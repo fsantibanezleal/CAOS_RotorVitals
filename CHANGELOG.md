@@ -3,6 +3,22 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.41.000] — 2026-06-25
+
+Feature — **completing the real-data suite**: the two tools that were still synthetic-only now run on real data.
+
+- **Ottawa REAL Campbell/order map** (a 7th segment tab, Ottawa only). The shipped order-vs-rpm raster is drawn as a
+  genuine Campbell: the shaft speed sweeps during the 10 s record, so the order-tracked envelope spectrum shows the
+  content vs instantaneous rpm, and the bearing fault frequencies are CONSTANT orders (horizontal lines). On an
+  outer-race segment the BPFO order (~3.57×) lights up exactly on its marker — the tool Ottawa's *variable* speed
+  uniquely enables and a constant-speed dataset cannot.
+- **RUL eval + recommendation on the real trajectory** (RUL mode now **11 tabs**): the α-λ accuracy plot evaluates the
+  projector against the selected dataset's true RUL; the recommendation is built from the real frame + fault-frequency
+  evidence + the real RUL projection.
+
+Remaining: feature-space in segment mode (a point over class clouds — a different view from the trajectory one) is
+the last synthetic-only tool. Verified live, 0 console errors.
+
 ## [0.40.000] — 2026-06-25
 
 Feature — **the FULL analysis suite now runs on real data; every downloaded dataset is integrated** (answering
