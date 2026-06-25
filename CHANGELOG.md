@@ -3,6 +3,19 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.41.001] — 2026-06-25
+
+Fix — **Envelope·SES (and any tool) no longer blanks the page on a geometry-less real source.** In RUL mode with
+FEMTO/IMS (no published bearing geometry → `base.f.bpfo = NaN`), the matched-peak table's guard `if (fam.freq <= 0)`
+did not catch NaN (`NaN <= 0` is `false`), so `nearestPeak` returned `found = freq[NaN] = undefined` and
+`undefined.toFixed()` threw — and with no error boundary the whole App unmounted to a blank page. Fixes:
+- guard `!(fam.freq > 0)` (catches NaN and ≤0); the SES `sesXmax` and the fault-frequency combs are NaN-guarded too
+  (and now render in orders for Ottawa); the empty matched-peak table is hidden when geometry is unknown.
+- **Added a per-panel `PanelBoundary`** so any future tool crash shows an inline "this tool doesn't apply to this
+  source" message instead of blanking the page — the tab bar stays usable.
+- **Exhaustively verified**: every tab in all 7 scenarios (synthetic 13 · CWRU/Ottawa/MaFaulDa segments · FEMTO/XJTU/IMS
+  RUL) renders with no blanks and no console errors.
+
 ## [0.41.000] — 2026-06-25
 
 Feature — **completing the real-data suite**: the two tools that were still synthetic-only now run on real data.

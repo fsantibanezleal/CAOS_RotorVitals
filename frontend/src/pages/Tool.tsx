@@ -31,6 +31,7 @@ import { RecommendationPanel } from '../viz/RecommendationPanel';
 import { DegradationReplayController } from '../viz/DegradationReplayController';
 import { buildLifeSnapshots, interpHI } from '../dsp/replay';
 import { PeakTable } from '../viz/PeakTable';
+import { PanelBoundary } from '../viz/PanelBoundary';
 import { realCepstrum } from '../dsp/cepstrum';
 import { spectrogram } from '../dsp/spectrogram';
 
@@ -208,7 +209,9 @@ export default function Tool() {
     for (let i = 0; i < f.length; i++) { if (f[i] > 6000) break; xs.push(f[i]); ys.push(20 * Math.log10(Math.max(m[i], 1e-9))); }
     return [xs, ys];
   }, [base]);
-  const sesXmax = Math.min(700, 10 * base.f.bpfo);
+  // SES view range: 10× the defect line if geometry is known, else a sensible default (700 Hz / 50 orders).
+  // Guards against NaN (FEMTO/IMS have no geometry → base.f.bpfo is NaN, which would make the chart range NaN).
+  const sesXmax = base.f.bpfo > 0 ? Math.min(base.orders ? 50 : 700, 10 * base.f.bpfo) : (base.orders ? 50 : 700);
   const liveSesData = useMemo<uPlot.AlignedData>(() => {
     const f = ses.freq, m = ses.mag; const xs: number[] = [], ys: number[] = [];
     for (let i = 0; i < f.length; i++) { if (f[i] > sesXmax) break; xs.push(f[i]); ys.push(m[i]); }
@@ -256,12 +259,18 @@ export default function Tool() {
     if (bandBrush) p.push(selectPlugin((lo, hi) => { setBand([Math.max(lo, 0.02 * fsEff), hi]); setBandMethod('manual'); }));
     return p;
   }, [effBand, specCombs, bandBrush]);
-  const sesCombs = useMemo<Comb[]>(() => [
-    { base: base.f.bpfo, harmonics: 6, color: C.outer, label: `BPFO ${base.f.bpfo.toFixed(1)} Hz` },
-    { base: base.f.bpfi, harmonics: 5, color: C.inner, label: `BPFI ${base.f.bpfi.toFixed(1)} Hz` },
-    { base: 2 * base.f.bsf, harmonics: 4, color: C.ball, label: `2·BSF ${(2 * base.f.bsf).toFixed(1)} Hz` },
-    { base: fr, harmonics: 3, color: C.shaft, label: `fr ${fr.toFixed(1)} Hz` },
-  ], [base, fr]);
+  const sesCombs = useMemo<Comb[]>(() => {
+    const u = base.orders ? '×' : ' Hz';      // order domain (Ottawa) labels in orders, not Hz
+    const p = base.orders ? 2 : 1;
+    // no fault-frequency combs when geometry is unknown (FEMTO/IMS) — only the shaft-rate comb
+    const c: Comb[] = base.f.bpfo > 0 ? [
+      { base: base.f.bpfo, harmonics: 6, color: C.outer, label: `BPFO ${base.f.bpfo.toFixed(p)}${u}` },
+      { base: base.f.bpfi, harmonics: 5, color: C.inner, label: `BPFI ${base.f.bpfi.toFixed(p)}${u}` },
+      { base: 2 * base.f.bsf, harmonics: 4, color: C.ball, label: `2·BSF ${(2 * base.f.bsf).toFixed(p)}${u}` },
+    ] : [];
+    if (!base.orders) c.push({ base: fr, harmonics: 3, color: C.shaft, label: `fr ${fr.toFixed(1)} Hz` });
+    return c;
+  }, [base, fr]);
   const sesPlugins = useMemo(() => [combsPlugin(sesCombs)], [sesCombs]);
   const cepCombs = useMemo<Comb[]>(() => ([{ base: 1 / fr, harmonics: 4, color: C.shaft, label: '1/fr' }, ...(base.f.bpfo > 0 ? [{ base: 1 / base.f.bpfo, harmonics: 3, color: C.outer, label: '1/BPFO' }] : [])]), [fr, base]);
   const cepPlugins = useMemo(() => [combsPlugin(cepCombs)], [cepCombs]);
@@ -354,7 +363,7 @@ export default function Tool() {
         {replayBar()}
         <p className="hint">{t.band}: <b>{(effBand[0] / 1000).toFixed(2)}–{(effBand[1] / 1000).toFixed(2)} kHz</b> · {t.clickKg}</p>
         <div className="rv-plot"><div className="rv-plot-t">{t.ses}</div><UPlotChart data={sesData} build={buildSes} plugins={sesPlugins} height={200} /></div>
-        <PeakTable ses={ses} f={base.f} lang={lang} />
+        {!base.noGeom && <PeakTable ses={ses} f={base.f} lang={lang} />}
         <div className="rv-plot"><div className="rv-plot-t">{t.cep}</div><UPlotChart data={cepData} build={buildCep} plugins={cepPlugins} height={150} /></div>
       </div>) },
     { id: 'spec', label: t.tSpec, content: (
@@ -403,9 +412,11 @@ export default function Tool() {
   const hasOrderMap = realMode && !!activeSample?.orderMap;
   const SEGMENT_TABS = hasOrderMap ? ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'cam'] : ['sig', 'env', 'spec', 'csc', 'kur', 'gram'];
   const TRAJ_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'wat', 'rul', 'eval', 'feat', 'rec'];
-  const tabsShown = realMode ? tabs.filter((tb) => SEGMENT_TABS.includes(tb.id))
+  const tabsShownRaw = realMode ? tabs.filter((tb) => SEGMENT_TABS.includes(tb.id))
     : trajMode ? tabs.filter((tb) => TRAJ_TABS.includes(tb.id))
     : tabs;
+  // wrap each panel so a crash in one tool renders an inline message instead of blanking the whole page
+  const tabsShown = tabsShownRaw.map((tb) => ({ ...tb, content: <PanelBoundary key={`${source}-${tb.id}`} lang={lang}>{tb.content}</PanelBoundary> }));
 
   return (
     <div className="page-body rv-layout">
