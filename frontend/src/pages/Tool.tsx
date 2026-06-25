@@ -10,7 +10,7 @@ import { ISO_CLASSES } from '../dsp/iso';
 import { defectFreqs, faultFreq, type FaultKind } from '../dsp/bearing';
 import { BEARINGS, bearingById } from '../data/bearings';
 import { SCENARIOS } from '../data/scenarios';
-import { runToFailure, loadFemtoRtf, femtoToRunToFailure, type FemtoTraj } from '../data/runtofailure';
+import { runToFailure, loadRealRtf, femtoToRunToFailure, RTF_SETS, type FemtoTraj } from '../data/runtofailure';
 import { loadSamples, diagnoseRaw, type Samples, type DiagOut } from '../dsp/learned';
 import { projectRUL } from '../dsp/health';
 import { UPlotChart } from '../viz/UPlotChart';
@@ -87,7 +87,7 @@ export default function Tool() {
   // REAL run-to-failure source for the RUL tab: '' = synthetic; else a FEMTO bearing id (real degradation data)
   const [rulSource, setRulSource] = useState('');
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
-  useEffect(() => { loadFemtoRtf().then(setFemtoTrajs).catch(() => {}); }, []);
+  useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
   // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
   // knobs) vs 'cwru' (a REAL held-out CWRU segment — the measured signal flows through the EXACT same tools; the
   // scenario knobs become read-only sample metadata, the analysis knobs stay live).
@@ -247,7 +247,7 @@ export default function Tool() {
   // The SAME projectRUL (onset → exp fit → first-passage) runs on whichever is selected; on FEMTO we can show the
   // predicted RUL next to the dataset's REAL failure time.
   const rtfShown = useMemo(() => {
-    if (trajMode && rulSource) { const ft = femtoTrajs.find((t) => t.id === rulSource); if (ft) return femtoToRunToFailure(ft); }
+    if (trajMode && rulSource) { const ft = femtoTrajs.find((t) => `${t.set}:${t.id}` === rulSource); if (ft) return femtoToRunToFailure(ft); }
     return rtf;
   }, [trajMode, rulSource, femtoTrajs, rtf]);
   const rulShown = useMemo(() => projectRUL(rtfShown.points, rtfShown.threshold), [rtfShown]);
@@ -357,7 +357,7 @@ export default function Tool() {
         <div className="rv-source" style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <button className={`chip ${source === 'synthetic' ? 'on' : ''}`} onClick={() => setSource('synthetic')}>{lang === 'es' ? 'Sintético' : 'Synthetic'}</button>
           <button className={`chip ${source === 'cwru' ? 'on' : ''}`} onClick={() => setSource('cwru')} disabled={!cwru} title={!cwru ? 'cargando…' : 'real CWRU 12 kHz segment'}>{lang === 'es' ? 'Real: CWRU (diag.)' : 'Real: CWRU (diag.)'}</button>
-          <button className={`chip ${source === 'femto' ? 'on' : ''}`} onClick={() => { setSource('femto'); if (!rulSource) { const f = femtoTrajs.find((t) => t.trueFail != null); if (f) setRulSource(f.id); } }} disabled={!femtoTrajs.length} title={!femtoTrajs.length ? 'cargando…' : 'real FEMTO run-to-failure'}>{lang === 'es' ? 'Real: FEMTO (RUL)' : 'Real: FEMTO (RUL)'}</button>
+          <button className={`chip ${source === 'femto' ? 'on' : ''}`} onClick={() => { setSource('femto'); if (!rulSource) { const f = femtoTrajs.find((t) => t.trueFail != null); if (f) setRulSource(`${f.set}:${f.id}`); } }} disabled={!femtoTrajs.length} title={!femtoTrajs.length ? 'cargando…' : 'real run-to-failure (FEMTO / XJTU / IMS)'}>{lang === 'es' ? 'Real: RUL' : 'Real: RUL'}</button>
         </div>
         {realMode ? (
           <>
@@ -373,9 +373,9 @@ export default function Tool() {
           </>
         ) : trajMode ? (
           <>
-            <label className="rv-ctl">{lang === 'es' ? 'Trayectoria real (FEMTO)' : 'Real trajectory (FEMTO)'}
+            <label className="rv-ctl">{lang === 'es' ? 'Trayectoria real (run-to-failure)' : 'Real trajectory (run-to-failure)'}
               <select className="select" value={rulSource} onChange={(e) => setRulSource(e.target.value)}>
-                {femtoTrajs.filter((ft) => ft.trueFail != null).map((ft) => <option key={ft.id} value={ft.id}>{ft.id} · C{ft.condition} · {ft.rpm} rpm</option>)}
+                {RTF_SETS.map((s) => { const items = femtoTrajs.filter((ft) => ft.set === s.set && ft.trueFail != null); return items.length ? <optgroup key={s.set} label={s.label}>{items.map((ft) => <option key={`${ft.set}:${ft.id}`} value={`${ft.set}:${ft.id}`}>{ft.id} · {ft.condition} · {ft.rpm} rpm</option>)}</optgroup> : null; })}
               </select>
             </label>
             <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
