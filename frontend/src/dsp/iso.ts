@@ -64,3 +64,16 @@ export function lifeFeatures(spec: {
   }
   return out;
 }
+
+/** Same LifeFeat[] but computed from REAL measured life-snapshots (the run-to-failure frames): per-frame RMS,
+ * envelope kurtosis and the SES amplitude at the fault frequency, so the feature-space view shows the MEASURED
+ * degradation trajectory. `fdef` (Hz) is the fault line for the SES amplitude (0 when geometry is unknown). */
+export function framesToLifeFeats(frames: { t: number; frac: number; raw: number[] }[], fs: number, fdef: number, band: [number, number]): LifeFeat[] {
+  const cal = 1; // real acceleration is already in g; the velocity reading stays in its native mm/s mapping
+  return frames.map((fr) => {
+    const x = Float64Array.from(fr.raw);
+    let sesAmp = 0;
+    if (fdef > 0 && isFinite(fdef)) { const ses = envelopeSpectrum(x, fs, band); const i = Math.min(ses.mag.length - 1, Math.round((fdef / (fs / 2)) * (ses.freq.length - 1))); sesAmp = ses.mag[i]; }
+    return { t: fr.t, sev: fr.frac, vrms: velocityRmsMmps(x, fs) * cal, rms: rms(x), kurt: kurtosis(x), sesAmp };
+  });
+}

@@ -6,12 +6,13 @@ import { magSpectrum, envelopeSpectrum } from '../dsp/envelope';
 import { kurtogram } from '../dsp/kurtogram';
 import { gramGrid } from '../dsp/infogram';
 import { diagnose } from '../dsp/diagnose';
-import { ISO_CLASSES } from '../dsp/iso';
+import { ISO_CLASSES, framesToLifeFeats } from '../dsp/iso';
 import { defectFreqs, faultFreq, type FaultKind } from '../dsp/bearing';
 import { BEARINGS, bearingById } from '../data/bearings';
 import { SCENARIOS } from '../data/scenarios';
-import { runToFailure, loadRealRtf, femtoToRunToFailure, RTF_SETS, type FemtoTraj } from '../data/runtofailure';
-import { loadSamples, diagnoseRaw, type Samples, type DiagOut } from '../dsp/learned';
+import { runToFailure, loadRealRtf, loadRealFrames, femtoToRunToFailure, RTF_SETS, type FemtoTraj, type FrameSet } from '../data/runtofailure';
+import { diagnoseRaw, type DiagOut } from '../dsp/learned';
+import { loadSegmentDatasets, type SegDataset } from '../dsp/segments';
 import { projectRUL } from '../dsp/health';
 import { UPlotChart } from '../viz/UPlotChart';
 import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
@@ -39,6 +40,10 @@ const Waterfall3D = lazy(() => import('../viz/Waterfall3D').then((m) => ({ defau
 const FAULTS: FaultKind[] = ['healthy', 'outer', 'inner', 'ball'];
 const C = { outer: '#f59f00', inner: '#f06595', ball: '#7c5cff', shaft: '#3fb950', band: '#58a6ff', outlier: '#f85149', window: '#d29922' };
 const FS = 12000;
+// XJTU-SY test bearing (LDK UER204) — the one run-to-failure set with published geometry, so its envelope/SES and
+// cyclostationary tabs can mark real fault frequencies. FEMTO/IMS publish none → those run without order markers.
+const XJTU_BEARING = { id: 'ldk-uer204', label: 'LDK UER204 (XJTU-SY)', n: 8, d: 7.92, D: 34.55, contactDeg: 0 };
+const NO_GEOM = { ftf: NaN, bpfo: NaN, bpfi: NaN, bsf: NaN }; // unknown geometry → no fault-frequency markers drawn
 
 const T = {
   en: { bearing: 'Bearing', fault: 'Planted fault', severity: 'Severity', rpm: 'Shaft speed (rpm)', snr: 'SNR (dB)',
@@ -92,23 +97,41 @@ export default function Tool() {
   // knobs) vs 'cwru' (a REAL held-out CWRU segment — the measured signal flows through the EXACT same tools; the
   // scenario knobs become read-only sample metadata, the analysis knobs stay live).
   const [source, setSource] = useState<'synthetic' | 'cwru' | 'femto'>('synthetic');
-  const [cwru, setCwru] = useState<Samples | null>(null);
-  const [cwruIdx, setCwruIdx] = useState(0);
+  const [segDatasets, setSegDatasets] = useState<SegDataset[]>([]);
+  const [segKey, setSegKey] = useState<'cwru' | 'ottawa' | 'mafaulda'>('cwru');
+  const [segIdx, setSegIdx] = useState(0);
   const [realDx, setRealDx] = useState<DiagOut | null>(null); // the WDCNN prediction on the real segment (ONNX)
-  useEffect(() => { loadSamples().then(setCwru).catch(() => {}); }, []);
-  const realMode = source === 'cwru' && !!cwru; // a measured DIAGNOSIS segment
-  const trajMode = source === 'femto';           // a REAL run-to-failure TRAJECTORY (prognostics)
-  // in real mode, sync the shaft-rate readout to the segment's rpm so fr/defect-freqs are consistent
-  useEffect(() => { if (source === 'cwru' && cwru) setRpm(cwru.rpm ?? 1730); }, [source, cwru]);
-  // run the trained WDCNN (ONNX) on the selected real segment — the learned diagnosis on real data
+  useEffect(() => { loadSegmentDatasets().then(setSegDatasets).catch(() => {}); }, []);
+  const cwruClasses = useMemo(() => segDatasets.find((d) => d.key === 'cwru')?.classes ?? ['normal', 'inner', 'outer', 'ball'], [segDatasets]);
+  const activeSeg = source === 'cwru' ? (segDatasets.find((d) => d.key === segKey) ?? segDatasets[0] ?? null) : null;
+  const activeSample = activeSeg ? activeSeg.samples[Math.min(segIdx, activeSeg.samples.length - 1)] ?? null : null;
+  const realMode = source === 'cwru' && !!activeSeg; // a measured DIAGNOSIS segment (CWRU / Ottawa / MaFaulDa)
+  const trajMode = source === 'femto';               // a REAL run-to-failure TRAJECTORY (prognostics)
+  useEffect(() => { setSegIdx((i) => (activeSeg ? Math.min(i, activeSeg.samples.length - 1) : i)); }, [activeSeg]);
+  // in real time-domain mode, sync the shaft-rate readout to the segment rpm so fr/defect-freqs are consistent
+  // (order-domain Ottawa keeps fr conceptual = 1 order, so its rpm is not pushed into the Hz readout)
+  useEffect(() => { if (realMode && activeSample?.rpm && activeSeg?.domain !== 'orders') setRpm(activeSample.rpm); }, [realMode, activeSample, activeSeg]);
+  // run the trained WDCNN (ONNX) on the selected real segment. CWRU is in-domain; Ottawa/MaFaulDa are CROSS-domain
+  // (a 12 kHz window through the CWRU-trained net), so the prediction stays in the CWRU class vocabulary.
   useEffect(() => {
-    if (source === 'cwru' && cwru) {
+    if (realMode && activeSeg && activeSample && activeSeg.wdcnnMode !== 'none') {
       let dead = false;
-      diagnoseRaw(cwru.samples[cwruIdx].raw, cwru.classes).then((d) => { if (!dead) setRealDx(d); }).catch(() => {});
+      diagnoseRaw(activeSample.rawWdcnn ?? activeSample.raw, cwruClasses).then((d) => { if (!dead) setRealDx(d); }).catch(() => {});
       return () => { dead = true; };
     }
     setRealDx(null);
-  }, [source, cwru, cwruIdx]);
+  }, [realMode, activeSeg, activeSample, cwruClasses]);
+
+  // REAL raw life-snapshots for the trajectory mode: ~8 measured windows along each run-to-failure, so the whole
+  // signal suite + the REAL degradation waterfall + the feature trajectory run on measured data (not only the HI).
+  const [frames, setFrames] = useState<Record<string, FrameSet>>({});
+  useEffect(() => { loadRealFrames().then(setFrames).catch(() => {}); }, []);
+  const [frameIdx, setFrameIdx] = useState(7); // default to the failure end (last frame)
+  const activeFrames = trajMode && rulSource ? frames[rulSource] ?? null : null;
+  const activeTraj = trajMode && rulSource ? femtoTrajs.find((tr) => `${tr.set}:${tr.id}` === rulSource) ?? null : null;
+  useEffect(() => { setFrameIdx((i) => (activeFrames ? Math.min(i, activeFrames.frames.length - 1) : i)); }, [activeFrames]);
+  // sync the shaft-rate readout to the trajectory's rpm, so fr + the fault-frequency markers/readout are consistent
+  useEffect(() => { if (trajMode && activeTraj?.rpm) setRpm(activeTraj.rpm); }, [trajMode, activeTraj]);
 
   const seed = useMemo(() => SCENARIOS.find((s) => s.fault === fault)?.spec.seed ?? 202, [fault]);
   const fr = rpm / 60;
@@ -119,30 +142,42 @@ export default function Tool() {
     let bearing = bearingById(bearingId);
     let useFr = fr;
     let trueCls: string | null = null;
-    if (source === 'cwru' && cwru) {
-      // REAL: a measured held-out CWRU segment (2048 samples @ 12 kHz). The exact same tools run on the measured
-      // signal — nothing is generated. The scenario knobs (fault/severity/snr) don't apply; only the analysis ones do.
-      const sm = cwru.samples[cwruIdx];
-      const x = Float64Array.from(sm.raw);
-      sig = { x, t: Float64Array.from(x, (_, i) => i / (cwru.fs || FS)), fs: cwru.fs || FS };
-      bearing = bearingById('skf6205'); // CWRU 6205 drive-end
-      useFr = (cwru.rpm ?? 1730) / 60;
-      trueCls = sm.cls;
+    if (realMode && activeSeg && activeSample) {
+      // REAL diagnosis segment — CWRU (12 kHz), Ottawa (computed-order-tracked, order domain) or MaFaulDa (50 kHz).
+      // The exact same tools run on the measured signal; scenario knobs don't apply, analysis knobs do. In the order
+      // domain (Ottawa) fr=1 so the kinematic frequencies are constant ORDERS (immune to the varying speed).
+      const x = Float64Array.from(activeSample.raw);
+      sig = { x, t: Float64Array.from(x, (_, i) => i / activeSeg.fs), fs: activeSeg.fs };
+      bearing = activeSeg.bearing;
+      useFr = activeSeg.domain === 'orders' ? 1 : (activeSample.rpm ?? activeSeg.rpm) / 60;
+      trueCls = activeSample.cls;
+    } else if (trajMode && activeFrames && activeFrames.frames.length) {
+      // REAL run-to-failure: the measured raw window at the selected life instant. The whole signal suite runs on it;
+      // XJTU has published geometry (fault-frequency markers), FEMTO/IMS don't (markers suppressed below).
+      const fr2 = activeFrames.frames[Math.min(frameIdx, activeFrames.frames.length - 1)];
+      const x = Float64Array.from(fr2.raw);
+      sig = { x, t: Float64Array.from(x, (_, i) => i / activeFrames.fs), fs: activeFrames.fs };
+      bearing = activeFrames.faultOrders ? XJTU_BEARING : bearing;
+      useFr = (activeTraj?.rpm ?? 1800) / 60;
     } else {
       const spec: SignalSpec = { fs: FS, dur: 1, rpm, bearing, fault, severity: fault === 'healthy' ? 0 : severity, resonance: 3400, zeta: 0.04, snrDb: snr, seed };
       sig = synth(spec);
     }
-    const raw = magSpectrum(sig.x, FS);
-    const kg = kurtogram(sig.x, FS, 5);
-    const f = defectFreqs(bearing, useFr);
+    const fsB = sig.fs; // the ACTIVE sample rate (12 kHz CWRU / 25.6 kHz FEMTO-XJTU / 20 kHz IMS / order-domain), not a constant
+    const raw = magSpectrum(sig.x, fsB);
+    const kg = kurtogram(sig.x, fsB, 5);
+    // unknown-geometry run-to-failure sets (FEMTO/IMS) draw no fault-frequency markers — honest over invented lines
+    const noGeom = trajMode && !!activeFrames && !activeFrames.faultOrders;
+    const f = noGeom ? NO_GEOM : defectFreqs(bearing, useFr);
     // band-INDEPENDENT diagnosis (from the kurtogram band) — seeds the IESFOgram target without the
     // effBand→ses→dx→α₀→effBand cycle that using the live dx would create.
-    const kgBand: [number, number] = [Math.max(kg.best.f1, 0.02 * FS), kg.best.f2];
-    const dx0 = diagnose(envelopeSpectrum(sig.x, FS, kgBand, false), f, 5);
-    return { sig, raw, kg, f, dx0, trueCls, real: source === 'cwru' && !!cwru };
-  }, [source, cwru, cwruIdx, bearingId, fault, severity, rpm, snr, seed, fr]);
+    const kgBand: [number, number] = [Math.max(kg.best.f1, 0.02 * fsB), kg.best.f2];
+    const dx0 = diagnose(envelopeSpectrum(sig.x, fsB, kgBand, false), f, 5);
+    return { sig, raw, kg, f, dx0, trueCls, real: realMode, noGeom, orders: realMode && activeSeg?.domain === 'orders' };
+  }, [realMode, activeSeg, activeSample, trajMode, activeFrames, activeTraj, frameIdx, bearingId, fault, severity, rpm, snr, seed, fr]);
 
   useEffect(() => { setBand(null); setFund(null); }, [base]);
+  const fsEff = base.sig.fs; // every tool that consumes base.sig must use this, not the synthetic FS constant
 
   // the diagnosed fault's cyclic frequency (BPFO/BPFI/2·BSF) — the IESFOgram target. From the band-independent dx0.
   const faultAlpha = useMemo(() => {
@@ -151,17 +186,17 @@ export default function Tool() {
   }, [base]);
   // T10: the IESFOgram targeted best band (only computed when that method is selected)
   const iesfoBest = useMemo(() => bandMethod === 'iesfo'
-    ? gramGrid(base.sig.x, FS, 5, { targetAlpha: faultAlpha, fr, blind: false }).best.iesfo : null,
+    ? gramGrid(base.sig.x, fsEff, 5, { targetAlpha: faultAlpha, fr, blind: false }).best.iesfo : null,
     [bandMethod, base, faultAlpha, fr]);
 
   // demod band: fixed 2–4 kHz · manual brush/pick · auto (kurtogram) · IESFOgram (targeted at the diagnosed fault)
   const effBand = useMemo<[number, number]>(() => {
     if (bandMethod === 'fixed') return [2000, 4000];
     if (bandMethod === 'manual' && band) return band;
-    if (bandMethod === 'iesfo' && iesfoBest) return [Math.max(iesfoBest.f1, 0.02 * FS), iesfoBest.f2];
-    return [Math.max(base.kg.best.f1, 0.02 * FS), base.kg.best.f2];
+    if (bandMethod === 'iesfo' && iesfoBest) return [Math.max(iesfoBest.f1, 0.02 * fsEff), iesfoBest.f2];
+    return [Math.max(base.kg.best.f1, 0.02 * fsEff), base.kg.best.f2];
   }, [bandMethod, band, base, iesfoBest]);
-  const ses = useMemo(() => envelopeSpectrum(base.sig.x, FS, effBand, envSquared), [base, effBand, envSquared]);
+  const ses = useMemo(() => envelopeSpectrum(base.sig.x, fsEff, effBand, envSquared), [base, effBand, envSquared]);
   const dx = useMemo(() => diagnose(ses, base.f, nHarm), [ses, base, nHarm]);
   const sev = dx.scores[0]?.score ?? 0;
   const isoBounds = ISO_CLASSES[isoClass].bounds;
@@ -183,8 +218,8 @@ export default function Tool() {
   const replaySnaps = useMemo(() => (replayOn ? buildLifeSnapshots({ bearing: bearingById(bearingId), fault, severityEnd: severity, rpm, snrDb: snr, sesXmax }) : null), [replayOn, bearingId, fault, severity, rpm, snr, sesXmax]);
   const curSnap = replaySnaps ? replaySnaps[Math.round(lifePos * (replaySnaps.length - 1))] : null;
   const sesData = curSnap ? (curSnap.sesData as uPlot.AlignedData) : liveSesData;
-  const spectro = useMemo(() => spectrogram(base.sig.x, FS, 512, 0.75), [base]);
-  const cep = useMemo(() => realCepstrum(base.sig.x, FS), [base]);
+  const spectro = useMemo(() => spectrogram(base.sig.x, fsEff, 512, 0.75), [base]);
+  const cep = useMemo(() => realCepstrum(base.sig.x, fsEff), [base]);
   const cepData = useMemo<uPlot.AlignedData>(() => { const q = cep.quef, a = cep.amp; const xs: number[] = [], ys: number[] = []; for (let i = 1; i < q.length; i++) { if (q[i] > 0.05) break; xs.push(q[i]); ys.push(a[i]); } return [xs, ys]; }, [cep]);
 
   // impact markers + fault-frequency detection windows on the waveform (first 0.08 s)
@@ -218,7 +253,7 @@ export default function Tool() {
   const specCombs = useMemo<Comb[]>(() => { const a: Comb[] = [{ base: fr, harmonics: 6, color: C.shaft, label: `fr ${fr.toFixed(1)} Hz` }]; if (fund) a.push({ base: fund, harmonics: 5, color: C.band, label: `${fund.toFixed(0)} Hz` }); return a; }, [fr, fund]);
   const specPlugins = useMemo(() => {
     const p = [regionsPlugin([effBand], C.band), combsPlugin(specCombs)];
-    if (bandBrush) p.push(selectPlugin((lo, hi) => { setBand([Math.max(lo, 0.02 * FS), hi]); setBandMethod('manual'); }));
+    if (bandBrush) p.push(selectPlugin((lo, hi) => { setBand([Math.max(lo, 0.02 * fsEff), hi]); setBandMethod('manual'); }));
     return p;
   }, [effBand, specCombs, bandBrush]);
   const sesCombs = useMemo<Comb[]>(() => [
@@ -259,7 +294,20 @@ export default function Tool() {
   // so the emerging ridge sits at the active defect frequency and the surface scales with severity.
   const WAT_FMAX = 600;
   const waterfall = useMemo(() => {
-    const rows = 26, fmax = WAT_FMAX, cols = 110; const grid: number[][] = []; let gmax = 1e-9;
+    const fmax = WAT_FMAX, cols = 110; let gmax = 1e-9;
+    // REAL degradation: stack the envelope spectrum of each MEASURED life-snapshot over the run-to-failure life.
+    if (trajMode && activeFrames && activeFrames.frames.length) {
+      const fsF = activeFrames.fs;
+      const band: [number, number] = [2000, Math.min(4500, 0.35 * (fsF / 2))];
+      const grid = activeFrames.frames.map((fr3) => {
+        const s = envelopeSpectrum(Float64Array.from(fr3.raw), fsF, band);
+        const rowv: number[] = [];
+        for (let c = 0; c < cols; c++) { const f = (c / (cols - 1)) * fmax; let i = Math.round((f / (fsF / 2)) * (s.freq.length - 1)); i = Math.max(0, Math.min(s.mag.length - 1, i)); const v = s.mag[i]; rowv.push(v); if (v > gmax) gmax = v; }
+        return rowv;
+      });
+      return grid.map((row) => row.map((v) => v / gmax));
+    }
+    const rows = 26; const grid: number[][] = [];
     const bearing = bearingById(bearingId);
     const sevEnd = fault === 'healthy' ? 0 : Math.max(0.25, severity) * 1.2;
     for (let r = 0; r < rows; r++) {
@@ -271,13 +319,17 @@ export default function Tool() {
       grid.push(rowv);
     }
     return grid.map((row) => row.map((v) => v / gmax));
-  }, [bearingId, fault, rpm, severity]);
+  }, [trajMode, activeFrames, bearingId, fault, rpm, severity]);
   // defect frequency of the active fault → labels the emerging ridge in the 3D waterfall
   const ridge = useMemo(() => {
     const hz = fault === 'outer' ? base.f.bpfo : fault === 'inner' ? base.f.bpfi : fault === 'ball' ? 2 * base.f.bsf : 0;
     const label = fault === 'outer' ? 'BPFO' : fault === 'inner' ? 'BPFI' : fault === 'ball' ? '2·BSF' : '';
     return { hz, label };
   }, [fault, base]);
+  // REAL feature-space trajectory: RMS / envelope-kurtosis / SES-amp of each MEASURED life-frame (run-to-failure)
+  const realFeats = useMemo(() => (trajMode && activeFrames && activeFrames.frames.length >= 2)
+    ? framesToLifeFeats(activeFrames.frames, activeFrames.fs, base.noGeom ? 0 : base.f.bpfo, [2000, Math.min(4500, 0.35 * (activeFrames.fs / 2))])
+    : undefined, [trajMode, activeFrames, base]);
 
   const faultLabel = (k: string) => (t as Record<string, string>)[`f_${k}`] ?? k;
 
@@ -308,15 +360,15 @@ export default function Tool() {
     { id: 'spec', label: t.tSpec, content: (
       <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{t.spectroT}</div><Heatmap2D cols={spectro.cols} times={spectro.times} freqs={spectro.freqs} fmax={6000} band={effBand} /></div><p className="hint">{t.spectroNote}</p></div>) },
     { id: 'csc', label: t.tCsc, content: (
-      <CscPanel x={base.sig.x} fs={FS} f={base.f} lang={lang} />) },
+      <CscPanel x={base.sig.x} fs={fsEff} f={base.f} lang={lang} />) },
     { id: 'kur', label: t.tKur, content: (
-      <div className="rv-vizstack"><Kurtogram kg={base.kg} fs={FS} onPick={onPickBand} /><p className="hint">{t.clickKg}</p></div>) },
+      <div className="rv-vizstack"><Kurtogram kg={base.kg} fs={fsEff} onPick={onPickBand} /><p className="hint">{t.clickKg}</p></div>) },
     { id: 'gram', label: t.tGram, content: (
-      <GramPanel x={base.sig.x} fs={FS} onPick={onPickBand} lang={lang} f={base.f} fr={fr} faultAlpha={faultAlpha} />) },
+      <GramPanel x={base.sig.x} fs={fsEff} onPick={onPickBand} lang={lang} f={base.f} fr={fr} faultAlpha={faultAlpha} />) },
     { id: 'cam', label: t.tCam, content: (
       <CampbellPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} seed={seed} rpm={rpm} lang={lang} />) },
     { id: 'wat', label: t.tWat, content: (
-      <div className="rv-vizstack">{replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} lifeRow={replayOn ? lifePos : null} /></Suspense><p className="hint">{t.watNote}</p></div>) },
+      <div className="rv-vizstack">{!trajMode && replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={base.noGeom ? 0 : ridge.hz} ridgeLabel={base.noGeom ? '' : ridge.label} lifeH={trajMode ? (isFinite(rtfShown.trueFail) ? rtfShown.trueFail : 100) : (isFinite(rtf.trueFail) ? rtf.trueFail : 100)} lifeRow={trajMode && activeFrames && activeFrames.frames.length > 1 ? Math.min(frameIdx, activeFrames.frames.length - 1) / (activeFrames.frames.length - 1) : (replayOn ? lifePos : null)} /></Suspense><p className="hint">{trajMode && activeFrames ? (lang === 'es' ? `Waterfall de degradación REAL — ${(activeTraj?.set ?? '').toUpperCase()} ${activeTraj?.id ?? ''}: cada fila es una instantánea MEDIDA de la vida (envolvente). El instante seleccionado está resaltado. Arrastra para rotar.` : `REAL degradation waterfall — ${(activeTraj?.set ?? '').toUpperCase()} ${activeTraj?.id ?? ''}: each row is a MEASURED life-snapshot (envelope). The selected instant is highlighted. Drag to rotate.`) : t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
       <div className="rv-vizstack">
         {!trajMode && replayBar()}
@@ -333,7 +385,7 @@ export default function Tool() {
     { id: 'iso', label: t.tIso, content: (
       <IsoTrendPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} bounds={isoBounds} isoLabel={ISO_CLASSES[isoClass].label} lang={lang} />) },
     { id: 'feat', label: t.tFeat, content: (
-      <FeatureSpacePanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} />) },
+      <FeatureSpacePanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} realFeats={realFeats} realLabel={activeTraj ? `${(activeTraj.set ?? '').toUpperCase()} ${activeTraj.id}` : undefined} />) },
     { id: 'rec', label: t.tRec, content: (
       <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={rul} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} isoBounds={isoBounds} lang={lang} />) },
   ];
@@ -343,8 +395,12 @@ export default function Tool() {
   // artifact: only the RUL projection runs on the measured HI(t) curve. Synthetic mode keeps every tool (the full
   // simulator). Tools that need a synthetic ground truth (Campbell run-up, feature-cloud, synthetic prognosis) are
   // hidden in real modes rather than shown fed by fabricated data — honesty over breadth.
+  // Tools available per source KIND, now that real artifacts carry raw windows:
+  // - segment (CWRU): the measured window → signal suite + feature space (real point) + recommendation.
+  // - trajectory (FEMTO/XJTU/IMS): each life-snapshot is a real window → signal suite + the REAL degradation
+  //   waterfall + RUL/eval + ISO trend + feature trajectory. (Campbell needs an rpm sweep — excluded; constant rpm.)
   const SEGMENT_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram'];
-  const TRAJ_TABS = ['rul'];
+  const TRAJ_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'wat', 'rul', 'feat'];
   const tabsShown = realMode ? tabs.filter((tb) => SEGMENT_TABS.includes(tb.id))
     : trajMode ? tabs.filter((tb) => TRAJ_TABS.includes(tb.id))
     : tabs;
@@ -356,19 +412,22 @@ export default function Tool() {
             measured CWRU segment (the analysis tools run on the measured signal; scenario knobs become read-only). */}
         <div className="rv-source" style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <button className={`chip ${source === 'synthetic' ? 'on' : ''}`} onClick={() => setSource('synthetic')}>{lang === 'es' ? 'Sintético' : 'Synthetic'}</button>
-          <button className={`chip ${source === 'cwru' ? 'on' : ''}`} onClick={() => setSource('cwru')} disabled={!cwru} title={!cwru ? 'cargando…' : 'real CWRU 12 kHz segment'}>{lang === 'es' ? 'Real: CWRU (diag.)' : 'Real: CWRU (diag.)'}</button>
+          <button className={`chip ${source === 'cwru' ? 'on' : ''}`} onClick={() => setSource('cwru')} disabled={!segDatasets.length} title={!segDatasets.length ? 'cargando…' : 'real measured segment (CWRU / Ottawa / MaFaulDa)'}>{lang === 'es' ? 'Real: segmento (diag.)' : 'Real: segment (diag.)'}</button>
           <button className={`chip ${source === 'femto' ? 'on' : ''}`} onClick={() => { setSource('femto'); if (!rulSource) { const f = femtoTrajs.find((t) => t.trueFail != null); if (f) setRulSource(`${f.set}:${f.id}`); } }} disabled={!femtoTrajs.length} title={!femtoTrajs.length ? 'cargando…' : 'real run-to-failure (FEMTO / XJTU / IMS)'}>{lang === 'es' ? 'Real: RUL' : 'Real: RUL'}</button>
         </div>
         {realMode ? (
           <>
-            <label className="rv-ctl">{lang === 'es' ? 'Segmento real (CWRU)' : 'Real segment (CWRU)'}
-              <select className="select" value={cwruIdx} onChange={(e) => setCwruIdx(+e.target.value)}>
-                {cwru!.samples.map((sm, i) => <option key={i} value={i}>{faultLabel(sm.cls)} · {sm.file} #{sm.seg}</option>)}
+            <div className="rv-source" style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+              {segDatasets.map((d) => <button key={d.key} className={`chip ${segKey === d.key ? 'on' : ''}`} onClick={() => { setSegKey(d.key); setSegIdx(0); }} title={`${d.classes.join('/')} · ${d.domain}`}>{d.label}</button>)}
+            </div>
+            <label className="rv-ctl">{lang === 'es' ? 'Segmento real' : 'Real segment'}
+              <select className="select" value={Math.min(segIdx, (activeSeg?.samples.length ?? 1) - 1)} onChange={(e) => setSegIdx(+e.target.value)}>
+                {activeSeg!.samples.map((sm, i) => <option key={i} value={i}>{sm.label}</option>)}
               </select>
             </label>
             <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
-              {lang === 'es' ? 'señal medida' : 'measured signal'} · CWRU 6205 · {cwru!.rpm} rpm · {lang === 'es' ? 'verdad' : 'truth'}: <b>{faultLabel(base.trueCls || '')}</b><br />
-              <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'perillas de escenario inactivas (el dato está medido); las de análisis siguen vivas ↓' : 'scenario knobs inactive (the datum is measured); the analysis knobs stay live ↓'}</span>
+              {activeSample?.meta} · {lang === 'es' ? 'verdad' : 'truth'}: <b>{faultLabel(base.trueCls || '')}</b><br />
+              <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'perillas de escenario inactivas (el dato está medido); las de análisis siguen vivas ↓' : 'scenario knobs inactive (the datum is measured); the analysis knobs stay live ↓'}{base.orders ? (lang === 'es' ? ' · eje en ÓRDENES (×rev)' : ' · axis in ORDERS (×rev)') : ''}</span>
             </div>
           </>
         ) : trajMode ? (
@@ -378,9 +437,16 @@ export default function Tool() {
                 {RTF_SETS.map((s) => { const items = femtoTrajs.filter((ft) => ft.set === s.set && ft.trueFail != null); return items.length ? <optgroup key={s.set} label={s.label}>{items.map((ft) => <option key={`${ft.set}:${ft.id}`} value={`${ft.set}:${ft.id}`}>{ft.id} · {ft.condition} · {ft.rpm} rpm</option>)}</optgroup> : null; })}
               </select>
             </label>
+            {activeFrames && activeFrames.frames.length > 0 && (() => { const fk = activeFrames.frames[Math.min(frameIdx, activeFrames.frames.length - 1)]; return (
+              <label className="rv-ctl">{lang === 'es' ? 'Instante de vida' : 'Life instant'}: {(fk.frac * 100).toFixed(0)}% · {fk.t.toFixed(2)} h · RMS {fk.rms.toFixed(2)} g
+                <input className="range" type="range" min={0} max={activeFrames.frames.length - 1} step={1} value={Math.min(frameIdx, activeFrames.frames.length - 1)} onChange={(e) => setFrameIdx(+e.target.value)} />
+              </label>); })()}
             <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
               {lang === 'es' ? 'run-to-failure medido' : 'measured run-to-failure'} · {lang === 'es' ? 'RMS de aceleración' : 'acceleration RMS'} · {lang === 'es' ? 'verdad' : 'truth'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} h` : '—'}</b><br />
-              <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'solo aplica el pronóstico (RUL) sobre la curva HI medida' : 'only the prognosis (RUL) applies on the measured HI curve'}</span>
+              <span style={{ opacity: 0.8 }}>{activeFrames && activeFrames.frames.length
+                ? (lang === 'es' ? 'las herramientas corren sobre la ventana medida de cada instante; el waterfall es la degradación REAL' : 'the tools run on the measured window at each instant; the waterfall is the REAL degradation')
+                : (lang === 'es' ? 'solo aplica el pronóstico (RUL) sobre la curva HI medida' : 'only the prognosis (RUL) applies on the measured HI curve')}
+              {base.noGeom ? (lang === 'es' ? ' · sin geometría publicada → sin marcadores de falla' : ' · no published geometry → no fault-frequency markers') : ''}</span>
             </div>
           </>
         ) : (
@@ -396,10 +462,8 @@ export default function Tool() {
           </>
         )}
 
-        {/* Analysis params + classical/learned diagnosis + severity gauge + fault frequencies describe a measured or
-            synthetic SIGNAL — they apply to synthetic and real-segment (CWRU) modes. A FEMTO run-to-failure is a pure
-            HI(t) curve, so they are hidden in trajectory mode (only the RUL projection applies there). */}
-        {!trajMode && (<>
+        {/* Analysis params drive HOW any signal is processed (band/envelope/harmonics/ISO) — they apply to EVERY mode
+            now that real trajectory frames are real windows too, so they stay live throughout. */}
         <div className="rv-analysis" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
           <div className="muted small" style={{ fontWeight: 700, letterSpacing: '0.03em', marginBottom: '0.2rem' }}>{t.anlys}</div>
           <label className="rv-ctl">{t.aBand}<select className="select" value={bandMethod} onChange={(e) => setBandMethod(e.target.value as 'auto' | 'fixed' | 'manual' | 'iesfo')}><option value="auto">{t.bAuto}</option><option value="iesfo">{t.bIesfo}</option><option value="fixed">{t.bFixed}</option><option value="manual">{t.bManual}</option></select></label>
@@ -408,18 +472,29 @@ export default function Tool() {
           <label className="rv-ctl">{t.aIso}<select className="select" value={isoClass} onChange={(e) => setIsoClass(e.target.value)}>{Object.entries(ISO_CLASSES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></label>
         </div>
 
-        <div className="rv-diag card" data-fault={dx.top}>
-          <div className="rv-diag-top"><span className="muted small">{realMode ? (lang === 'es' ? 'Envolvente/SES (clásico)' : 'Envelope/SES (classical)') : t.diag}</span><strong>{faultLabel(dx.top)}</strong><span className="muted small">{(dx.confidence * 100).toFixed(0)}% {t.conf}</span></div>
+        {/* Classical/learned diagnosis + severity gauge + fault-frequency readout need known fault geometry: synthetic,
+            CWRU and XJTU (real published orders). Hidden for FEMTO/IMS run-to-failure (no geometry → base.noGeom). */}
+        {!base.noGeom && (<>
+        {/* In trajectory (run-to-failure) mode the single-threshold classifier is calibrated on the synthetic
+            contrast and doesn't transfer; instead of a misleading binary verdict we surface the fault-frequency
+            family with the strongest spectral evidence (the prominence ranking the user reads off the SES). */}
+        <div className="rv-diag card" data-fault={trajMode ? dx.scores[0].kind : dx.top}>
+          <div className="rv-diag-top"><span className="muted small">{trajMode ? (lang === 'es' ? 'Frec. de falla (evidencia)' : 'Fault freqs (evidence)') : realMode ? (lang === 'es' ? 'Envolvente/SES (clásico)' : 'Envelope/SES (classical)') : t.diag}</span><strong>{faultLabel(trajMode ? dx.scores[0].kind : dx.top)}</strong>{!trajMode && <span className="muted small">{(dx.confidence * 100).toFixed(0)}% {t.conf}</span>}</div>
           {dx.scores.map((s) => <div key={s.kind} className="rv-bar"><span>{faultLabel(s.kind)}</span><div className="rv-bar-t"><i style={{ width: `${Math.min(100, (s.score / (dx.scores[0].score || 1)) * 100)}%` }} /></div><span className="mono">{s.score.toFixed(1)}×</span></div>)}
         </div>
-        {realMode && realDx && (
+        {realMode && realDx && activeSeg && (() => {
+          // cross-domain truth-check: map the dataset's truth class to its CWRU-WDCNN counterpart (null = none, e.g. cage)
+          const expected = activeSeg.wdcnnClasses[base.trueCls || ''] ?? null;
+          const cross = activeSeg.wdcnnMode === 'cross';
+          const hit = expected != null && realDx.predClass === expected;
+          return (
           <div className="rv-diag card" style={{ marginTop: '0.4rem' }} data-fault={realDx.predClass}>
-            <div className="rv-diag-top"><span className="muted small">WDCNN (ONNX)</span><strong>{faultLabel(realDx.predClass)}</strong><span className="muted small">{(Math.max(...realDx.probs) * 100).toFixed(0)}%</span></div>
-            <div className="muted small">{lang === 'es' ? 'modelo aprendido, en vivo sobre el segmento real' : 'learned model, live on the real segment'} · {realDx.predClass === base.trueCls ? '✓' : '✗'} {lang === 'es' ? 'vs verdad' : 'vs truth'} <b>{faultLabel(base.trueCls || '')}</b></div>
-          </div>
-        )}
+            <div className="rv-diag-top"><span className="muted small">WDCNN (ONNX){cross ? ' · cross-domain' : ''}</span><strong>{faultLabel(realDx.predClass)}</strong><span className="muted small">{(Math.max(...realDx.probs) * 100).toFixed(0)}%</span></div>
+            <div className="muted small">{cross ? (lang === 'es' ? 'modelo entrenado en CWRU, sobre otro dominio' : 'CWRU-trained model, on another domain') : (lang === 'es' ? 'modelo aprendido, en vivo sobre el segmento real' : 'learned model, live on the real segment')} · {expected == null ? (lang === 'es' ? 'clase sin contraparte CWRU' : 'class has no CWRU counterpart') : <>{hit ? '✓' : '✗'} {lang === 'es' ? 'vs verdad' : 'vs truth'} <b>{faultLabel(base.trueCls || '')}</b></>}</div>
+          </div>);
+        })()}
         <Gauge title={t.sev} value={sev} max={12} unit="×" zones={[{ upTo: 3, color: '#3fb950', label: 'Healthy' }, { upTo: 6, color: '#58a6ff', label: 'Watch' }, { upTo: 9, color: '#d29922', label: 'Alarm' }, { upTo: 12, color: '#f85149', label: 'Trip' }]} />
-        <div className="rv-freqs small"><div className="muted">{t.freqs} · fr = {fr.toFixed(1)} Hz</div><span style={{ color: C.outer }}>BPFO {base.f.bpfo.toFixed(1)}</span> · <span style={{ color: C.inner }}>BPFI {base.f.bpfi.toFixed(1)}</span> · <span style={{ color: C.ball }}>2·BSF {(2 * base.f.bsf).toFixed(1)}</span> · FTF {base.f.ftf.toFixed(1)} Hz</div>
+        <div className="rv-freqs small"><div className="muted">{t.freqs} · {base.orders ? (lang === 'es' ? 'órdenes (×rev)' : 'orders (×rev)') : `fr = ${fr.toFixed(1)} Hz`}</div><span style={{ color: C.outer }}>BPFO {base.f.bpfo.toFixed(base.orders ? 2 : 1)}</span> · <span style={{ color: C.inner }}>BPFI {base.f.bpfi.toFixed(base.orders ? 2 : 1)}</span> · <span style={{ color: C.ball }}>2·BSF {(2 * base.f.bsf).toFixed(base.orders ? 2 : 1)}</span> · FTF {base.f.ftf.toFixed(base.orders ? 2 : 1)} {base.orders ? 'ord' : 'Hz'}</div>
         </>)}
       </aside>
       <div className="rv-main">

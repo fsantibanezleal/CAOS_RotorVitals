@@ -3,6 +3,9 @@ import { lifeFeatures, type LifeFeat } from '../dsp/iso';
 import { type FaultKind, type Bearing } from '../dsp/bearing';
 import { viridis } from './Heatmap2D';
 
+// When realFeats is supplied (the measured run-to-failure frames) the panel plots the MEASURED degradation
+// trajectory instead of the synthetic ramp — same view, real data.
+
 function css(name: string, fb: string) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb; }
 
 type AxisKey = 'rms' | 'kurt' | 'ses';
@@ -31,14 +34,16 @@ function ellipse(xs: number[], ys: number[]) {
  * with the healthy-baseline centroid + 95% Mahalanobis novelty ellipse and the onset point. The
  * fault case departs the healthy cluster; healthy stays inside the ellipse. (Hand-crafted features
  * here are the honest baseline that a learned deep-autoencoder latent space improves on.) */
-export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, lang }: {
+export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, lang, realFeats, realLabel }: {
   bearing: Bearing; fault: FaultKind; severity: number; snr: number; rpm: number; lifeH: number; lang: 'en' | 'es';
+  realFeats?: LifeFeat[]; realLabel?: string;
 }) {
   const es = lang === 'es';
   const [pair, setPair] = useState<[AxisKey, AxisKey]>(['kurt', 'ses']);
   const ref = useRef<HTMLCanvasElement>(null);
   const [hov, setHov] = useState<{ x: number; y: number; i: number } | null>(null);
-  const feats = useMemo(() => lifeFeatures({ bearing, fault, severityEnd: severity, rpm, snrDb: snr, lifeH }), [bearing, fault, severity, rpm, snr, lifeH]);
+  const synthFeats = useMemo(() => lifeFeatures({ bearing, fault, severityEnd: severity, rpm, snrDb: snr, lifeH }), [bearing, fault, severity, rpm, snr, lifeH]);
+  const feats = realFeats && realFeats.length >= 2 ? realFeats : synthFeats;
 
   const ax = AXES[pair[0]], ay = AXES[pair[1]];
   const xs = feats.map(ax.get), ys = feats.map(ay.get);
@@ -103,7 +108,8 @@ export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, l
   };
 
   const toggles: [AxisKey, AxisKey][] = [['kurt', 'ses'], ['rms', 'ses'], ['rms', 'kurt']];
-  const title = es ? 'Espacio de features de salud — trayectoria de degradación' : 'Health-feature space — degradation trajectory';
+  const isReal = !!(realFeats && realFeats.length >= 2);
+  const title = (es ? 'Espacio de features de salud — trayectoria de degradación' : 'Health-feature space — degradation trajectory') + (isReal ? (es ? ` · MEDIDO${realLabel ? ` (${realLabel})` : ''}` : ` · MEASURED${realLabel ? ` (${realLabel})` : ''}`) : '');
   const note = es
     ? 'Cada punto es una instantánea de vida (color = vida). La elipse es la novedad 95% (Mahalanobis) del cúmulo sano; el caso con falla se aleja de ella tras el onset, mientras un caso sano permanece dentro. Estas features hechas a mano (RMS, curtosis, amplitud de defecto SES) y la distancia de Mahalanobis al cúmulo sano son el caso LINEAL de la construcción de indicador de salud en el espacio latente de un autoencoder profundo de González-Muñiz et al. (2022, Reliability Engineering & System Safety 224:108482, DOI 10.1016/j.ress.2022.108482), que calcula la MISMA novedad de Mahalanobis (RaPP "NAP") en un espacio latente NO LINEAL aprendido sólo de datos sanos — la generalización SOTA, entrenada offline. (Nota honesta: a SNR bajo las features estadísticas crudas separan débilmente; por eso el análisis de envolvente/SES sigue siendo el caballo de batalla.)'
     : 'Each point is a life snapshot (color = life). The ellipse is the 95% Mahalanobis novelty of the healthy cluster; the fault case departs it after onset while a healthy case stays inside. These hand-crafted features (RMS, kurtosis, SES defect amplitude) and the Mahalanobis distance to the healthy cluster are the LINEAR case of building a health indicator in the latent space of a deep autoencoder — González-Muñiz et al. (2022, Reliability Engineering & System Safety 224:108482, DOI 10.1016/j.ress.2022.108482) compute the SAME Mahalanobis novelty (RaPP "NAP") in a LEARNED nonlinear latent space trained on healthy data only — the SOTA generalization, trained offline. (Honest note: at low SNR raw statistical features separate weakly, which is why envelope/SES analysis stays the workhorse.)';
