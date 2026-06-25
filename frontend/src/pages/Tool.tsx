@@ -91,12 +91,13 @@ export default function Tool() {
   // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
   // knobs) vs 'cwru' (a REAL held-out CWRU segment — the measured signal flows through the EXACT same tools; the
   // scenario knobs become read-only sample metadata, the analysis knobs stay live).
-  const [source, setSource] = useState<'synthetic' | 'cwru'>('synthetic');
+  const [source, setSource] = useState<'synthetic' | 'cwru' | 'femto'>('synthetic');
   const [cwru, setCwru] = useState<Samples | null>(null);
   const [cwruIdx, setCwruIdx] = useState(0);
   const [realDx, setRealDx] = useState<DiagOut | null>(null); // the WDCNN prediction on the real segment (ONNX)
   useEffect(() => { loadSamples().then(setCwru).catch(() => {}); }, []);
-  const realMode = source === 'cwru' && !!cwru;
+  const realMode = source === 'cwru' && !!cwru; // a measured DIAGNOSIS segment
+  const trajMode = source === 'femto';           // a REAL run-to-failure TRAJECTORY (prognostics)
   // in real mode, sync the shaft-rate readout to the segment's rpm so fr/defect-freqs are consistent
   useEffect(() => { if (source === 'cwru' && cwru) setRpm(cwru.rpm ?? 1730); }, [source, cwru]);
   // run the trained WDCNN (ONNX) on the selected real segment — the learned diagnosis on real data
@@ -246,9 +247,9 @@ export default function Tool() {
   // The SAME projectRUL (onset → exp fit → first-passage) runs on whichever is selected; on FEMTO we can show the
   // predicted RUL next to the dataset's REAL failure time.
   const rtfShown = useMemo(() => {
-    if (rulSource) { const ft = femtoTrajs.find((t) => t.id === rulSource); if (ft) return femtoToRunToFailure(ft); }
+    if (trajMode && rulSource) { const ft = femtoTrajs.find((t) => t.id === rulSource); if (ft) return femtoToRunToFailure(ft); }
     return rtf;
-  }, [rulSource, femtoTrajs, rtf]);
+  }, [trajMode, rulSource, femtoTrajs, rtf]);
   const rulShown = useMemo(() => projectRUL(rtfShown.points, rtfShown.threshold), [rtfShown]);
   // replay-derived 'now' position fed to the RUL chart + 3D waterfall while replay is engaged
   const replayLifeH = isFinite(rtf.trueFail) ? rtf.trueFail : 60;
@@ -318,21 +319,14 @@ export default function Tool() {
       <div className="rv-vizstack">{replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={ridge.hz} ridgeLabel={ridge.label} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 100} lifeRow={replayOn ? lifePos : null} /></Suspense><p className="hint">{t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
       <div className="rv-vizstack">
-        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
-          <span className="muted small">{lang === 'es' ? 'Trayectoria' : 'Trajectory'}:</span>
-          <button className={`chip ${rulSource === '' ? 'on' : ''}`} onClick={() => setRulSource('')}>{lang === 'es' ? 'Sintética' : 'Synthetic'}</button>
-          {femtoTrajs.filter((ft) => ft.trueFail != null).map((ft) => (
-            <button key={ft.id} className={`chip ${rulSource === ft.id ? 'on' : ''}`} onClick={() => setRulSource(ft.id)} title={`FEMTO real · C${ft.condition} · ${ft.rpm} rpm / ${ft.loadN} N`}>{ft.id}</button>
-          ))}
-        </div>
-        {rulSource === '' && replayBar()}
-        <RulChart points={rtfShown.points} rul={rulShown} nowT={rulSource === '' ? nowT : undefined} nowHi={rulSource === '' ? nowHi : undefined} />
-        <p className="hint">{rulSource === ''
+        {!trajMode && replayBar()}
+        <RulChart points={rtfShown.points} rul={rulShown} nowT={!trajMode ? nowT : undefined} nowHi={!trajMode ? nowHi : undefined} />
+        <p className="hint">{!trajMode
           ? t.rulNote
           : (lang === 'es'
             ? `${rtfShown.label} — datos de degradación REALES (run-to-failure, RMS @ 25.6 kHz). El MISMO projectRUL corre sobre ellos; la falla real del experimento es a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
             : `${rtfShown.label} — REAL degradation data (run-to-failure, RMS @ 25.6 kHz). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
-        <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{rulSource !== '' && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
+        <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
       <PrognosticEvalPanel rtf={rtf} fault={fault} severity={severity} lang={lang} />) },
@@ -344,14 +338,26 @@ export default function Tool() {
       <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={rul} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} isoBounds={isoBounds} lang={lang} />) },
   ];
 
+  // Tools available per source KIND. A measured CWRU window is a DIAGNOSIS artifact: the signal-analysis tools run on
+  // it for real (waveform/envelope/spectrum/cyclostationary/kurtogram/SK-gram). A FEMTO run-to-failure is a PROGNOSIS
+  // artifact: only the RUL projection runs on the measured HI(t) curve. Synthetic mode keeps every tool (the full
+  // simulator). Tools that need a synthetic ground truth (Campbell run-up, feature-cloud, synthetic prognosis) are
+  // hidden in real modes rather than shown fed by fabricated data — honesty over breadth.
+  const SEGMENT_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram'];
+  const TRAJ_TABS = ['rul'];
+  const tabsShown = realMode ? tabs.filter((tb) => SEGMENT_TABS.includes(tb.id))
+    : trajMode ? tabs.filter((tb) => TRAJ_TABS.includes(tb.id))
+    : tabs;
+
   return (
     <div className="page-body rv-layout">
       <aside className="rv-side">
         {/* SOURCE — the first-level decision of the workbench: a fabricated synthetic case (scenario knobs) vs a REAL
             measured CWRU segment (the analysis tools run on the measured signal; scenario knobs become read-only). */}
-        <div className="rv-source" style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.5rem' }}>
+        <div className="rv-source" style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <button className={`chip ${source === 'synthetic' ? 'on' : ''}`} onClick={() => setSource('synthetic')}>{lang === 'es' ? 'Sintético' : 'Synthetic'}</button>
-          <button className={`chip ${source === 'cwru' ? 'on' : ''}`} onClick={() => setSource('cwru')} disabled={!cwru} title={!cwru ? 'cargando…' : 'real CWRU 12 kHz segment'}>{lang === 'es' ? 'Real: CWRU' : 'Real: CWRU'}</button>
+          <button className={`chip ${source === 'cwru' ? 'on' : ''}`} onClick={() => setSource('cwru')} disabled={!cwru} title={!cwru ? 'cargando…' : 'real CWRU 12 kHz segment'}>{lang === 'es' ? 'Real: CWRU (diag.)' : 'Real: CWRU (diag.)'}</button>
+          <button className={`chip ${source === 'femto' ? 'on' : ''}`} onClick={() => { setSource('femto'); if (!rulSource) { const f = femtoTrajs.find((t) => t.trueFail != null); if (f) setRulSource(f.id); } }} disabled={!femtoTrajs.length} title={!femtoTrajs.length ? 'cargando…' : 'real FEMTO run-to-failure'}>{lang === 'es' ? 'Real: FEMTO (RUL)' : 'Real: FEMTO (RUL)'}</button>
         </div>
         {realMode ? (
           <>
@@ -363,6 +369,18 @@ export default function Tool() {
             <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
               {lang === 'es' ? 'señal medida' : 'measured signal'} · CWRU 6205 · {cwru!.rpm} rpm · {lang === 'es' ? 'verdad' : 'truth'}: <b>{faultLabel(base.trueCls || '')}</b><br />
               <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'perillas de escenario inactivas (el dato está medido); las de análisis siguen vivas ↓' : 'scenario knobs inactive (the datum is measured); the analysis knobs stay live ↓'}</span>
+            </div>
+          </>
+        ) : trajMode ? (
+          <>
+            <label className="rv-ctl">{lang === 'es' ? 'Trayectoria real (FEMTO)' : 'Real trajectory (FEMTO)'}
+              <select className="select" value={rulSource} onChange={(e) => setRulSource(e.target.value)}>
+                {femtoTrajs.filter((ft) => ft.trueFail != null).map((ft) => <option key={ft.id} value={ft.id}>{ft.id} · C{ft.condition} · {ft.rpm} rpm</option>)}
+              </select>
+            </label>
+            <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
+              {lang === 'es' ? 'run-to-failure medido' : 'measured run-to-failure'} · RMS @ 25.6 kHz · {lang === 'es' ? 'verdad' : 'truth'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} h` : '—'}</b><br />
+              <span style={{ opacity: 0.8 }}>{lang === 'es' ? 'solo aplica el pronóstico (RUL) sobre la curva HI medida' : 'only the prognosis (RUL) applies on the measured HI curve'}</span>
             </div>
           </>
         ) : (
@@ -378,8 +396,10 @@ export default function Tool() {
           </>
         )}
 
-        {/* T7 — analysis parameters: change HOW the signal is analysed (band, envelope, harmonics, ISO scale).
-            They drive the always-visible diagnosis + the Envelope·SES / ISO trend / Recommendation tabs. */}
+        {/* Analysis params + classical/learned diagnosis + severity gauge + fault frequencies describe a measured or
+            synthetic SIGNAL — they apply to synthetic and real-segment (CWRU) modes. A FEMTO run-to-failure is a pure
+            HI(t) curve, so they are hidden in trajectory mode (only the RUL projection applies there). */}
+        {!trajMode && (<>
         <div className="rv-analysis" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
           <div className="muted small" style={{ fontWeight: 700, letterSpacing: '0.03em', marginBottom: '0.2rem' }}>{t.anlys}</div>
           <label className="rv-ctl">{t.aBand}<select className="select" value={bandMethod} onChange={(e) => setBandMethod(e.target.value as 'auto' | 'fixed' | 'manual' | 'iesfo')}><option value="auto">{t.bAuto}</option><option value="iesfo">{t.bIesfo}</option><option value="fixed">{t.bFixed}</option><option value="manual">{t.bManual}</option></select></label>
@@ -400,9 +420,10 @@ export default function Tool() {
         )}
         <Gauge title={t.sev} value={sev} max={12} unit="×" zones={[{ upTo: 3, color: '#3fb950', label: 'Healthy' }, { upTo: 6, color: '#58a6ff', label: 'Watch' }, { upTo: 9, color: '#d29922', label: 'Alarm' }, { upTo: 12, color: '#f85149', label: 'Trip' }]} />
         <div className="rv-freqs small"><div className="muted">{t.freqs} · fr = {fr.toFixed(1)} Hz</div><span style={{ color: C.outer }}>BPFO {base.f.bpfo.toFixed(1)}</span> · <span style={{ color: C.inner }}>BPFI {base.f.bpfi.toFixed(1)}</span> · <span style={{ color: C.ball }}>2·BSF {(2 * base.f.bsf).toFixed(1)}</span> · FTF {base.f.ftf.toFixed(1)} Hz</div>
+        </>)}
       </aside>
       <div className="rv-main">
-        <Tabs tabs={tabs} ariaLabel="analysis" />
+        <Tabs key={source} tabs={tabsShown} ariaLabel="analysis" />
       </div>
     </div>
   );
