@@ -339,6 +339,12 @@ export default function Tool() {
   const realFeats = useMemo(() => (trajMode && activeFrames && activeFrames.frames.length >= 2)
     ? framesToLifeFeats(activeFrames.frames, activeFrames.fs, base.noGeom ? 0 : base.f.bpfo, [2000, Math.min(4500, 0.35 * (activeFrames.fs / 2))])
     : undefined, [trajMode, activeFrames, base]);
+  // REAL feature-space by CLASS (segment mode): the same features for every measured segment of the active dataset,
+  // so the feature space shows where each class sits and where the selected segment lands.
+  const segFeats = useMemo(() => (realMode && activeSeg && activeSeg.samples.length >= 2)
+    ? framesToLifeFeats(activeSeg.samples.map((s) => ({ t: 0, frac: 0, raw: s.raw })), activeSeg.fs, base.noGeom ? 0 : base.f.bpfo, [Math.min(2000, 0.12 * (activeSeg.fs / 2)), 0.42 * (activeSeg.fs / 2)])
+    : undefined, [realMode, activeSeg, base]);
+  const segClassColor = useCallback((c: string) => (({ normal: '#3fb950', healthy: '#3fb950', outer: '#f59f00', inner: '#f06595', ball: '#7c5cff', cage: '#58a6ff' } as Record<string, string>)[c] ?? '#8b949e'), []);
 
   const faultLabel = (k: string) => (t as Record<string, string>)[`f_${k}`] ?? k;
 
@@ -394,7 +400,11 @@ export default function Tool() {
     { id: 'iso', label: t.tIso, content: (
       <IsoTrendPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} bounds={isoBounds} isoLabel={ISO_CLASSES[isoClass].label} lang={lang} />) },
     { id: 'feat', label: t.tFeat, content: (
-      <FeatureSpacePanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang} realFeats={realFeats} realLabel={activeTraj ? `${(activeTraj.set ?? '').toUpperCase()} ${activeTraj.id}` : undefined} />) },
+      <FeatureSpacePanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} rpm={rpm} lifeH={isFinite(rtf.trueFail) ? rtf.trueFail : 60} lang={lang}
+        realFeats={trajMode ? realFeats : (realMode ? segFeats : undefined)}
+        realLabel={trajMode ? (activeTraj ? `${(activeTraj.set ?? '').toUpperCase()} ${activeTraj.id}` : undefined) : (realMode ? activeSeg?.label : undefined)}
+        classPts={realMode && activeSeg ? activeSeg.samples.map((s) => ({ cls: s.cls })) : undefined}
+        classColor={segClassColor} selIdx={realMode ? segIdx : undefined} classList={realMode && activeSeg ? activeSeg.classes : undefined} />) },
     { id: 'rec', label: t.tRec, content: (
       <RecommendationPanel bearing={bearingById(bearingId)} bearingLabel={trajMode && activeTraj ? `${(activeTraj.set ?? '').toUpperCase()} ${activeTraj.id}` : bearingById(bearingId).label} fault={fault} severity={fault === 'healthy' ? 0 : severity} rpm={rpm} snr={snr} sigX={base.sig.x} diag={dx} rul={trajMode ? rulShown : rul} lifeH={trajMode ? (isFinite(rtfShown.trueFail) ? rtfShown.trueFail : 60) : (isFinite(rtf.trueFail) ? rtf.trueFail : 60)} isoBounds={isoBounds} lang={lang} />) },
   ];
@@ -410,7 +420,7 @@ export default function Tool() {
   //   waterfall + RUL/eval + ISO trend + feature trajectory. (Campbell needs an rpm sweep — excluded; constant rpm.)
   // Ottawa's varying speed uniquely enables a REAL Campbell/order map (it ships an order-vs-rpm raster); add it there.
   const hasOrderMap = realMode && !!activeSample?.orderMap;
-  const SEGMENT_TABS = hasOrderMap ? ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'cam'] : ['sig', 'env', 'spec', 'csc', 'kur', 'gram'];
+  const SEGMENT_TABS = hasOrderMap ? ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'cam', 'feat'] : ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'feat'];
   const TRAJ_TABS = ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'wat', 'rul', 'eval', 'feat', 'rec'];
   const tabsShownRaw = realMode ? tabs.filter((tb) => SEGMENT_TABS.includes(tb.id))
     : trajMode ? tabs.filter((tb) => TRAJ_TABS.includes(tb.id))

@@ -3,6 +3,14 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.41.003] — 2026-06-25
+
+Feature — **the last synthetic-only view is now real too: feature-space in segment mode.** A measured DIAGNOSIS
+segment (CWRU/Ottawa/MaFaulDa) now gets a Feature space tab that places EVERY measured segment of the dataset by its
+features (RMS / envelope-kurtosis / SES-defect-amplitude), colored by its TRUE class, with the selected segment
+ringed — the class-scatter view (healthy clusters low, fault classes separate) instead of the by-life trajectory
+(which stays for RUL mode). With this, EVERY tool that genuinely applies runs on real data in every mode. Verified.
+
 ## [0.41.002] — 2026-06-25
 
 Fix (honesty/consistency) — **the docs pages now match what the App actually does.** A pre-share validation found the
