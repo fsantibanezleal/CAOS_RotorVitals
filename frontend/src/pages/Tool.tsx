@@ -199,7 +199,11 @@ export default function Tool() {
   }, [bandMethod, band, base, iesfoBest]);
   const ses = useMemo(() => envelopeSpectrum(base.sig.x, fsEff, effBand, envSquared), [base, effBand, envSquared]);
   const dx = useMemo(() => diagnose(ses, base.f, nHarm), [ses, base, nHarm]);
-  const sev = dx.scores[0]?.score ?? 0;
+  // Fault severity index: the dominant fault family's diagnostic prominence, CLAMPED to the gauge's 0–12 range so
+  // the needle never overshoots the scale (raw prominence can exceed 12 at high severity → the needle ran off the
+  // gauge and looked like it "snapped back"). The prominence is a detectability ratio, so at very low signal it is
+  // mildly noisy; it climbs sharply once the fault line clears the noise (the classical hard-threshold behaviour).
+  const sev = Math.min(12, dx.scores[0]?.score ?? 0);
   const isoBounds = ISO_CLASSES[isoClass].bounds;
 
   // ---- chart data (memoized) ----
