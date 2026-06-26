@@ -858,6 +858,11 @@ export default function Methodology() {
       <p>{es
         ? 'El resultado held-out es honesto y revelador: el WDCNN profundo llega a 100%, mientras el SVM-RBF y el Random Forest se quedan en ~85.6%. La columna que lo explica es el "recall de la clase sana": el ML clásico clava las fallas (externa/interna ~100%, bola ~90%) pero falsa-alarma en la MITAD de las ventanas sanas — las prominencias de los peines, hechas a mano, también disparan en señales sanas con transitorios. El CNN profundo aprende esa frontera sano/falla que las features fijas no capturan. No es una victoria fabricada: el split es idéntico, los tres corren en vivo sobre los mismos segmentos, y el número se reporta como cae.'
         : 'The held-out result is honest and revealing: the deep WDCNN reaches 100%, while the SVM-RBF and the Random Forest sit at ~85.6%. The column that explains it is the "healthy-class recall": the classical ML nails the faults (outer/inner ~100%, ball ~90%) but false-alarms on HALF the healthy windows — the hand-crafted comb prominences also fire on healthy signals with transients. The deep CNN learns the healthy/fault boundary the fixed features cannot. Not a fabricated win: the split is identical, all three run live on the same segments, and the number is reported as it lands.'}{' '}<Cite id="smith2015" paren /></p>
+
+      <p>{es
+        ? 'La generalización entre dominios (la "adaptación de dominio" mencionada arriba) se pone a prueba de forma honesta en el App: el WDCNN entrenado SOLO en CWRU se ejecuta CROSS-DOMAIN sobre otros bancos —Ottawa y MaFaulDa— sin haber visto un registro suyo, sobre una ventana re-muestreada a 12 kHz para igualar su entrada. Como el modelo predice en el vocabulario de clases de CWRU, cada clase del banco destino se mapea a su contraparte de CWRU para el chequeo (la jaula de MaFaulDa no tiene contraparte y se omite). El resultado se etiqueta como lo que es: en MaFaulDa la falla de pista externa transfiere (externa→externa ✓), mientras que en Ottawa el modelo a veces no acierta —el dominio difiere en banco, rodamiento y régimen de velocidad—. Esa brecha de dominio es el resultado honesto, no algo que se esconda; es justamente por qué la adaptación de dominio es un problema abierto y no una casilla resuelta.'
+        : 'Cross-domain generalization (the "domain adaptation" mentioned above) is tested honestly in the App: the WDCNN trained ONLY on CWRU runs CROSS-DOMAIN on other rigs — Ottawa and MaFaulDa — never having seen a record of theirs, on a window resampled to 12 kHz to match its input. Since the model predicts in CWRU\'s class vocabulary, each target-rig class is mapped to its CWRU counterpart for the check (MaFaulDa\'s cage has no counterpart and is skipped). The result is labelled as what it is: on MaFaulDa the outer-race fault transfers (outer→outer ✓), while on Ottawa the model sometimes misses — the domain differs in rig, bearing and speed regime. That domain gap is the honest result, not something hidden; it is exactly why domain adaptation is an open problem and not a solved checkbox.'}{' '}<Cite id="lei2018" paren /></p>
+
       <Callout variant="honest" title={es ? 'Honestidad de evaluación' : 'Evaluation honesty'}>
         <p>{es
           ? 'Se reporta la partición (sin fuga del conjunto de referencia) y la prueba cruzada de carga (se deja FUERA una carga entera, 3 HP); la exactitud sin esas salvaguardas es engañosa. El WDCNN, el autoencoder profundo Y los dos clasificadores clásicos (SVM-RBF / Random Forest) SÍ están implementados y corren en vivo en la página Benchmark (diagnóstico interactivo sobre segmentos reales + los números held-out); CWRU es un banco limpio, por eso se reporta la degradación honesta vs ruido y el recall sano por modelo en vez de un 100% pelado.'
@@ -867,10 +872,42 @@ export default function Methodology() {
     </div>
   );
 
+  const otTab = (
+    <div className="prose">
+      <p>{es
+        ? 'Todo lo anterior asume velocidad de eje constante: las frecuencias de falla son fijas en Hz y sus picos caen en bins estables. Bajo velocidad variable —un arranque, una parada, una máquina de proceso que cambia de régimen— esa premisa se rompe: la frecuencia de falla sigue al eje, así que sus líneas se desplazan y se difuminan en el espectro, y el promediado las borra. Esta es exactamente la condición del conjunto Ottawa (velocidad variable), y donde el análisis de frecuencia fija falla.'
+        : 'Everything above assumes constant shaft speed: the fault frequencies are fixed in Hz and their peaks land in stable bins. Under varying speed — a run-up, a coast-down, a process machine changing regime — that premise breaks: the fault frequency tracks the shaft, so its lines smear across the spectrum and averaging erases them. This is exactly the Ottawa (varying-speed) set\'s condition, and where fixed-frequency analysis fails.'}{' '}<Cite id="randall2011" paren /></p>
+
+      <p>{es
+        ? 'La solución estándar es el seguimiento de orden por cómputo (computed order tracking): en vez de muestrear en tiempo uniforme, se re-muestrea la señal a ÁNGULO de eje uniforme. De un tacómetro o encoder se estima el ángulo instantáneo del eje θ(t) integrando la velocidad angular; luego se interpola la vibración en instantes de ángulo equiespaciado Δθ. En ese dominio angular, una falla que ocurre un número fijo de veces por revolución es periódica en el ÁNGULO, no en el tiempo.'
+        : 'The standard fix is computed order tracking: instead of sampling at uniform time, the signal is resampled to uniform shaft ANGLE. From a tachometer or encoder the instantaneous shaft angle θ(t) is estimated by integrating the angular velocity; the vibration is then interpolated at equally-spaced angle increments Δθ. In that angular domain, a fault happening a fixed number of times per revolution is periodic in ANGLE, not in time.'}{' '}<Cite id="randall2011" paren /></p>
+
+      <Equation tex={String.raw`\theta(t) = \int_0^t \omega(\tau)\,d\tau, \qquad x_\theta[m] = x\big(t(m\,\Delta\theta)\big), \quad m = 0,1,2,\dots`} caption={es ? 'ángulo de eje por integración de la velocidad (del tacómetro); la señal se interpola a ángulo equiespaciado Δθ → muestras por revolución' : 'shaft angle by integrating speed (from the tachometer); the signal is interpolated at equally-spaced angle Δθ → samples per revolution'} />
+
+      <p>{es
+        ? 'El espectro tomado sobre x_θ está en ÓRDENES (múltiplos de la frecuencia de rotación), no en Hz. Y aquí está la clave: las frecuencias de falla del rodamiento son razones cinemáticas fijas (BPFO, BPFI, BSF como múltiplos de la velocidad del eje), así que en órdenes son CONSTANTES, sin importar cómo varíe la velocidad. La línea de BPFO que se difuminaba en Hz queda quieta en su orden (p. ej. ≈3.57× para el rodamiento ER-16K de Ottawa).'
+        : 'The spectrum taken over x_θ is in ORDERS (multiples of the rotation frequency), not Hz. And here is the point: the bearing fault frequencies are fixed kinematic ratios (BPFO, BPFI, BSF as multiples of shaft speed), so in orders they are CONSTANT, no matter how the speed varies. The BPFO line that smeared in Hz stands still at its order (e.g. ≈3.57× for Ottawa\'s ER-16K bearing).'}{' '}<Cite id="randall2011" paren /></p>
+
+      <Equation tex={String.raw`O_{\text{BPFO}} = \tfrac{n}{2}(1-r), \quad O_{\text{BPFI}} = \tfrac{n}{2}(1+r), \quad O_{\text{BSF}} = \tfrac{D}{2d}(1-r^2), \qquad r=\tfrac{d}{D}\cos\varphi`} caption={es ? 'órdenes de defecto (= frecuencia ÷ velocidad de eje): constantes bajo velocidad variable; el Campbell las traza como líneas horizontales' : 'defect orders (= frequency ÷ shaft speed): constant under varying speed; the Campbell map draws them as horizontal lines'} />
+
+      <p>{es
+        ? 'Esto habilita el mapa de Campbell/orden: el espectro de envolvente seguido en orden, apilado contra la rpm instantánea durante el barrido de velocidad. Una línea de falla aparece HORIZONTAL (orden constante), separándola de cualquier contenido de frecuencia fija (que sería diagonal). Es la herramienta que la velocidad variable habilita y un banco de velocidad fija no.'
+        : 'This enables the Campbell/order map: the order-tracked envelope spectrum stacked against instantaneous rpm across the speed sweep. A fault line appears HORIZONTAL (constant order), separating it from any fixed-frequency content (which would be diagonal). It is the tool varying speed enables and a fixed-speed rig cannot.'}{' '}<Cite id="randall2011" paren /></p>
+
+      <Callout variant="honest" title={es ? 'Alcance honesto de este build' : 'Honest scope of this build'}>
+        <p>{es
+          ? 'El order tracking de esta app se computa OFFLINE en el pipeline (re-muestreo angular a partir del tacómetro de Ottawa, canal 2), y el App muestra el raster orden-vs-rpm resultante en la pestaña Campbell del modo de segmento real; el re-muestreo en vivo en el navegador no está implementado. Las razones de orden son exactas (geometría del rodamiento); el raster es de los segmentos medidos, etiquetado como tal.'
+          : 'This app\'s order tracking is computed OFFLINE in the pipeline (angular resampling from Ottawa\'s tachometer, channel 2), and the App shows the resulting order-vs-rpm raster in the Campbell tab of the real-segment mode; live in-browser resampling is not implemented. The order ratios are exact (bearing geometry); the raster is from the measured segments, labelled as such.'}</p>
+      </Callout>
+      <Refs ids={['randall2011']} label={refsLabel} />
+    </div>
+  );
+
   const tabs = [
     { id: 'env', label: es ? 'Envolvente / SES' : 'Envelope / SES', content: envTab },
     { id: 'sk', label: es ? 'Kurtosis espectral / Kurtograma' : 'Spectral kurtosis / Kurtogram', content: skTab },
     { id: 'cs', label: es ? 'Cicloestacionario' : 'Cyclostationary', content: csTab },
+    { id: 'ot', label: es ? 'Order tracking / velocidad variable' : 'Order tracking / varying speed', content: otTab },
     { id: 'decomp', label: es ? 'Descomposición / Deconvolución' : 'Decomposition / Deconvolution', content: decompTab },
     { id: 'rul', label: es ? 'Pronóstico / RUL + ISO' : 'Prognostics / RUL + ISO', content: rulTab },
     { id: 'ml', label: es ? 'ML / Deep Learning' : 'ML / Deep Learning', content: mlTab },

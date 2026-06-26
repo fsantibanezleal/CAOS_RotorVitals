@@ -3,6 +3,16 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.42.000] — 2026-06-25
+
+Docs — **method documentation for release**: the two methods the App added are now documented in Methodology.
+- New **Order tracking / varying speed** tab: why fixed-frequency analysis fails under varying speed, computed order
+  tracking (angular resampling from the tachometer, θ(t)=∫ω dt → samples-per-rev), the defect ORDERS being constant
+  (so the Campbell map draws horizontal fault lines), with equations + honest scope (offline in the pipeline).
+- **Cross-domain WDCNN** paragraph in the ML tab: the CWRU-trained model evaluated cross-domain on Ottawa/MaFaulDa
+  with the class mapping, labelled honestly (outer→outer transfers on MaFaulDa; Ottawa shows the domain gap).
+Closes #98.
+
 ## [0.41.003] — 2026-06-25
 
 Feature — **the last synthetic-only view is now real too: feature-space in segment mode.** A measured DIAGNOSIS
