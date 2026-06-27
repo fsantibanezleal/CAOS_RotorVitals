@@ -51,7 +51,9 @@ export default function Implementation() {
         <rect x="40" y="226" width="260" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" />
         <text x="52" y="247">{es ? 'Deconvolución ciega (barridos periodo/ciclo)' : 'Blind deconvolution (period / cyclic sweeps)'}</text>
         <rect x="40" y="268" width="260" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" />
-        <text x="52" y="289">{es ? 'Entrenamiento RUL · abanicos de pronóstico' : 'RUL training · forecast fans'}</text>
+        <text x="52" y="289">{es ? 'Entrenamiento Deep-RUL CNN (XJTU+FEMTO) → ONNX' : 'Deep-RUL CNN training (XJTU+FEMTO) → ONNX'}</text>
+        <rect x="40" y="310" width="260" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" />
+        <text x="52" y="331">{es ? 'Evaluación RUL: PF + GP sobre FEMTO/XJTU/IMS' : 'RUL benchmark: PF + GP on FEMTO/XJTU/IMS'}</text>
       </g>
 
       {/* seed note for the offline lane */}
