@@ -135,8 +135,15 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
   if (post.length < 4) return { onset: points[onsetIdx].t, failTimeMedian: null, rulMedian: null, rulP10: null, rulP90: null, curve: [], params: { lengthScale: 1, sigmaF: 1, sigmaN: 0.1 } };
 
   const X = post.map(p => p.t);
-  const y = post.map(p => Math.log(Math.max(1e-9, p.hi)));
+  const yRaw = post.map(p => Math.log(Math.max(1e-9, p.hi)));
   const span = X[X.length - 1] - X[0] || 1;
+
+  // Fit a linear mean function m(t) = lnA + b*t via OLS (the classical model), then GP on the residual.
+  // This prevents the GP from reverting to zero far from training data — the mean function carries the trend.
+  let sxM = 0, syM = 0, sxxM = 0, sxyM = 0;
+  for (let i = 0; i < X.length; i++) { sxM += X[i]; syM += yRaw[i]; sxxM += X[i] * X[i]; sxyM += X[i] * yRaw[i]; }
+  const mN = X.length, bMean = (mN * sxyM - sxM * syM) / (mN * sxxM - sxM * sxM), lnAMean = (syM - bMean * sxM) / mN;
+  const y = yRaw.map((yi, i) => yi - (lnAMean + bMean * X[i])); // residual — GP on this
 
   // coarse grid search for hyper-parameters
   const ells = [span * 0.1, span * 0.3, span * 0.5, span, span * 1.5, span * 2, span * 3];
@@ -163,15 +170,20 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
   const Nq = 60;
   const Xq: number[] = [];
   for (let i = 0; i <= Nq; i++) Xq.push(tLast + (i / Nq) * (tEnd - tLast));
-  const { mean, sd } = gpPredict(Xq, X, y, best.ell, best.sf, best.sn);
+  // GP prediction (on residual) — then add the mean function back for the final HI projection
+  const { mean: meanRes, sd } = gpPredict(Xq, X, y, best.ell, best.sf, best.sn);
 
-  // first-passage — the time where mean + k*sd crosses threshold
+  // Add the linear mean function back: log(HI) = (lnA + b*t) + GP_residual(t)
+  const meanFull = meanRes.map((mr, i) => mr + lnAMean + bMean * Xq[i]);
+
+  // first-passage — the time where GP mean (with linear trend) crosses the threshold
   const curve: GpRulResult['curve'] = [];
   let crossTime: number | null = null;
+  const logThr = Math.log(threshold);
   for (let i = 0; i <= Nq; i++) {
-    const m = Math.exp(mean[i]), lo = Math.exp(mean[i] - 1.645 * sd[i]), hi = Math.exp(mean[i] + 1.645 * sd[i]);
-    curve.push({ t: Xq[i], mean: m, lo, hi });
-    if (crossTime === null && mean[i] >= Math.log(threshold)) crossTime = Xq[i];
+    const mExp = Math.exp(meanFull[i]), lo = Math.exp(meanFull[i] - 1.645 * sd[i]), hi = Math.exp(meanFull[i] + 1.645 * sd[i]);
+    curve.push({ t: Xq[i], mean: mExp, lo, hi });
+    if (crossTime === null && meanFull[i] >= logThr) crossTime = Xq[i];
   }
 
   const rulMed = crossTime !== null ? Math.max(0, crossTime - tLast) : null;
