@@ -408,9 +408,9 @@ export default function Tool() {
       <div className="rv-vizstack">
         {!trajMode && replayBar()}
         <div className="rul-model-bar" style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
-          {(['exponential','pf','gp'] as RulModel[]).map(m => (
+          {(['exponential','pf','gp','deep'] as RulModel[]).map(m => (
             <button key={m} className={`chip ${rulModel===m?'on':''}`} onClick={()=>setRulModel(m)}>
-              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':''}
+              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':'Deep-RUL'}
             </button>
           ))}
         </div>
