@@ -103,11 +103,12 @@ def train_deep_rul(
 
 
 def export_onnx(model: DeepRUL, path: str, device: str = "cpu") -> None:
-    """Export the trained model to ONNX (opset 16) for onnxruntime-web. Input: (1,1,2048)."""
+    """Export the trained model to ONNX (opset 14) for onnxruntime-web. Input: (1,1,2048)."""
     model.eval()
     dummy = torch.randn(1, 1, 2048).to(device)
     torch.onnx.export(
-        model.to(device), dummy, path, opset_version=16,
+        model.to(device), dummy, path, opset_version=14,
         input_names=["vibration"], output_names=["rul"],
         dynamic_axes={"vibration": {0: "batch"}, "rul": {0: "batch"}},
+        dynamo=False,
     )

@@ -159,7 +159,7 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
 
   // predict forward
   const tLast = X[X.length - 1];
-  const tEnd = tLast + span * 2;
+  const tEnd = tLast + span * 4;  // project further forward so the GP has room to reach the threshold
   const Nq = 60;
   const Xq: number[] = [];
   for (let i = 0; i <= Nq; i++) Xq.push(tLast + (i / Nq) * (tEnd - tLast));
