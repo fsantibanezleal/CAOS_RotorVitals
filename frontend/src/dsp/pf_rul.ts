@@ -91,11 +91,11 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
 
   // 2. OLS fit on post-onset for the seed
   const post = points.slice(onsetIdx).filter(p => p.hi > 0);
-  if (post.length < 4) return { onset: points[onsetIdx].t, ...empty };
+  if (post.length < 4) return { onset: points[onsetIdx].t, failTimeMedian: null, rulMedian: null, rulP10: null, rulP90: null, particles: [], rulEnsemble: [] };
   let sx = 0, sy = 0, sxx = 0, sxy = 0;
   for (const p of post) { const y = Math.log(p.hi); sx += p.t; sy += y; sxx += p.t * p.t; sxy += p.t * y; }
   const m = post.length, bOls = (m * sxy - sx * sy) / (m * sxx - sx * sx), lnAOls = (sy - bOls * sx) / m;
-  if (bOls <= 0) return { onset: points[onsetIdx].t, ...empty };
+  if (bOls <= 0) return { onset: points[onsetIdx].t, failTimeMedian: null, rulMedian: null, rulP10: null, rulP90: null, particles: [], rulEnsemble: [] };
 
   // 3. initialise particles around the OLS estimate
   const particles: Particle[] = [];

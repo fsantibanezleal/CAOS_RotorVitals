@@ -132,7 +132,7 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
   if (onsetIdx < 0) return { ...empty };
 
   const post = points.slice(onsetIdx).filter(p => p.hi > 0);
-  if (post.length < 4) return { onset: points[onsetIdx].t, ...empty };
+  if (post.length < 4) return { onset: points[onsetIdx].t, failTimeMedian: null, rulMedian: null, rulP10: null, rulP90: null, curve: [], params: { lengthScale: 1, sigmaF: 1, sigmaN: 0.1 } };
 
   const X = post.map(p => p.t);
   const y = post.map(p => Math.log(Math.max(1e-9, p.hi)));

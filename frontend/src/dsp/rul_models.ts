@@ -6,9 +6,9 @@
 //   Particle Filter — Bayesian state estimation, full posterior distribution
 //   Gaussian Process — non-parametric, calibrated uncertainty bands
 //   Deep-RUL CNN    — SOTA, trained on XJTU-SY + FEMTO, ONNX in-browser
-import { type HIPoint, projectRUL, type RulResult } from './health';
-import { particleFilterRUL, type PfRulResult } from './pf_rul';
-import { gpRUL, type GpRulResult } from './gp_rul';
+import { type HIPoint, projectRUL } from './health';
+import { particleFilterRUL } from './pf_rul';
+import { gpRUL } from './gp_rul';
 import { deepRul } from '../lib/ort';
 
 export type RulModel = 'exponential' | 'pf' | 'gp' | 'deep';
