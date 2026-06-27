@@ -308,19 +308,18 @@ export default function Tool() {
   // Deep-RUL async ONNX inference — uses the ACTIVE raw vibration signal (not interpolated HI)
   useEffect(() => {
     if (rulModel !== 'deep') return;
-    // Use the actual signal being analysed: synthetic mode uses the generated signal,
-    // real RUL mode uses the active frame's raw window
-    const rawSignal: Float32Array | null = trajMode && activeFrames?.frames?.length ?
-      (activeFrames.frames[Math.min(frameIdx, activeFrames.frames.length-1)] as any)?.raw as Float32Array ?? null
-      : base.sig?.x as Float32Array ?? null;
-    if (!rawSignal || rawSignal.length < 8) { setDeepRulResult(null); return; }
+    // Use the actual signal: synthetic → generated signal, real RUL → active frame's raw window
+    const anyRaw: Float64Array | Float32Array | null = trajMode && activeFrames?.frames?.length ?
+      (activeFrames.frames[Math.min(frameIdx, activeFrames.frames.length-1)] as any)?.raw ?? null
+      : base.sig?.x ?? null;
+    if (!anyRaw || anyRaw.length < 8) { setDeepRulResult(null); return; }
     // Resample to 2048 samples (the CNN's input size)
     const win = new Float32Array(2048);
-    const n = rawSignal.length;
+    const n = anyRaw.length;
     for (let i = 0; i < 2048; i++) {
       const frac = i / 2047;
       const idx = Math.min(n - 1, Math.floor(frac * (n - 1)));
-      win[i] = rawSignal[idx];
+      win[i] = anyRaw[idx];
     }
     // Normalise to unit variance (CNNs expect scaled input)
     let sum = 0, sumSq = 0;
