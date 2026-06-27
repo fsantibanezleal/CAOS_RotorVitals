@@ -840,15 +840,64 @@ export default function Methodology() {
 
       <h4>{es ? 'Escalera de modelos de pronóstico' : 'Prognostic model ladder'}</h4>
       <p>{es
-        ? 'El modelo exponencial de primer pasaje es el primer escalón de una escalera de cuatro modelos de pronóstico, todos implementados en ambas líneas (TypeScript en el navegador para uso en vivo, Python en el pipeline offline para procesamiento pesado y validación):'
-        : 'The exponential first-passage model is the first rung of a four-model prognostic ladder, all implemented in both lanes (TypeScript in the browser for live use, Python in the offline pipeline for heavy processing and validation):'}</p>
-      <ul style={{listStyle:'none',padding:0}}>
-        <li style={{marginBottom:10}}>🔬 <b>{es ? 'Exponencial clásico' : 'Classical exponential'}</b> — {es ? 'detección de onset por excursión sostenida (μ+4σ, dos puntos consecutivos), ajuste OLS en espacio logarítmico, proyección de primer pasaje al umbral con banda de incertidumbre ±2σ. Honestidad estructural: sin onset → sin número, b≤0 → sin número, la banda se ensancha con el tiempo. Referencia: Lei et al. (2018).' : 'onset detection by sustained excursion (μ+4σ, two consecutive points), OLS fit in log space, first-passage projection to threshold with ±2σ uncertainty band. Structural honesty: no onset → no number, b≤0 → no number, band widens with time. Reference: Lei et al. (2018).'}</li>
-        <li style={{marginBottom:10}}>🎲 <b>{es ? 'Filtro de Partículas (PF)' : 'Particle Filter (PF)'}</b> — {es ? '500 partículas con remuestreo sistemático (Arulampalam et al. 2002) y jitter Gaussiano. Cada partícula porta (ln a, b) del modelo exponencial; el filtro SIR actualiza los pesos por verosimilitud logarítmica en cada nueva observación HI, remuestrea cuando el tamaño efectivo de muestra cae bajo 250, y proyecta la distribución posterior completa del RUL — mediana, percentiles 10/90 y nube de partículas. Implementado en TypeScript (navegador) y numpy (pipeline). Referencia: An, Kim & Choi (2013).' : '500 particles with systematic resampling (Arulampalam et al. 2002) and Gaussian jitter. Each particle carries (ln a, b) of the exponential model; the SIR filter updates weights by log-likelihood at each new HI observation, resamples when effective sample size drops below 250, and projects the full posterior RUL distribution — median, 10th/90th percentiles and particle cloud. Implemented in TypeScript (browser) and numpy (pipeline). Reference: An, Kim & Choi (2013).'}</li>
-        <li style={{marginBottom:10}}>📈 <b>{es ? 'Proceso Gaussiano (GP)' : 'Gaussian Process (GP)'}</b> — {es ? 'Regresión no paramétrica sobre log(HI) con kernel compuesto. Pipeline offline: scikit-learn GaussianProcessRegressor con kernel RBF+Matérn(ν=2.5)+WhiteKernel, optimización L-BFGS-B con 5 reinicios. Frontend: kernel RBF + descomposición de Cholesky + búsqueda en grilla de hiperparámetros, con función de media lineal (OLS) para mantener la tendencia en extrapolación. Entrega bandas de incertidumbre calibradas continuas. Referencias: Rasmussen & Williams (2006), Liu et al. (2020).' : 'Non-parametric regression on log(HI) with composite kernel. Offline pipeline: scikit-learn GaussianProcessRegressor with RBF+Matérn(ν=2.5)+WhiteKernel, L-BFGS-B optimisation with 5 restarts. Frontend: RBF kernel + Cholesky decomposition + hyperparameter grid search, with a linear mean function (OLS) to preserve the trend during extrapolation. Delivers continuous calibrated uncertainty bands. References: Rasmussen & Williams (2006), Liu et al. (2020).'}</li>
-        <li style={{marginBottom:10}}>🧠 <b>Deep-RUL (CNN)</b> — {es ? 'CNN 1-D con backbone WDCNN (Zhang et al. 2017): 5 bloques Conv1d→BN→ReLU→MaxPool con kernel ancho en la primera capa (64 muestras, stride 16), cabeza de regresión Flatten→100→Dropout→1→Sigmoid que emite la fracción de vida [0,1]. Entrenada sobre XJTU-SY + FEMTO/PRONOSTIA (~143 ventanas etiquetadas por fracción de vida), exportada a ONNX (opset 14) e inferida en vivo en el navegador con onnxruntime-web. La misma arquitectura que el WDCNN de diagnóstico; la cabeza de clasificación se reemplaza por regresión. Referencias: Li, Ding & Sun (2018), Zhu, Chen & Peng (2019).' : '1-D CNN with WDCNN backbone (Zhang et al. 2017): 5 Conv1d→BN→ReLU→MaxPool blocks with wide first-layer kernel (64 samples, stride 16), regression head Flatten→100→Dropout→1→Sigmoid outputting life fraction [0,1]. Trained on XJTU-SY + FEMTO/PRONOSTIA (~143 windows labelled by life fraction), exported to ONNX (opset 14) and inferred live in the browser via onnxruntime-web. Same architecture as the diagnostic WDCNN; the classification head is replaced by regression. References: Li, Ding & Sun (2018), Zhu, Chen & Peng (2019).'}</li>
-      </ul>
-      <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'an2013', 'rasmussen2006', 'liu2020', 'li2018', 'zhu2019', 'zhang2017']} label={refsLabel} />
+        ? 'El modelo exponencial de primer pasaje descrito arriba es el primer escalón de una escalera de cuatro modelos. Los tres modelos adicionales — un filtro de partículas, un proceso Gaussiano y una CNN profunda — están implementados en ambas líneas (TypeScript en el navegador y Python en el pipeline offline) y se seleccionan desde la pestaña Prognostics·RUL del App mediante un grupo de chips.'
+        : 'The exponential first-passage model described above is the first rung of a four-model ladder. The three additional models — a particle filter, a Gaussian Process, and a deep CNN — are implemented in both lanes (TypeScript in the browser and Python in the offline pipeline) and are selectable from the Prognostics·RUL tab in the App via a chip group.'}</p>
+
+      <Callout variant="info" title={es ? 'Filtro de Partículas' : 'Particle Filter'}>
+      <p>{es
+        ? 'Un filtro de partículas de 500 partículas con remuestreo sistemático de baja varianza (Arulampalam et al. 2002) y perturbación Gaussiana para evitar el empobrecimiento de muestras. Cada partícula porta un par '
+        : 'A 500-particle filter with low-variance systematic resampling (Arulampalam et al. 2002) and Gaussian jitter to avoid sample impoverishment. Each particle carries a pair '}
+        <InlineMath tex={String.raw`(\ln a, b)`} />{es
+        ? ' del modelo exponencial. Sobre cada nueva observación del indicador de salud se actualizan los pesos por verosimilitud logarítmica. Cuando el tamaño efectivo de muestra '
+        : ' of the exponential model. At each new health-indicator observation, weights are updated by log-likelihood. When the effective sample size '}
+        <InlineMath tex={String.raw`N_{\mathrm{eff}} = 1/\sum w_i^2`} />{es
+        ? ' cae bajo 250, las partículas se remuestrean y perturban. El ensemble de 500 tiempos de primer pasaje proyectados produce la distribución posterior completa del RUL: mediana, percentiles 10 y 90, y la nube de partículas para visualización tipo histograma. La proyección forward se construye evaluando '
+        : ' drops below 250, the particles are resampled and jittered. The ensemble of 500 projected first-passage times yields the full posterior RUL distribution: median, 10th and 90th percentiles, and the particle cloud for histogram visualisation. The forward projection is built by evaluating '}
+        <InlineMath tex={String.raw`\mathrm{HI}(t)=\exp(\ln a + b\cdot t)`} />{es
+        ? ' para cada partícula en cada paso de tiempo futuro y tomando los percentiles 10, 50 y 90 del ensemble de valores de HI — la banda es la incertidumbre posterior del filtro. Pipeline: numpy vectorizado. Ref.: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.'
+        : ' for each particle at each future time step and taking the 10th, 50th and 90th percentiles of the HI ensemble — the band IS the filter\'s posterior uncertainty. Pipeline: numpy vectorised. Ref.: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.'}
+      </p></Callout>
+
+      <Callout variant="info" title={es ? 'Proceso Gaussiano' : 'Gaussian Process'}>
+      <p>{es
+        ? 'Un proceso Gaussiano con kernel RBF (exponencial al cuadrado) colocado sobre '
+        : 'A Gaussian Process with RBF (squared-exponential) kernel placed on '}
+        <InlineMath tex={String.raw`\ln(\mathrm{HI}(t))`} />{es
+        ? '. La función de media del GP es el ajuste lineal OLS del modelo exponencial — esto evita que el GP revierta a media cero lejos de los datos de entrenamiento y preserva la tendencia de crecimiento exponencial durante la extrapolación. Los hiperparámetros (escala de longitud '
+        : '. The GP mean function is the OLS linear fit of the exponential model — this prevents the GP from reverting to zero mean far from the training data and preserves the exponential growth trend during extrapolation. Hyper-parameters (length-scale '}
+        <InlineMath tex={String.raw`\ell`} />{es
+        ? ', varianza de señal '
+        : ', signal variance '}
+        <InlineMath tex={String.raw`\sigma_f^2`} />{es
+        ? ', varianza de ruido '
+        : ', noise variance '}
+        <InlineMath tex={String.raw`\sigma_n^2`} />{es
+        ? ') se eligen maximizando la verosimilitud marginal logarítmica sobre una grilla. La distribución predictiva se computa vía descomposición de Cholesky de la matriz de kernel. Las bandas de incertidumbre son continuas y se ensanchan con la distancia de extrapolación. Pipeline offline: scikit-learn '
+        : ') are chosen by maximising the log marginal likelihood over a grid. The predictive distribution is computed via Cholesky decomposition of the kernel matrix. The uncertainty bands are continuous and widen with extrapolation distance. Offline pipeline: scikit-learn '}
+        <code>GaussianProcessRegressor</code>{es
+        ? ' con kernel compuesto RBF + Matérn('
+        : ' with composite RBF + Matérn('}
+        <InlineMath tex={String.raw`\nu=2.5`} />{es
+        ? ') + WhiteKernel, optimización L-BFGS-B con 5 reinicios. Ref.: Rasmussen & Williams (2006), ISBN 0-262-18253-X; Liu et al. (2020), DOI 10.1016/j.ymssp.2020.106870.'
+        : ') + WhiteKernel, L-BFGS-B optimisation with 5 restarts. Ref.: Rasmussen & Williams (2006), ISBN 0-262-18253-X; Liu et al. (2020), DOI 10.1016/j.ymssp.2020.106870.'}
+      </p></Callout>
+
+      <Callout variant="info" title="Deep-RUL (CNN)">
+      <p>{es
+        ? 'Una CNN 1-D con el mismo backbone WDCNN del diagnóstico (Zhang et al. 2017, '
+        : 'A 1-D CNN with the same WDCNN backbone as the diagnosis tier (Zhang et al. 2017, '}
+        <InlineMath tex={String.raw`5\times`} />{es
+        ? ' bloques Conv1d→BN→ReLU→MaxPool, kernel ancho de 64 muestras en la primera capa). La cabeza de clasificación de 4 clases se reemplaza por una cabeza de regresión Flatten→100→Dropout(0.35)→1→Sigmoid que emite la fracción de vida '
+        : ' Conv1d→BN→ReLU→MaxPool blocks, wide 64-sample first-layer kernel). The 4-class classification head is replaced by a regression head Flatten→100→Dropout(0.35)→1→Sigmoid outputting the life fraction '}
+        <InlineMath tex={String.raw`\in[0,1]`} />{es
+        ? '. Entrenada sobre ~143 ventanas de vibración etiquetadas por fracción de vida de los benchmarks XJTU-SY (Wang, Lei, Li & Li 2020) y FEMTO/PRONOSTIA, exportada a ONNX (opset 14, entrada '
+        : '. Trained on ~143 vibration windows labelled by life fraction from the XJTU-SY (Wang, Lei, Li & Li 2020) and FEMTO/PRONOSTIA benchmarks, exported to ONNX (opset 14, input '}
+        <InlineMath tex={String.raw`(1,1,2048)`} />{es
+        ? ', salida escalar) e inferida en vivo en el navegador con onnxruntime-web (WASM EP, single-threaded). El pipeline de exportación ONNX es el mismo que sirve los modelos WDCNN, deep-AE, SVM y Random Forest del diagnóstico. Ref.: Li, Ding & Sun (2018), DOI 10.1016/j.ress.2017.11.008; Zhu, Chen & Peng (2019), DOI 10.1016/j.measurement.2019.06.040; Wang et al. (2020), DOI 10.1109/TR.2018.2882682.'
+        : ', scalar output) and inferred live in the browser via onnxruntime-web (WASM EP, single-threaded). The ONNX export pipeline is the same one serving the WDCNN, deep-AE, SVM and Random Forest diagnosis models. Ref.: Li, Ding & Sun (2018), DOI 10.1016/j.ress.2017.11.008; Zhu, Chen & Peng (2019), DOI 10.1016/j.measurement.2019.06.040; Wang et al. (2020), DOI 10.1109/TR.2018.2882682.'}
+      </p></Callout>
+
+      <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'an2013', 'arulampalam2002', 'rasmussen2006', 'liu2020', 'li2018', 'zhu2019', 'zhang2017']} label={refsLabel} />
     </div>
   );
 
