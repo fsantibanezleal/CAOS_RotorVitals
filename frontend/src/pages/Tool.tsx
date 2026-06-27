@@ -307,7 +307,26 @@ export default function Tool() {
     const exp = projectRUL(rtfShown.points, rtfShown.threshold);
     if (rulModel === 'pf') {
       const pf = particleFilterRUL(rtfShown.points, rtfShown.threshold);
-      return { onset: pf.onset, threshold: rtfShown.threshold, failTime: pf.failTimeMedian ?? null, rul: pf.rulMedian ?? null, curve: [] as {t:number;lo:number;mid:number;hi:number}[] };
+      // Build projection curve from the particle ensemble: compute HI(t) for each particle,
+      // take P10/P50/P90 at each forward time step. The band IS the PF's posterior uncertainty.
+      const pfCurve: {t:number;lo:number;mid:number;hi:number}[] = [];
+      const particles = pf.particles ?? [];
+      if (particles.length > 10 && pf.rulMedian && pf.rulMedian > 0 && pf.failTimeMedian) {
+        const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? 0;
+        const tEnd = pf.failTimeMedian * 1.2;
+        const nPts = 30;
+        for (let i=0; i<=nPts; i++) {
+          const t = tNow + (i/nPts) * (tEnd - tNow);
+          const his: number[] = [];
+          for (const p of particles) {
+            his.push(Math.exp(p.lnA + p.b * t));
+          }
+          his.sort((a,b)=>a-b);
+          const K=his.length;
+          pfCurve.push({t, lo:his[Math.floor(K*0.1)], mid:his[Math.floor(K*0.5)], hi:his[Math.floor(K*0.9)]});
+        }
+      }
+      return { onset: pf.onset, threshold: rtfShown.threshold, failTime: pf.failTimeMedian ?? null, rul: pf.rulMedian ?? null, curve: pfCurve };
     }
     if (rulModel === 'gp') {
       const gp = gpRUL(rtfShown.points, rtfShown.threshold);
