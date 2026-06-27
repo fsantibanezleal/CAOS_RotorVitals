@@ -17,6 +17,7 @@ import { projectRUL } from '../dsp/health';
 import { type RulModel } from '../dsp/rul_models';
 import { particleFilterRUL } from '../dsp/pf_rul';
 import { gpRUL } from '../dsp/gp_rul';
+import { deepRul } from '../lib/ort';
 import { UPlotChart } from '../viz/UPlotChart';
 import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
 import { minMaxDecimate } from '../viz/decimate';
@@ -97,6 +98,21 @@ export default function Tool() {
   const [rulSource, setRulSource] = useState('');
   // Prognostic model selector (exponential | pf | gp | deep)
   const [rulModel, setRulModel] = useState<RulModel>('exponential');
+  const [deepRulResult, setDeepRulResult] = useState<number|null>(null);
+  useEffect(() => {
+    if (rulModel !== 'deep') return;
+    const raw = rtfShown.points.length >= 8 ? rtfShown.points[rtfShown.points.length-1] : null;
+    if (!raw) { setDeepRulResult(null); return; }
+    // Build a 2048-sample window from the HI trend (interpolated to match CNN input size)
+    const win=new Float32Array(2048);
+    const n=rtfShown.points.length;
+    for (let i=0;i<2048;i++) {
+      const frac=i/2047;
+      const idx=Math.min(n-1,Math.floor(frac*n));
+      win[i]=rtfShown.points[idx].hi;
+    }
+    deepRul(win).then(v=>setDeepRulResult(v)).catch(()=>setDeepRulResult(null));
+  }, [rulModel, rtfShown]);
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
   useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
   // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
@@ -332,8 +348,14 @@ export default function Tool() {
       const gp = gpRUL(rtfShown.points, rtfShown.threshold);
       return { onset: gp.onset, threshold: rtfShown.threshold, failTime: gp.failTimeMedian ?? null, rul: gp.rulMedian ?? null, curve: (gp.curve ?? []).map(c => ({ t: c.t, lo: c.lo, mid: c.mean ?? 0, hi: c.hi })) };
     }
+    if (rulModel === 'deep') {
+      const frac = deepRulResult; // [0,1] from ONNX inference
+      const totalLife = exp.failTime ?? (exp.onset ? (rtfShown.points[rtfShown.points.length-1]?.t??0) * 2 : null);
+      const rul = frac != null && totalLife ? Math.max(0, totalLife * (1-frac)) : null;
+      return { onset: exp.onset, threshold: rtfShown.threshold, failTime: rul != null ? (rtfShown.points[rtfShown.points.length-1]?.t??0) + rul : null, rul, curve: exp.curve };
+    }
     return exp;
-  }, [rtfShown, rulModel]);
+  }, [rtfShown, rulModel, deepRulResult]);
   // replay-derived 'now' position fed to the RUL chart + 3D waterfall while replay is engaged
   const replayLifeH = isFinite(rtf.trueFail) ? rtf.trueFail : 60;
   const nowT = replayOn ? lifePos * replayLifeH : undefined;
