@@ -3,6 +3,18 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.43.000] — 2026-06-27
+
+### Added — Prognostic model ladder
+- **Particle Filter** (`dsp/pf_rul.ts`, `rotorlab/model/pf_rul.py`): 500-particle Bayesian SIR with systematic resampling + jitter. Full posterior RUL distribution (median, P10/P90, particle cloud). Pipeline: numpy vectorised. Ref: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.
+- **Gaussian Process** (`dsp/gp_rul.ts`, `rotorlab/model/gp_rul.py`): non-parametric regression on log(HI). Pipeline: scikit-learn GaussianProcessRegressor, composite RBF+Matérn(5/2)+WhiteKernel, L-BFGS-B with 5 restarts. Frontend: RBF kernel + Cholesky in TypeScript. Ref: Rasmussen & Williams (2006), Liu et al. (2020).
+- **Deep-RUL CNN** (`rotorlab/model/deep_rul.py` + `stages/train_rul.py`, `lib/ort.ts::deepRul()`): WDCNN backbone with regression head, trained on XJTU-SY+FEMTO life-fraction snapshots, exported to ONNX (opset 16) and inferred live via onnxruntime-web. Ref: Li, Ding & Sun (2018), Zhu, Chen & Peng (2019).
+- **Unified RUL interface** (`dsp/rul_models.ts::predictRUL`): single entry point for all four models (exponential/pf/gp/deep).
+- **RUL benchmark stage** (`stages/evaluate_rul.py`): compares all models on FEMTO/XJTU-SY/IMS, writes `rv-rul-benchmark.json`.
+- **Docs**: extended `docs/frameworks/14_prognostics-rul/prognostics-rul.md` with full PF/GP/Deep-RUL sections + model ladder summary table.
+- **Introduction page**: new paragraph describing the prognostic model ladder.
+- **i18n fix**: 'surfaces' translated as verb (EXPONE), not noun (SUPERFICIE).
+
 ## [0.42.000] — 2026-06-25
 
 Docs — **method documentation for release**: the two methods the App added are now documented in Methodology.
