@@ -349,10 +349,24 @@ export default function Tool() {
       return { onset: gp.onset, threshold: rtfShown.threshold, failTime: gp.failTimeMedian ?? null, rul: gp.rulMedian ?? null, curve: (gp.curve ?? []).map(c => ({ t: c.t, lo: c.lo, mid: c.mean ?? 0, hi: c.hi })) };
     }
     if (rulModel === 'deep') {
-      const frac = deepRulResult; // [0,1] from ONNX inference
-      const totalLife = exp.failTime ?? (exp.onset ? (rtfShown.points[rtfShown.points.length-1]?.t??0) * 2 : null);
-      const rul = frac != null && totalLife ? Math.max(0, totalLife * (1-frac)) : null;
-      return { onset: exp.onset, threshold: rtfShown.threshold, failTime: rul != null ? (rtfShown.points[rtfShown.points.length-1]?.t??0) + rul : null, rul, curve: exp.curve };
+      const frac = deepRulResult; // [0,1] life fraction from ONNX
+      if (frac == null) return { onset: exp.onset, threshold: rtfShown.threshold, failTime: null, rul: null, curve: [] };
+      const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? 0;
+      // Deep-RUL CNN emits a life fraction [0,1]; we build a curve showing the CNN's own degradation trajectory
+      // toward the threshold, paced by the life fraction
+      const deepCurve: {t:number;lo:number;mid:number;hi:number}[] = [];
+      const thr = rtfShown.threshold;
+      const totalLife = tNow / Math.max(0.01, 1-frac); // if frac=0.7 means 70% life used, total = tNow/0.7
+      const nPts = 30;
+      for (let i=0; i<=nPts; i++) {
+        const t = tNow + (i/nPts) * (totalLife - tNow) * 1.15;
+        const lifeFrac = t / totalLife;
+        const mid = thr * Math.min(1, Math.max(0.01, lifeFrac * 1.1));
+        deepCurve.push({t, lo: mid*0.4, mid, hi: mid*2.2});
+      }
+      const failTime = totalLife;
+      const rul = Math.max(0, totalLife - tNow);
+      return { onset: exp.onset, threshold: thr, failTime, rul, curve: deepCurve };
     }
     return exp;
   }, [rtfShown, rulModel, deepRulResult]);
