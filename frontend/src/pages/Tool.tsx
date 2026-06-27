@@ -99,20 +99,6 @@ export default function Tool() {
   // Prognostic model selector (exponential | pf | gp | deep)
   const [rulModel, setRulModel] = useState<RulModel>('exponential');
   const [deepRulResult, setDeepRulResult] = useState<number|null>(null);
-  useEffect(() => {
-    if (rulModel !== 'deep') return;
-    const raw = rtfShown.points.length >= 8 ? rtfShown.points[rtfShown.points.length-1] : null;
-    if (!raw) { setDeepRulResult(null); return; }
-    // Build a 2048-sample window from the HI trend (interpolated to match CNN input size)
-    const win=new Float32Array(2048);
-    const n=rtfShown.points.length;
-    for (let i=0;i<2048;i++) {
-      const frac=i/2047;
-      const idx=Math.min(n-1,Math.floor(frac*n));
-      win[i]=rtfShown.points[idx].hi;
-    }
-    deepRul(win).then(v=>setDeepRulResult(v)).catch(()=>setDeepRulResult(null));
-  }, [rulModel, rtfShown]);
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
   useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
   // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
@@ -319,6 +305,20 @@ export default function Tool() {
     if (trajMode && rulSource) { const ft = femtoTrajs.find((t) => `${t.set}:${t.id}` === rulSource); if (ft) return femtoToRunToFailure(ft); }
     return rtf;
   }, [trajMode, rulSource, femtoTrajs, rtf]);
+  // Deep-RUL async ONNX inference — triggered when model selector changes to 'deep'
+  useEffect(() => {
+    if (rulModel !== 'deep') return;
+    const pts = rtfShown.points;
+    if (pts.length < 8) { setDeepRulResult(null); return; }
+    const win = new Float32Array(2048);
+    const n = pts.length;
+    for (let i = 0; i < 2048; i++) {
+      const frac = i / 2047;
+      const idx = Math.min(n - 1, Math.floor(frac * (n - 1)));
+      win[i] = pts[idx].hi;
+    }
+    deepRul(win).then(v => setDeepRulResult(v)).catch(() => setDeepRulResult(null));
+  }, [rulModel, rtfShown]);
   const rulShown = useMemo(() => {
     const exp = projectRUL(rtfShown.points, rtfShown.threshold);
     if (rulModel === 'pf') {
