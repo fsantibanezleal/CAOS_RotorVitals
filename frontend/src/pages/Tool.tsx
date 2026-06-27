@@ -14,6 +14,9 @@ import { runToFailure, loadRealRtf, loadRealFrames, femtoToRunToFailure, RTF_SET
 import { diagnoseRaw, type DiagOut } from '../dsp/learned';
 import { loadSegmentDatasets, type SegDataset } from '../dsp/segments';
 import { projectRUL } from '../dsp/health';
+import { type RulModel } from '../dsp/rul_models';
+import { particleFilterRUL } from '../dsp/pf_rul';
+import { gpRUL } from '../dsp/gp_rul';
 import { UPlotChart } from '../viz/UPlotChart';
 import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
 import { minMaxDecimate } from '../viz/decimate';
@@ -92,6 +95,8 @@ export default function Tool() {
   const [bandBrush, setBandBrush] = useState(false); // spectrum drag selects the demod band → live SES
   // REAL run-to-failure source for the RUL tab: '' = synthetic; else a FEMTO bearing id (real degradation data)
   const [rulSource, setRulSource] = useState('');
+  // Prognostic model selector (exponential | pf | gp | deep)
+  const [rulModel, setRulModel] = useState<RulModel>('exponential');
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
   useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
   // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
@@ -298,7 +303,18 @@ export default function Tool() {
     if (trajMode && rulSource) { const ft = femtoTrajs.find((t) => `${t.set}:${t.id}` === rulSource); if (ft) return femtoToRunToFailure(ft); }
     return rtf;
   }, [trajMode, rulSource, femtoTrajs, rtf]);
-  const rulShown = useMemo(() => projectRUL(rtfShown.points, rtfShown.threshold), [rtfShown]);
+  const rulShown = useMemo(() => {
+    const exp = projectRUL(rtfShown.points, rtfShown.threshold);
+    if (rulModel === 'pf') {
+      const pf = particleFilterRUL(rtfShown.points, rtfShown.threshold);
+      return { onset: pf.onset, threshold: rtfShown.threshold, failTime: pf.failTimeMedian ?? null, rul: pf.rulMedian ?? null, curve: [] as {t:number;lo:number;mid:number;hi:number}[] };
+    }
+    if (rulModel === 'gp') {
+      const gp = gpRUL(rtfShown.points, rtfShown.threshold);
+      return { onset: gp.onset, threshold: rtfShown.threshold, failTime: gp.failTimeMedian ?? null, rul: gp.rulMedian ?? null, curve: (gp.curve ?? []).map(c => ({ t: c.t, lo: c.lo, mid: c.mean ?? 0, hi: c.hi })) };
+    }
+    return exp;
+  }, [rtfShown, rulModel]);
   // replay-derived 'now' position fed to the RUL chart + 3D waterfall while replay is engaged
   const replayLifeH = isFinite(rtf.trueFail) ? rtf.trueFail : 60;
   const nowT = replayOn ? lifePos * replayLifeH : undefined;
@@ -391,12 +407,19 @@ export default function Tool() {
     { id: 'rul', label: t.tRul, content: (
       <div className="rv-vizstack">
         {!trajMode && replayBar()}
+        <div className="rul-model-bar" style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
+          {(['exponential','pf','gp'] as RulModel[]).map(m => (
+            <button key={m} className={`chip ${rulModel===m?'on':''}`} onClick={()=>setRulModel(m)}>
+              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':''}
+            </button>
+          ))}
+        </div>
         <RulChart points={rtfShown.points} rul={rulShown} nowT={!trajMode ? nowT : undefined} nowHi={!trajMode ? nowHi : undefined} />
         <p className="hint">{!trajMode
           ? t.rulNote
           : (lang === 'es'
-            ? `${rtfShown.label} — datos de degradación REALES (run-to-failure, RMS de aceleración). El MISMO projectRUL corre sobre ellos; la falla real del experimento es a ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
-            : `${rtfShown.label} — REAL degradation data (run-to-failure, acceleration RMS). The SAME projectRUL runs on it; the experiment's true failure is at ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
+            ? `${rtfShown.label} — datos de degradación REALES (${rulModel==='exponential'?'exponencial':rulModel==='pf'?'filtro de partículas':'GP'}). Falla real: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
+            : `${rtfShown.label} — REAL degradation data (${rulModel==='exponential'?'exponential':rulModel==='pf'?'particle filter':'GP'}). True failure: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
