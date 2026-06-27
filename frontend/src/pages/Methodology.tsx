@@ -843,7 +843,7 @@ export default function Methodology() {
         ? 'El modelo exponencial de primer pasaje descrito arriba es el primer escalón de una escalera de cuatro modelos. Los tres modelos adicionales — un filtro de partículas, un proceso Gaussiano y una CNN profunda — están implementados en ambas líneas (TypeScript en el navegador y Python en el pipeline offline) y se seleccionan desde la pestaña Prognostics·RUL del App mediante un grupo de chips.'
         : 'The exponential first-passage model described above is the first rung of a four-model ladder. The three additional models — a particle filter, a Gaussian Process, and a deep CNN — are implemented in both lanes (TypeScript in the browser and Python in the offline pipeline) and are selectable from the Prognostics·RUL tab in the App via a chip group.'}</p>
 
-      <Callout variant="info" title={es ? 'Filtro de Partículas' : 'Particle Filter'}>
+      <Callout variant="note" title={es ? 'Filtro de Partículas' : 'Particle Filter'}>
       <p>{es
         ? 'Un filtro de partículas de 500 partículas con remuestreo sistemático de baja varianza (Arulampalam et al. 2002) y perturbación Gaussiana para evitar el empobrecimiento de muestras. Cada partícula porta un par '
         : 'A 500-particle filter with low-variance systematic resampling (Arulampalam et al. 2002) and Gaussian jitter to avoid sample impoverishment. Each particle carries a pair '}
@@ -858,7 +858,7 @@ export default function Methodology() {
         : ' for each particle at each future time step and taking the 10th, 50th and 90th percentiles of the HI ensemble — the band IS the filter\'s posterior uncertainty. Pipeline: numpy vectorised. Ref.: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.'}
       </p></Callout>
 
-      <Callout variant="info" title={es ? 'Proceso Gaussiano' : 'Gaussian Process'}>
+      <Callout variant="note" title={es ? 'Proceso Gaussiano' : 'Gaussian Process'}>
       <p>{es
         ? 'Un proceso Gaussiano con kernel RBF (exponencial al cuadrado) colocado sobre '
         : 'A Gaussian Process with RBF (squared-exponential) kernel placed on '}
@@ -882,7 +882,7 @@ export default function Methodology() {
         : ') + WhiteKernel, L-BFGS-B optimisation with 5 restarts. Ref.: Rasmussen & Williams (2006), ISBN 0-262-18253-X; Liu et al. (2020), DOI 10.1016/j.ymssp.2020.106870.'}
       </p></Callout>
 
-      <Callout variant="info" title="Deep-RUL (CNN)">
+      <Callout variant="note" title="Deep-RUL (CNN)">
       <p>{es
         ? 'Una CNN 1-D con el mismo backbone WDCNN del diagnóstico (Zhang et al. 2017, '
         : 'A 1-D CNN with the same WDCNN backbone as the diagnosis tier (Zhang et al. 2017, '}
