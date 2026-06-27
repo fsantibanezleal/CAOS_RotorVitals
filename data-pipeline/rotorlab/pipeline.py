@@ -143,7 +143,33 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--retrain", action="store_true",
                     help="regenerate the ONNX/metrics from raw CWRU (torch + scipy) before rebuilding the replay")
+    ap.add_argument("--retrain-rul", action="store_true",
+                    help="train Deep-RUL CNN on XJTU-SY+FEMTO, export ONNX, then evaluate all 4 RUL models")
+    ap.add_argument("--eval-rul", action="store_true",
+                    help="evaluate PF+GP on all run-to-failure datasets, write rv-rul-benchmark.json")
     args = ap.parse_args()
+    if args.retrain_rul:
+        print("[retrain-rul] training Deep-RUL CNN on XJTU-SY+FEMTO frames ...", flush=True)
+        from .stages.train_rul import train_deep_rul_stage
+        import torch
+        dev = "cuda" if torch.cuda.is_available() else "cpu"
+        r = train_deep_rul_stage(device=dev)
+        print(f"  Deep-RUL trained: {r['train_samples']} train / {r['val_samples']} val | "
+              f"best loss {r.get('best_val_loss', 'N/A'):.4f} | ONNX -> {r['onnx_path']}", flush=True)
+        print("[eval-rul] running 4-model RUL benchmark (exponential / PF / GP / Deep-RUL) ...", flush=True)
+        from .stages.evaluate_rul import evaluate_rul_models
+        b = evaluate_rul_models()
+        s = b["summary"]
+        print(f"  {s['trajectories_evaluated']} trajectories | "
+              f"MAE exp={s.get('mae_exponential','N/A')} pf={s.get('mae_pf','N/A')} gp={s.get('mae_gp','N/A')}"
+              f" -> {DERIVED}/rv-rul-benchmark.json", flush=True)
+    if args.eval_rul and not args.retrain_rul:
+        from .stages.evaluate_rul import evaluate_rul_models
+        b = evaluate_rul_models()
+        s = b["summary"]
+        print(f"[eval-rul] {s['trajectories_evaluated']} trajectories | "
+              f"MAE exp={s.get('mae_exponential','N/A')} pf={s.get('mae_pf','N/A')} gp={s.get('mae_gp','N/A')}"
+              f" -> {DERIVED}/rv-rul-benchmark.json", flush=True)
     if args.retrain:
         retrain(args.seed)
     if args.case == "all":
