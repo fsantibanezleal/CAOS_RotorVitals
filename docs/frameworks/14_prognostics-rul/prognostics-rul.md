@@ -108,9 +108,73 @@ template; supply the HI trend + threshold. For severity, pick the ISO class matc
 A/B/C/D logic is unchanged. Calibrate the ±2σ band against held-out run-to-failure trajectories before trusting it in
 production (the α-λ/calibration tools are there for exactly that).
 
+## Model 2 — Particle Filter (Bayesian state estimation)
+
+**LIVE (browser):** `frontend/src/dsp/pf_rul.ts` — pure TypeScript, no training.
+**PIPELINE (offline):** `data-pipeline/rotorlab/model/pf_rul.py` — numpy, vectorised SIR.
+
+A sequential-importance-resampling (SIR) particle filter over the exponential degradation model `HI(t)=a·exp(b·t)`.
+Each of 500 particles carries a pair `(ln a, b)`; as each new HI observation arrives, particles are reweighted by
+log-likelihood and, when the effective sample size drops below 250, resampled via **systematic resampling**
+(Arulampalam et al. 2002, low-variance O(N)) with Gaussian jitter regularisation to avoid sample impoverishment.
+The RUL distribution is the ensemble of per-particle first-passage times — giving not just a point estimate but the
+full posterior: median, 10th/90th percentiles, and the raw particle cloud for histogram visualisation.
+
+References: An, Kim & Choi (2013), doi:10.1016/j.ress.2012.09.011; Orchard & Vachtsevanos (2009),
+doi:10.1177/0142331208093993; Arulampalam et al. (2002), doi:10.1109/78.978374.
+
+## Model 3 — Gaussian Process (non-parametric Bayesian regression)
+
+**LIVE (browser):** `frontend/src/dsp/gp_rul.ts` — pure TypeScript, RBF kernel, Cholesky decomposition, grid-search.
+**PIPELINE (offline):** `data-pipeline/rotorlab/model/gp_rul.py` — scikit-learn `GaussianProcessRegressor`,
+composite RBF+Matern(ν=2.5)+WhiteKernel, L-BFGS-B hyper-parameter optimisation with 5 restarts.
+
+A GP is placed on `log(HI) ~ GP(0, k(t, t'))` and the posterior predictive distribution is projected forward.
+The pipeline version uses scikit-learn's mature implementation (Pedregosa et al. 2011) with a composite kernel:
+the RBF captures smooth exponential growth, the Matérn 5/2 captures rougher deviations (once-differentiable), and
+a WhiteKernel models observation noise — all three variance and length-scale parameters are learned from the data
+via the log marginal likelihood. The RUL is the first-passage time of the predictive mean to the failure threshold.
+
+The frontend version implements the same RBF kernel + Cholesky solver in TypeScript, with a coarse grid search
+for hyper‑parameters — good enough for the 5–20 post-onset points typical of bearing prognostics, and dependency‑free
+in the browser.
+
+References: Rasmussen & Williams (2006), ISBN 0-262-18253-X; Liu et al. (2020), doi:10.1016/j.ymssp.2020.106870;
+Pedregosa et al. (2011), JMLR 12:2825–2830.
+
+## Model 4 — Deep-RUL CNN (learned, offline training → ONNX → live inference)
+
+**PIPELINE (offline):** `data-pipeline/rotorlab/model/deep_rul.py` — PyTorch, WDCNN backbone, regression head.
+Training stage: `data-pipeline/rotorlab/stages/train_rul.py` — reads XJTU-SY + FEMTO life-snapshot frames,
+trains on life-fraction regression, exports `deep_rul.onnx`.
+**LIVE (browser):** `frontend/src/lib/ort.ts::deepRul()` — `onnxruntime-web`, WASM EP, single-threaded.
+
+A 1-D convolutional neural network with the same backbone as the WDCNN diagnosis model (Zhang et al. 2017): five
+Conv1d→BatchNorm→ReLU→MaxPool blocks, the first with a wide kernel (64 samples at stride 16) to capture
+long-period degradation signatures. A regression head (Flatten→100→Dropout→1→Sigmoid) outputs the life fraction
+[0,1]. Trained on ~112 labelled snapshots from XJTU-SY and FEMTO/PRONOSTIA run-to-failure bearings, exported to
+ONNX (opset 16, `(1,1,2048)→scalar`), and loaded in the browser by the same `onnxruntime-web` pipeline that
+already serves the WDCNN and deep-AE classifiers. The model architecture follows the deep-RUL CNN of Li, Ding &
+Sun (2018) and the multi-scale variant of Zhu, Chen & Peng (2019).
+
+References: Li, Ding & Sun (2018), doi:10.1016/j.ress.2017.11.008; Zhu, Chen & Peng (2019),
+doi:10.1016/j.measurement.2019.06.040; Zhang et al. (2017), Sensors 17(2):425.
+
+## Model ladder summary (all four in both lanes)
+
+| Model | Frontend (live) | Pipeline (offline) | Framework (pipeline) | Training needed |
+|---|---|---|---|---|
+| Exponential | `health.ts::projectRUL` | `evaluate_rul.py::_exponential_rul` | numpy OLS | No |
+| Particle Filter | `pf_rul.ts` | `pf_rul.py` | numpy (vectorised SIR) | No |
+| Gaussian Process | `gp_rul.ts` | `gp_rul.py` | sklearn.GaussianProcessRegressor (RBF+Matern+White) | No |
+| Deep-RUL CNN | `ort.ts::deepRul()` (ONNX) | `deep_rul.py` + `train_rul.py` | PyTorch → ONNX | Yes (offline) |
+
 ## Honest reading
 
-A transparent, closed-form prognostic at the bottom of the model ladder (the heavier particle-filter / GP / deep-RUL
-options buy better-calibrated uncertainty at the cost of data and compute). Its honesty is structural: no onset → no
-number, `b ≤ 0` → no number, and the band widens. The method and the ISO zones are exact and transferable; the
-absolute severity/hours in the demos are synthetic and labelled.
+A ladder of four prognostic models from transparent closed-form to SOTA learned. The classical exponential is
+the bottom rung — transparent, structural honesty (no onset → no number, `b ≤ 0` → no number, band widens).
+The particle filter buys a full posterior distribution at the cost of particle resampling. The Gaussian
+Process buys calibrated uncertainty bands with a composite kernel, at the cost of the O(n³) Cholesky (negligible
+for the ~5–20 post-onset points typical of bearings). The deep-RUL CNN buys features learned directly from raw
+vibration at the cost of offline training and an ONNX artifact. All methods and the ISO severity zones are exact
+and transferable; the absolute severity/hours in the demos are synthetic and labelled.

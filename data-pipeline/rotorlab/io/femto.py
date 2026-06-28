@@ -17,7 +17,6 @@ Source: IEEE PHM 2012 Prognostic Challenge (FEMTO-ST). Download: the wkzs111 Git
 """
 from __future__ import annotations
 
-import io
 import json
 import zipfile
 from pathlib import Path
@@ -82,6 +81,81 @@ def _smooth(y: np.ndarray, w: int = 9) -> np.ndarray:
     return np.convolve(y, np.ones(w) / w, mode="same")
 
 
+# --- raw life-snapshot frames (for the App's signal suite on Real:RUL) ------------------------------------------------
+RAW_WIN = 2048  # contiguous samples of the horizontal channel kept per snapshot (a 0.08 s window @ 25.6 kHz)
+LIFE_FRACS = [0.0, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 1.0]  # ~8 snapshots spanning flat-then-rising degradation
+
+
+def _snapshot_signal(raw: bytes, n: int = RAW_WIN) -> np.ndarray:
+    """First `n` contiguous samples of the horizontal-acceleration column (index 4) of one acc_*.csv snapshot [g]."""
+    flat = np.fromstring(raw.replace(b"\n", b",").replace(b";", b","), sep=",")
+    if flat.size < 6:
+        return np.array([], dtype=float)
+    m = flat[: (flat.size // 6) * 6].reshape(-1, 6)
+    h = m[:, 4]
+    return h[:n].astype(float)
+
+
+def _selectable_groups(zip_path: str | Path, selectable_ids: set[str]) -> dict[str, list[str]]:
+    """Ordered acc_*.csv file lists keyed by trajectory id, for the SAME non-test source set the HI curve used
+    (Learning_set / Full_Test_Set; never the truncated Test_set), so frame fractions line up with rv-femto-rtf.json."""
+    zf = zipfile.ZipFile(zip_path)
+    groups: dict[str, list[str]] = {}
+    for n in zf.namelist():
+        if not (n.endswith(".csv") and "/acc_" in n):
+            continue
+        parts = n.split("/")
+        setname, bearing = parts[-3], parts[-2]
+        if bearing not in selectable_ids or "Test_set" in setname:  # exclude truncated challenge trajectories
+            continue
+        groups.setdefault(bearing, []).append(n)
+    for b in groups:
+        groups[b].sort()  # acc_00001 < acc_00002 < ... == time order
+    return groups
+
+
+def frames_artifact(zip_path: str | Path, selectable: list[dict], n_win: int = RAW_WIN) -> dict:
+    """Companion artifact keyed by trajectory id: for each SELECTABLE (reaches failure) trajectory, ~8 raw
+    life-snapshots sampled at LIFE_FRACS of life. Each frame carries the absolute time (hours), the life fraction,
+    the window RMS [g] and a contiguous `n_win`-sample window of the horizontal vibration channel [g]. The last
+    frame is clamped to the final (failure) snapshot. fs of every raw window = FS_HZ (25.6 kHz)."""
+    sel_ids = {t["id"] for t in selectable}
+    groups = _selectable_groups(zip_path, sel_ids)
+    zf = zipfile.ZipFile(zip_path)
+    frames: dict[str, list[dict]] = {}
+    for t in selectable:
+        files = groups.get(t["id"], [])
+        if not files:
+            print(f"  WARN: no raw files for selectable {t['id']}", flush=True)
+            continue
+        last = len(files) - 1
+        idxs = sorted({min(last, int(round(f * last))) for f in LIFE_FRACS})  # clamp + dedupe -> ascending file idx
+        rows: list[dict] = []
+        for i in idxs:
+            sig = _snapshot_signal(zf.read(files[i]), n_win)
+            if sig.size < n_win:
+                continue
+            rms = float(np.sqrt(np.mean(sig * sig)))
+            rows.append(
+                {
+                    "t": round(i * SNAPSHOT_PERIOD_S / 3600.0, 4),
+                    "frac": round(i / last if last else 0.0, 4),
+                    "rms": round(rms, 5),
+                    "raw": [round(float(x), 5) for x in sig],
+                }
+            )
+        frames[t["id"]] = rows
+        if rows:
+            print(f"  {t['id']}: {len(rows)} frames, RMS {rows[0]['rms']:.3f}->{rows[-1]['rms']:.3f} g", flush=True)
+    return {
+        "source": "FEMTO/PRONOSTIA (IEEE PHM 2012, FEMTO-ST)",
+        "fs": FS_HZ,
+        "channel": "accel_horizontal",
+        "winSamples": n_win,
+        "frames": frames,
+    }
+
+
 def frontend_artifact(trajs: list[dict], threshold_g: float = 2.0, n_points: int = 160) -> dict:
     """Compact App artifact: the COMPLETE trajectories (learning + full-test, which run to failure) reduced to a
     decimated HI curve plus a REAL first-passage trueFail at an absolute alarm threshold (g RMS). The truncated
@@ -123,6 +197,7 @@ def main() -> None:
     ap.add_argument("--zip", default=str(repo / "data-pipeline" / "_raw" / "femto.zip"))
     ap.add_argument("--out", default=str(repo / "data-pipeline" / "_raw" / "femto_hi.json"))
     ap.add_argument("--frontend-out", default=str(repo / "frontend" / "public" / "rv-femto-rtf.json"))
+    ap.add_argument("--frames-out", default=str(repo / "frontend" / "public" / "rv-femto-frames.json"))
     args = ap.parse_args()
     print(f"FEMTO: reducing trajectories from {args.zip}", flush=True)
     trajs = trajectories(args.zip)
@@ -133,6 +208,12 @@ def main() -> None:
     Path(args.frontend_out).write_text(json.dumps(art), encoding="utf-8")
     n_fail = sum(1 for t in art["trajectories"] if t["trueFail"] is not None)
     print(f"wrote {args.frontend_out}: {art['nTrajectories']} complete trajectories ({n_fail} reach the {art['thresholdG']} g alarm)", flush=True)
+    selectable = [t for t in art["trajectories"] if t["trueFail"] is not None]
+    print(f"FEMTO: emitting raw life-snapshot frames for {len(selectable)} selectable trajectories", flush=True)
+    fr = frames_artifact(args.zip, selectable)
+    Path(args.frames_out).write_text(json.dumps(fr), encoding="utf-8")
+    n_frames = sum(len(v) for v in fr["frames"].values())
+    print(f"wrote {args.frames_out}: {len(fr['frames'])} trajectories, {n_frames} raw frames @ {fr['fs']} Hz", flush=True)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,9 @@ import { lifeFeatures, type LifeFeat } from '../dsp/iso';
 import { type FaultKind, type Bearing } from '../dsp/bearing';
 import { viridis } from './Heatmap2D';
 
+// When realFeats is supplied (the measured run-to-failure frames) the panel plots the MEASURED degradation
+// trajectory instead of the synthetic ramp — same view, real data.
+
 function css(name: string, fb: string) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb; }
 
 type AxisKey = 'rms' | 'kurt' | 'ses';
@@ -31,14 +34,21 @@ function ellipse(xs: number[], ys: number[]) {
  * with the healthy-baseline centroid + 95% Mahalanobis novelty ellipse and the onset point. The
  * fault case departs the healthy cluster; healthy stays inside the ellipse. (Hand-crafted features
  * here are the honest baseline that a learned deep-autoencoder latent space improves on.) */
-export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, lang }: {
+export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, lang, realFeats, realLabel, classPts, classColor, selIdx, classList }: {
   bearing: Bearing; fault: FaultKind; severity: number; snr: number; rpm: number; lifeH: number; lang: 'en' | 'es';
+  realFeats?: LifeFeat[]; realLabel?: string;
+  // class-scatter mode (a measured DIAGNOSIS segment): points colored by CLASS, the selected sample ringed —
+  // instead of the by-life degradation trajectory. classPts runs parallel to realFeats.
+  classPts?: { cls: string }[]; classColor?: (c: string) => string; selIdx?: number; classList?: string[];
 }) {
   const es = lang === 'es';
   const [pair, setPair] = useState<[AxisKey, AxisKey]>(['kurt', 'ses']);
   const ref = useRef<HTMLCanvasElement>(null);
   const [hov, setHov] = useState<{ x: number; y: number; i: number } | null>(null);
-  const feats = useMemo(() => lifeFeatures({ bearing, fault, severityEnd: severity, rpm, snrDb: snr, lifeH }), [bearing, fault, severity, rpm, snr, lifeH]);
+  const synthFeats = useMemo(() => lifeFeatures({ bearing, fault, severityEnd: severity, rpm, snrDb: snr, lifeH }), [bearing, fault, severity, rpm, snr, lifeH]);
+  const classMode = !!(classPts && classPts.length && realFeats && realFeats.length === classPts.length);
+  const feats = (realFeats && realFeats.length >= 2) ? realFeats : synthFeats;
+  const cColor = classColor ?? (() => '#58a6ff');
 
   const ax = AXES[pair[0]], ay = AXES[pair[1]];
   const xs = feats.map(ax.get), ys = feats.map(ay.get);
@@ -64,32 +74,36 @@ export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, l
     g.fillStyle = fg; g.font = '11px ui-sans-serif, sans-serif';
     g.fillText(ax.label(es), padL + pw / 2 - 24, padT + ph + 26);
     g.save(); g.translate(12, padT + ph / 2 + 30); g.rotate(-Math.PI / 2); g.fillText(ay.label(es), 0, 0); g.restore();
-    // healthy 95% Mahalanobis ellipse
-    const el = ellipse(xs.slice(0, healthyN), ys.slice(0, healthyN));
-    if (el) {
-      const cx = sx(el.mx), cy = sy(el.my);
-      const rxp = (el.rx / (xmax - xmin || 1)) * pw, ryp = (el.ry / (ymax - ymin || 1)) * ph;
-      g.strokeStyle = dim; g.setLineDash([4, 3]); g.globalAlpha = 0.8; g.beginPath();
-      g.ellipse(cx, cy, Math.max(2, rxp), Math.max(2, ryp), -el.angle, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
-      // centroid diamond
-      g.strokeStyle = dim; g.beginPath(); g.moveTo(cx, cy - 5); g.lineTo(cx + 5, cy); g.lineTo(cx, cy + 5); g.lineTo(cx - 5, cy); g.closePath(); g.stroke();
-      g.fillStyle = dim; g.font = '9px ui-sans-serif, sans-serif'; g.fillText(es ? 'sano 95%' : 'healthy 95%', cx + 7, cy - 6);
+    if (classMode) {
+      // class-scatter: each measured segment is a point colored by its TRUE class; the selected one is ringed.
+      feats.forEach((_, i) => { g.fillStyle = cColor(classPts![i].cls); g.globalAlpha = (selIdx === i) ? 1 : 0.7; g.beginPath(); g.arc(sx(xs[i]), sy(ys[i]), selIdx === i ? 5 : 3.5, 0, 7); g.fill(); });
+      g.globalAlpha = 1;
+      if (selIdx != null && selIdx >= 0 && selIdx < feats.length) { g.strokeStyle = fg; g.lineWidth = 2; g.beginPath(); g.arc(sx(xs[selIdx]), sy(ys[selIdx]), 8, 0, 7); g.stroke(); g.fillStyle = fg; g.font = '9px ui-sans-serif, sans-serif'; g.fillText(es ? 'sel' : 'sel', sx(xs[selIdx]) + 10, sy(ys[selIdx]) - 6); }
+      // class legend
+      let lx = padL + 6; const ly = padT + 8;
+      (classList ?? []).forEach((c) => { g.fillStyle = cColor(c); g.beginPath(); g.arc(lx + 4, ly, 4, 0, 7); g.fill(); g.fillStyle = dim; g.font = '9px ui-sans-serif, sans-serif'; g.fillText(c, lx + 11, ly + 3); lx += 16 + g.measureText(c).width; });
+    } else {
+      // healthy 95% Mahalanobis ellipse
+      const el = ellipse(xs.slice(0, healthyN), ys.slice(0, healthyN));
+      if (el) {
+        const cx = sx(el.mx), cy = sy(el.my);
+        const rxp = (el.rx / (xmax - xmin || 1)) * pw, ryp = (el.ry / (ymax - ymin || 1)) * ph;
+        g.strokeStyle = dim; g.setLineDash([4, 3]); g.globalAlpha = 0.8; g.beginPath();
+        g.ellipse(cx, cy, Math.max(2, rxp), Math.max(2, ryp), -el.angle, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+        g.strokeStyle = dim; g.beginPath(); g.moveTo(cx, cy - 5); g.lineTo(cx + 5, cy); g.lineTo(cx, cy + 5); g.lineTo(cx - 5, cy); g.closePath(); g.stroke();
+        g.fillStyle = dim; g.font = '9px ui-sans-serif, sans-serif'; g.fillText(es ? 'sano 95%' : 'healthy 95%', cx + 7, cy - 6);
+      }
+      g.strokeStyle = grid; g.lineWidth = 1; g.beginPath(); feats.forEach((_, i) => { const X = sx(xs[i]), Y = sy(ys[i]); i === 0 ? g.moveTo(X, Y) : g.lineTo(X, Y); }); g.stroke();
+      feats.forEach((_, i) => { const [r, gg, bb] = viridis(i / (feats.length - 1)); g.fillStyle = `rgb(${r * 255},${gg * 255},${bb * 255})`; g.beginPath(); g.arc(sx(xs[i]), sy(ys[i]), 3, 0, 7); g.fill(); });
+      if (onsetIdx > 0) { g.strokeStyle = warn; g.lineWidth = 2; g.beginPath(); g.arc(sx(xs[onsetIdx]), sy(ys[onsetIdx]), 6, 0, 7); g.stroke(); g.fillStyle = warn; g.fillText('onset', sx(xs[onsetIdx]) + 8, sy(ys[onsetIdx]) - 6); }
+      const last = feats.length - 1; g.strokeStyle = fg; g.lineWidth = 2; g.beginPath(); g.arc(sx(xs[last]), sy(ys[last]), 5, 0, 7); g.stroke();
+      const cbx = padL + pw - 90, cby = padT + 6;
+      for (let i = 0; i < 60; i++) { const [r, gg, bb] = viridis(i / 59); g.fillStyle = `rgb(${r * 255},${gg * 255},${bb * 255})`; g.fillRect(cbx + i * 1.3, cby, 1.4, 7); }
+      g.fillStyle = dim; g.font = '9px ui-monospace, monospace'; g.fillText(es ? 'vida →' : 'life →', cbx, cby + 17);
     }
-    // trajectory line
-    g.strokeStyle = grid; g.lineWidth = 1; g.beginPath(); feats.forEach((_, i) => { const X = sx(xs[i]), Y = sy(ys[i]); i === 0 ? g.moveTo(X, Y) : g.lineTo(X, Y); }); g.stroke();
-    // points colored by life
-    feats.forEach((_, i) => { const [r, gg, bb] = viridis(i / (feats.length - 1)); g.fillStyle = `rgb(${r * 255},${gg * 255},${bb * 255})`; g.beginPath(); g.arc(sx(xs[i]), sy(ys[i]), 3, 0, 7); g.fill(); });
-    // onset ring
-    if (onsetIdx > 0) { g.strokeStyle = warn; g.lineWidth = 2; g.beginPath(); g.arc(sx(xs[onsetIdx]), sy(ys[onsetIdx]), 6, 0, 7); g.stroke(); g.fillStyle = warn; g.fillText('onset', sx(xs[onsetIdx]) + 8, sy(ys[onsetIdx]) - 6); }
-    // 'now' = last point
-    const last = feats.length - 1; g.strokeStyle = fg; g.lineWidth = 2; g.beginPath(); g.arc(sx(xs[last]), sy(ys[last]), 5, 0, 7); g.stroke();
-    // colorbar (life)
-    const cbx = padL + pw - 90, cby = padT + 6;
-    for (let i = 0; i < 60; i++) { const [r, gg, bb] = viridis(i / 59); g.fillStyle = `rgb(${r * 255},${gg * 255},${bb * 255})`; g.fillRect(cbx + i * 1.3, cby, 1.4, 7); }
-    g.fillStyle = dim; g.font = '9px ui-monospace, monospace'; g.fillText(es ? 'vida →' : 'life →', cbx, cby + 17);
     // hover
     if (hov) { g.strokeStyle = fg; g.lineWidth = 1.5; g.beginPath(); g.arc(sx(xs[hov.i]), sy(ys[hov.i]), 6, 0, 7); g.stroke(); }
-  }, [feats, pair, hov, es, healthyN, onsetIdx, ax, ay, xs, ys]);
+  }, [feats, pair, hov, es, healthyN, onsetIdx, ax, ay, xs, ys, classMode, classPts, selIdx, classList, cColor]);
 
   const onMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const cv = ref.current; if (!cv) return; const rect = cv.getBoundingClientRect();
@@ -103,8 +117,15 @@ export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, l
   };
 
   const toggles: [AxisKey, AxisKey][] = [['kurt', 'ses'], ['rms', 'ses'], ['rms', 'kurt']];
-  const title = es ? 'Espacio de features de salud — trayectoria de degradación' : 'Health-feature space — degradation trajectory';
-  const note = es
+  const isReal = !!(realFeats && realFeats.length >= 2);
+  const title = classMode
+    ? (es ? `Espacio de features — segmentos por clase · MEDIDO${realLabel ? ` (${realLabel})` : ''}` : `Feature space — segments by class · MEASURED${realLabel ? ` (${realLabel})` : ''}`)
+    : (es ? 'Espacio de features de salud — trayectoria de degradación' : 'Health-feature space — degradation trajectory') + (isReal ? (es ? ` · MEDIDO${realLabel ? ` (${realLabel})` : ''}` : ` · MEASURED${realLabel ? ` (${realLabel})` : ''}`) : '');
+  const note = classMode
+    ? (es
+      ? 'Cada punto es un segmento MEDIDO ubicado por sus features (RMS, curtosis, amplitud de defecto SES), coloreado por su clase verdadera; el segmento seleccionado está resaltado. Las clases sanas se agrupan a baja energía/curtosis y las de falla se separan — la misma separabilidad que un autoencoder profundo aprende en un espacio latente no lineal (González-Muñiz et al. 2022, RESS 224:108482). Datos medidos; las features son el caso lineal honesto.'
+      : 'Each point is a MEASURED segment placed by its features (RMS, kurtosis, SES defect amplitude), colored by its true class; the selected segment is ringed. Healthy classes cluster at low energy/kurtosis and fault classes separate — the same separability a deep autoencoder learns in a nonlinear latent space (González-Muñiz et al. 2022, RESS 224:108482). Measured data; the features are the honest linear case.')
+    : es
     ? 'Cada punto es una instantánea de vida (color = vida). La elipse es la novedad 95% (Mahalanobis) del cúmulo sano; el caso con falla se aleja de ella tras el onset, mientras un caso sano permanece dentro. Estas features hechas a mano (RMS, curtosis, amplitud de defecto SES) y la distancia de Mahalanobis al cúmulo sano son el caso LINEAL de la construcción de indicador de salud en el espacio latente de un autoencoder profundo de González-Muñiz et al. (2022, Reliability Engineering & System Safety 224:108482, DOI 10.1016/j.ress.2022.108482), que calcula la MISMA novedad de Mahalanobis (RaPP "NAP") en un espacio latente NO LINEAL aprendido sólo de datos sanos — la generalización SOTA, entrenada offline. (Nota honesta: a SNR bajo las features estadísticas crudas separan débilmente; por eso el análisis de envolvente/SES sigue siendo el caballo de batalla.)'
     : 'Each point is a life snapshot (color = life). The ellipse is the 95% Mahalanobis novelty of the healthy cluster; the fault case departs it after onset while a healthy case stays inside. These hand-crafted features (RMS, kurtosis, SES defect amplitude) and the Mahalanobis distance to the healthy cluster are the LINEAR case of building a health indicator in the latent space of a deep autoencoder — González-Muñiz et al. (2022, Reliability Engineering & System Safety 224:108482, DOI 10.1016/j.ress.2022.108482) compute the SAME Mahalanobis novelty (RaPP "NAP") in a LEARNED nonlinear latent space trained on healthy data only — the SOTA generalization, trained offline. (Honest note: at low SNR raw statistical features separate weakly, which is why envelope/SES analysis stays the workhorse.)';
 

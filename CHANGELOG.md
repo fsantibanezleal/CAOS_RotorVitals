@@ -3,6 +3,129 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.43.000] — 2026-06-27
+
+### Added — Prognostic model ladder
+- **Particle Filter** (`dsp/pf_rul.ts`, `rotorlab/model/pf_rul.py`): 500-particle Bayesian SIR with systematic resampling + jitter. Full posterior RUL distribution (median, P10/P90, particle cloud). Pipeline: numpy vectorised. Ref: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.
+- **Gaussian Process** (`dsp/gp_rul.ts`, `rotorlab/model/gp_rul.py`): non-parametric regression on log(HI). Pipeline: scikit-learn GaussianProcessRegressor, composite RBF+Matérn(5/2)+WhiteKernel, L-BFGS-B with 5 restarts. Frontend: RBF kernel + Cholesky in TypeScript. Ref: Rasmussen & Williams (2006), Liu et al. (2020).
+- **Deep-RUL CNN** (`rotorlab/model/deep_rul.py` + `stages/train_rul.py`, `lib/ort.ts::deepRul()`): WDCNN backbone with regression head, trained on XJTU-SY+FEMTO life-fraction snapshots, exported to ONNX (opset 16) and inferred live via onnxruntime-web. Ref: Li, Ding & Sun (2018), Zhu, Chen & Peng (2019).
+- **Unified RUL interface** (`dsp/rul_models.ts::predictRUL`): single entry point for all four models (exponential/pf/gp/deep).
+- **RUL benchmark stage** (`stages/evaluate_rul.py`): compares all models on FEMTO/XJTU-SY/IMS, writes `rv-rul-benchmark.json`.
+- **Docs**: extended `docs/frameworks/14_prognostics-rul/prognostics-rul.md` with full PF/GP/Deep-RUL sections + model ladder summary table.
+- **Introduction page**: new paragraph describing the prognostic model ladder.
+- **i18n fix**: 'surfaces' translated as verb (EXPONE), not noun (SUPERFICIE).
+
+## [0.42.000] — 2026-06-25
+
+Docs — **method documentation for release**: the two methods the App added are now documented in Methodology.
+- New **Order tracking / varying speed** tab: why fixed-frequency analysis fails under varying speed, computed order
+  tracking (angular resampling from the tachometer, θ(t)=∫ω dt → samples-per-rev), the defect ORDERS being constant
+  (so the Campbell map draws horizontal fault lines), with equations + honest scope (offline in the pipeline).
+- **Cross-domain WDCNN** paragraph in the ML tab: the CWRU-trained model evaluated cross-domain on Ottawa/MaFaulDa
+  with the class mapping, labelled honestly (outer→outer transfers on MaFaulDa; Ottawa shows the domain gap).
+Closes #98.
+
+## [0.41.003] — 2026-06-25
+
+Feature — **the last synthetic-only view is now real too: feature-space in segment mode.** A measured DIAGNOSIS
+segment (CWRU/Ottawa/MaFaulDa) now gets a Feature space tab that places EVERY measured segment of the dataset by its
+features (RMS / envelope-kurtosis / SES-defect-amplitude), colored by its TRUE class, with the selected segment
+ringed — the class-scatter view (healthy clusters low, fault classes separate) instead of the by-life trajectory
+(which stays for RUL mode). With this, EVERY tool that genuinely applies runs on real data in every mode. Verified.
+
+## [0.41.002] — 2026-06-25
+
+Fix (honesty/consistency) — **the docs pages now match what the App actually does.** A pre-share validation found the
+docs still described the old single-dataset build while the App runs 6 real sources:
+- **Experiments → Coverage + datasets**: FEMTO/XJTU/IMS/Ottawa/MAFAULDA were still tagged `planned/roadmap` ("today
+  there are TWO real integrated sets… the other six are roadmap") — false now. Re-tagged: CWRU `live`, MFPT
+  `cross-dataset`, Ottawa/MaFaulDa `real segment (App)`, FEMTO/XJTU/IMS `real RUL (App)`; only Paderborn stays
+  roadmap (host unreachable). The status note rewritten to "SEVEN real integrated sets".
+- **Introduction honest-framing**: it claimed "the run-to-failure trajectories shown in the app are synthetic" —
+  now distinguishes REAL mode (measured CWRU/Ottawa/MaFaulDa segments + FEMTO/XJTU/IMS trajectories) from SYNTHETIC mode.
+- **Benchmark lede**: notes the App also operates live on the five further real sources (the page quantifies CWRU +
+  the MFPT cross-dataset transfer).
+No fabricated metrics added — only the integration status corrected to the truth.
+
+## [0.41.001] — 2026-06-25
+
+Fix — **Envelope·SES (and any tool) no longer blanks the page on a geometry-less real source.** In RUL mode with
+FEMTO/IMS (no published bearing geometry → `base.f.bpfo = NaN`), the matched-peak table's guard `if (fam.freq <= 0)`
+did not catch NaN (`NaN <= 0` is `false`), so `nearestPeak` returned `found = freq[NaN] = undefined` and
+`undefined.toFixed()` threw — and with no error boundary the whole App unmounted to a blank page. Fixes:
+- guard `!(fam.freq > 0)` (catches NaN and ≤0); the SES `sesXmax` and the fault-frequency combs are NaN-guarded too
+  (and now render in orders for Ottawa); the empty matched-peak table is hidden when geometry is unknown.
+- **Added a per-panel `PanelBoundary`** so any future tool crash shows an inline "this tool doesn't apply to this
+  source" message instead of blanking the page — the tab bar stays usable.
+- **Exhaustively verified**: every tab in all 7 scenarios (synthetic 13 · CWRU/Ottawa/MaFaulDa segments · FEMTO/XJTU/IMS
+  RUL) renders with no blanks and no console errors.
+
+## [0.41.000] — 2026-06-25
+
+Feature — **completing the real-data suite**: the two tools that were still synthetic-only now run on real data.
+
+- **Ottawa REAL Campbell/order map** (a 7th segment tab, Ottawa only). The shipped order-vs-rpm raster is drawn as a
+  genuine Campbell: the shaft speed sweeps during the 10 s record, so the order-tracked envelope spectrum shows the
+  content vs instantaneous rpm, and the bearing fault frequencies are CONSTANT orders (horizontal lines). On an
+  outer-race segment the BPFO order (~3.57×) lights up exactly on its marker — the tool Ottawa's *variable* speed
+  uniquely enables and a constant-speed dataset cannot.
+- **RUL eval + recommendation on the real trajectory** (RUL mode now **11 tabs**): the α-λ accuracy plot evaluates the
+  projector against the selected dataset's true RUL; the recommendation is built from the real frame + fault-frequency
+  evidence + the real RUL projection.
+
+Remaining: feature-space in segment mode (a point over class clouds — a different view from the trajectory one) is
+the last synthetic-only tool. Verified live, 0 console errors.
+
+## [0.40.000] — 2026-06-25
+
+Feature — **the FULL analysis suite now runs on real data; every downloaded dataset is integrated** (answering
+"why does Real:RUL show only one tab, and Real:CWRU only six?"). The limit was the artifacts, not the data:
+
+- **Real raw windows shipped.** Each run-to-failure trajectory carries ~8 raw life-snapshots (rv-{femto,xjtu,ims}-frames.json);
+  each diagnosis dataset carries measured segments. The full suite reads them — nothing synthetic where real exists.
+- **RUL mode: 1 → 9 tabs.** A *life-instant* slider scrubs the measured windows (healthy→failure); the signal suite
+  (waveform/spectrum/envelope·SES/cyclostationary/kurtogram/infogram) runs on each instant; the **3D waterfall is
+  the REAL degradation surface** (envelope vs measured life, selected instant highlighted); the **feature space is
+  the measured degradation trajectory** through the healthy 95% Mahalanobis ellipse. (Campbell excluded — constant rpm.)
+- **Two new diagnosis sources.** The 'Real: segment' source gains a dataset sub-selector:
+  - **Ottawa** — time-VARYING speed, **computed-order-tracked**: kinematic frequencies are constant ORDERS
+    (BPFO 3.57×) immune to the speed sweep; the readout switches to 'orders (×rev)'.
+  - **MaFaulDa** — 50 kHz, classes outer/ball/cage.
+  Both run the CWRU-trained **WDCNN cross-domain** on a 12 kHz window, labelled honestly (Ottawa healthy→outer ✗
+  shows the domain gap; MaFaulDa outer→outer ✓ transfers; cage has no CWRU counterpart).
+- **Multi-fs correctness.** Every spectrum/kurtogram/envelope now uses the active sample rate (12/20/25.6 kHz / order
+  domain), not the synthetic 12 kHz constant.
+- **Honest classifier in real mode.** The single-threshold verdict is calibrated on synthetic contrast and doesn't
+  transfer, so real modes surface the fault-frequency family with the strongest spectral evidence instead of a
+  misleading 'Healthy'.
+
+6 real sources total (3 diagnosis + 3 prognosis). Synthetic (13 tabs) intact. All modes screenshot-verified, 0 console errors.
+
+## [0.39.000] — 2026-06-24
+
+Feature — **first-level source selector (the corrected Faena workbench pattern)**. The App no longer buries data
+choice inside a tab; a top-of-sidebar selector decides what the whole workbench operates on, and the tool set
+reacts to the **kind** of data:
+
+- **Synthetic** — unchanged full simulator (all scenario knobs + all 13 tools).
+- **Real: CWRU (diagnosis)** — a measured held-out CWRU segment. The 6 signal-analysis tools (waveform, spectrum,
+  envelope·SES, cyclostationary, kurtogram, SK-gram) run on the real window; the **WDCNN (ONNX)** prediction vs
+  the true label and the classical diagnosis run live. Scenario knobs (fault/severity/rpm/SNR) become read-only
+  metadata — a measured datum can't be re-dialed — while the **analysis** knobs (band/envelope/harmonics) stay
+  live, because you genuinely can re-process real data. Trajectory/Campbell/feature tools (which need a synthetic
+  ground truth) are hidden rather than shown fed by fabricated data.
+- **Real: RUL (prognosis)** — merges **FEMTO/PRONOSTIA (7) + XJTU-SY (14) + IMS (2 outer-race) = 23** real
+  run-to-failure trajectories under one selector grouped by dataset; the same `projectRUL` runs on each measured
+  HI(t) curve against the experiment's real failure time. Only the RUL projection is shown (the one tool that
+  applies to a pure HI curve).
+
+Adds the **XJTU-SY** (`rotorlab/io/xjtu.py`) and **IMS/NASA** (`rotorlab/io/ims.py`) parsers — each reduces the
+complete run-to-failure set offline to a compact HI(t) artifact (`public/rv-{xjtu,ims}-rtf.json`, link-only
+redistribution; raw archives gitignored) with a real first-passage failure marker (XJTU 2 g; IMS adaptive
+per-trajectory, with real elapsed time parsed from snapshot timestamps). Drops the in-tab RUL parche. All three
+modes screenshot-verified live. Ottawa + MaFaulDa are downloaded; Ottawa is a **variable-speed** set (needs order
+tracking / cross-domain treatment) and lands as a Benchmark transfer experiment, not a drop-in segment source.
+
 ## [0.38.000] — 2026-06-24
 
 Feature — **REAL run-to-failure data integrated** (the RUL page was previously driven only by a synthetic forward

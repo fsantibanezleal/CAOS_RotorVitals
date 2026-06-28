@@ -300,3 +300,69 @@ test('pca2d: degenerate input is handled', () => {
   assert.deepEqual(pca2d([]).pts, []);
   assert.equal(pca2d([[1, 2, 3]]).pts.length, 1);   // single row → projects to ~origin, no crash
 });
+
+// ── RUL models ─────────────────────────────────────────────────────────────
+import { projectRUL, type HIPoint } from '../src/dsp/health.ts';
+import { particleFilterRUL } from '../src/dsp/pf_rul.ts';
+import { gpRUL } from '../src/dsp/gp_rul.ts';
+
+function synthHI(a: number, b: number, tMax: number, n: number, noise = 0.01): HIPoint[] {
+  const pts: HIPoint[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i / (n - 1)) * tMax;
+    const hi = a * Math.exp(b * t) * (1 + noise * (Math.random() * 2 - 1));
+    pts.push({ t, hi });
+  }
+  return pts;
+}
+
+test('projectRUL: clean exponential gives RUL near truth', () => {
+  const pts = synthHI(0.3, 0.15, 18, 20, 0.005);
+  const r = projectRUL(pts, 30);
+  assert.ok(r.onset !== null, 'should detect onset');
+  assert.ok(r.rul !== null && r.rul > 0, `expected positive RUL, got ${r.rul}`);
+  // true fail at ~23h, last obs at 18h => RUL ~5h
+  assert.ok(r.rul! > 2 && r.rul! < 12, `RUL ~5h expected, got ${r.rul?.toFixed(1)}`);
+});
+
+test('particleFilterRUL: agrees with classical on clean data', () => {
+  const pts = synthHI(0.3, 0.15, 18, 20, 0.005);
+  const classical = projectRUL(pts, 30);
+  const pf = particleFilterRUL(pts, 30);
+  assert.ok(pf.rulMedian !== null, 'PF should produce RUL');
+  // PF should be within factor of 2 of classical
+  const ratio = Math.max(classical.rul!, pf.rulMedian!) / Math.max(1, Math.min(classical.rul!, pf.rulMedian!));
+  assert.ok(ratio < 3.0, `PF ${pf.rulMedian?.toFixed(1)} too far from classical ${classical.rul?.toFixed(1)} (ratio ${ratio.toFixed(1)})`);
+});
+
+test('particleFilterRUL: returns 500 particles', () => {
+  const pts = synthHI(0.3, 0.15, 18, 20, 0.005);
+  const pf = particleFilterRUL(pts, 30);
+  assert.equal(pf.particles.length, 500);
+});
+
+test('particleFilterRUL: no onset returns null', () => {
+  const pts: HIPoint[] = [];
+  for (let i = 0; i < 20; i++) pts.push({ t: i * 2, hi: 0.15 });
+  const pf = particleFilterRUL(pts, 3);
+  assert.equal(pf.rulMedian, null);
+});
+
+test('gpRUL: agrees with classical on clean data', () => {
+  const pts = synthHI(0.3, 0.15, 18, 20, 0.005);
+  const classical = projectRUL(pts, 30);
+  const gp = gpRUL(pts, 30);
+  assert.ok(gp.rulMedian !== null, 'GP should produce RUL');
+  const ratio = Math.max(classical.rul!, gp.rulMedian!) / Math.max(1, Math.min(classical.rul!, gp.rulMedian!));
+  assert.ok(ratio < 4.0, `GP ${gp.rulMedian?.toFixed(1)} too far from classical ${classical.rul?.toFixed(1)}`);
+});
+
+test('gpRUL: curve has valid bands (hi >= mean >= lo)', () => {
+  const pts = synthHI(0.3, 0.15, 18, 20, 0.005);
+  const gp = gpRUL(pts, 30);
+  assert.ok(gp.curve.length > 2, 'should have forward projection');
+  for (const c of gp.curve.slice(-5)) {
+    assert.ok(c.hi >= c.mean, 'hi must be >= mean');
+    assert.ok(c.mean >= c.lo, 'mean must be >= lo');
+  }
+});
