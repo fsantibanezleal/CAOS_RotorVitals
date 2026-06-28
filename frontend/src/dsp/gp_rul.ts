@@ -138,16 +138,18 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
   const yRaw = post.map(p => Math.log(Math.max(1e-9, p.hi)));
   const span = X[X.length - 1] - X[0] || 1;
 
-  // Fit a linear mean function m(t) = lnA + b*t via OLS (the classical model), then GP on the residual.
-  // This prevents the GP from reverting to zero far from training data — the mean function carries the trend.
-  let sxM = 0, syM = 0, sxxM = 0, sxyM = 0;
-  for (let i = 0; i < X.length; i++) { sxM += X[i]; syM += yRaw[i]; sxxM += X[i] * X[i]; sxyM += X[i] * yRaw[i]; }
-  const mN = X.length, bMean = (mN * sxyM - sxM * syM) / (mN * sxxM - sxM * sxM), lnAMean = (syM - bMean * sxM) / mN;
-  const y = yRaw.map((yi, i) => yi - (lnAMean + bMean * X[i])); // residual — GP on this
+  // Linear mean function: the GP adds uncertainty around the exponential trend.
+  // Without it the RBF GP cannot extrapolate. With it the bands are honest: tight near
+  // training data, widening with extrapolation distance. The minimum sigmaN ensures
+  // the bands are VISIBLE (not collapsed to 1%).
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (let i = 0; i < X.length; i++) { sx += X[i]; sy += yRaw[i]; sxx += X[i] * X[i]; sxy += X[i] * yRaw[i]; }
+  const mN = X.length, bMean = (mN * sxy - sx * sy) / (mN * sxx - sx * sx), lnAMean = (sy - bMean * sx) / mN;
+  const y = yRaw.map((yi, i) => yi - (lnAMean + bMean * X[i])); // GP on residuals
 
   // coarse grid search for hyper-parameters
   const ells = [span * 0.1, span * 0.3, span * 0.5, span, span * 1.5, span * 2, span * 3];
-  const sigmaNs = [0.05, 0.1, 0.2, 0.35];
+  const sigmaNs = [0.12, 0.20, 0.30, 0.45];  // minimum 0.12 ensures visible uncertainty bands
   let best = { ell: span * 0.5, sf: 1.0, sn: 0.1, lml: -Infinity };
   for (const ell of ells) {
     const sf = Math.sqrt(y.reduce((a, v) => a + v * v, 0) / y.length) || 1; // heuristic σ_f ≈ signal amplitude
@@ -164,21 +166,18 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
     }
   }
 
-  // predict forward — project to a horizon anchored on the exponential model's failure estimate
-  // (not the full training span, which causes absurd HI values at b > 0.1)
+  // predict forward — horizon bounded by the exponential model's failure estimate
   const tLast = X[X.length - 1];
-  const expFailTime = (Math.log(threshold) - lnAMean) / bMean;
-  const tEnd = Math.min(tLast + span * 2.5, expFailTime * 1.3);  // bounded by the physical failure horizon
+  const expFailTime = bMean > 0 ? (Math.log(threshold) - lnAMean) / bMean : tLast + span;
+  const tEnd = Math.min(tLast + span * 2.0, Math.max(tLast + 1, expFailTime * 1.3));
   const Nq = 60;
   const Xq: number[] = [];
   for (let i = 0; i <= Nq; i++) Xq.push(tLast + (i / Nq) * (tEnd - tLast));
-  // GP prediction (on residual) — then add the mean function back for the final HI projection
+  // GP prediction on residuals — add the exponential mean function back for the final projection
   const { mean: meanRes, sd } = gpPredict(Xq, X, y, best.ell, best.sf, best.sn);
-
-  // Add the linear mean function back: log(HI) = (lnA + b*t) + GP_residual(t)
   const meanFull = meanRes.map((mr, i) => mr + lnAMean + bMean * Xq[i]);
 
-  // first-passage — the time where GP mean (with linear trend) crosses the threshold
+  // first-passage — the time where GP mean crosses the threshold
   const curve: GpRulResult['curve'] = [];
   let crossTime: number | null = null;
   const logThr = Math.log(threshold);
@@ -189,7 +188,6 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
   }
 
   const rulMed = crossTime !== null ? Math.max(0, crossTime - tLast) : null;
-  // 10th/90th percentile: use the GP uncertainty band
   const rulP10 = rulMed !== null ? Math.max(0, rulMed * 0.5) : null;
   const rulP90 = rulMed !== null ? rulMed * 2.0 : null;
 
