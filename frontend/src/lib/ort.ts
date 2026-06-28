@@ -58,14 +58,22 @@ function mlClassify(model: string, feat: Float32Array): Promise<{ label: number;
 export const svmClassify = (feat: Float32Array) => mlClassify('rv-svm.onnx', feat);
 export const rfClassify = (feat: Float32Array) => mlClassify('rv-rf.onnx', feat);
 
-/** Deep-RUL CNN: a raw 2048-sample vibration window → scalar RUL fraction [0,1].
- *  Trained on XJTU-SY + FEMTO/PRONOSTIA run-to-failure bearings (offline, torch → ONNX).
- *  Same backbone as WDCNN (wide first kernel), regression head replacing the 4-class classification head.
- *  References: Li, Ding & Sun (2018), doi:10.1016/j.ress.2017.11.008; Zhu, Chen & Peng (2019). */
-export function deepRul(window2048: Float32Array): Promise<number> {
-  return serialize('deep_rul.onnx', async () => {
-    const s = await get('deep_rul.onnx');
-    const out = await s.run({ vibration: new ort.Tensor('float32', window2048, [1, 1, window2048.length]) });
-    return (out.rul.data as Float32Array)[0];
+/** CNN-BiLSTM degradation model: sequence of vibration windows → HI curve + RUL.
+ *  Single ONNX with two outputs: hi (seq_len,) and rul (scalar).
+ *  Trained on XJTU-SY + FEMTO/PRONOSTIA run-to-failure bearings (offline).
+ *  References: Muthukumar & Philip (2024), Yang et al. (2024), Guo et al. (2023). */
+export async function deepHiRul(sequence: Float32Array[]): Promise<{ hi: Float32Array; rul: number } | null> {
+  const seqLen = sequence.length;
+  if (seqLen < 2) return null;
+  // Build (1, seqLen, 1, 2048) tensor
+  const data = new Float32Array(seqLen * 2048);
+  for (let i = 0; i < seqLen; i++) {
+    const src = sequence[i];
+    for (let j = 0; j < 2048; j++) data[i * 2048 + j] = j < src.length ? src[j] : 0;
+  }
+  return serialize('deep_hi.onnx', async () => {
+    const s = await get('deep_hi.onnx');
+    const out = await s.run({ vibration_seq: new ort.Tensor('float32', data, [1, seqLen, 1, 2048]) });
+    return { hi: out.hi.data as Float32Array, rul: (out.rul.data as Float32Array)[0] };
   });
 }
