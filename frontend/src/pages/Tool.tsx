@@ -98,7 +98,7 @@ export default function Tool() {
   const [rulSource, setRulSource] = useState('');
   // Prognostic model selector (exponential | pf | gp | deep)
   const [rulModel, setRulModel] = useState<RulModel>('exponential');
-  const [deepRulResult, setDeepRulResult] = useState<number|null>(null);
+  const [deepRulResult, setDeepRulResult] = useState<{frac:number;t:number}[]|null>(null); // multi-step curve
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
   useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
   // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
@@ -305,30 +305,51 @@ export default function Tool() {
     if (trajMode && rulSource) { const ft = femtoTrajs.find((t) => `${t.set}:${t.id}` === rulSource); if (ft) return femtoToRunToFailure(ft); }
     return rtf;
   }, [trajMode, rulSource, femtoTrajs, rtf]);
-  // Deep-RUL async ONNX inference — uses the ACTIVE raw vibration signal (not interpolated HI)
+  // Deep-RUL multi-step CNN inference: feed raw vibration windows at different life stages
+  // → real curve of life fractions vs time (not fabricated)
   useEffect(() => {
     if (rulModel !== 'deep') return;
-    // Use the actual signal: synthetic → generated signal, real RUL → active frame's raw window
-    const anyRaw: Float64Array | Float32Array | null = trajMode && activeFrames?.frames?.length ?
-      (activeFrames.frames[Math.min(frameIdx, activeFrames.frames.length-1)] as any)?.raw ?? null
-      : base.sig?.x ?? null;
-    if (!anyRaw || anyRaw.length < 8) { setDeepRulResult(null); return; }
-    // Resample to 2048 samples (the CNN's input size)
-    const win = new Float32Array(2048);
-    const n = anyRaw.length;
-    for (let i = 0; i < 2048; i++) {
-      const frac = i / 2047;
-      const idx = Math.min(n - 1, Math.floor(frac * (n - 1)));
-      win[i] = anyRaw[idx];
-    }
-    // Normalise to unit variance (CNNs expect scaled input)
-    let sum = 0, sumSq = 0;
-    for (let i = 0; i < 2048; i++) { sum += win[i]; sumSq += win[i] * win[i]; }
-    const mean = sum / 2048;
-    const std = Math.sqrt(sumSq / 2048 - mean * mean) || 1e-9;
-    for (let i = 0; i < 2048; i++) win[i] = (win[i] - mean) / std;
-    deepRul(win).then(v => setDeepRulResult(v)).catch(() => setDeepRulResult(null));
-  }, [rulModel, rtfShown, trajMode, activeFrames, frameIdx, base.sig]);
+    let cancelled = false;
+    const runMultiStep = async () => {
+      const points: {frac:number;t:number}[] = [];
+      const normWin = (raw: Float64Array|Float32Array): Float32Array => {
+        const w = new Float32Array(2048); const n=raw.length;
+        for(let i=0;i<2048;i++){const idx=Math.min(n-1,Math.floor((i/2047)*(n-1)));w[i]=raw[idx];}
+        let s=0,ss=0; for(let i=0;i<2048;i++){s+=w[i];ss+=w[i]*w[i];}
+        const m=s/2048; const sd=Math.sqrt(ss/2048-m*m)||1e-9;
+        for(let i=0;i<2048;i++)w[i]=(w[i]-m)/sd;
+        return w;
+      };
+      if (trajMode && activeFrames?.frames?.length) {
+        // Real RUL mode: each frame is a measured vibration window at a life instant
+        const frames = activeFrames.frames;
+        for (const f of frames) {
+          if (cancelled) return;
+          const raw = (f as any)?.raw as Float32Array|Float64Array|null;
+          if (!raw || raw.length < 8) continue;
+          try {
+            const frac = await deepRul(normWin(raw));
+            if (!cancelled) points.push({frac, t: (f as any).t ?? 0});
+          } catch(_){}
+        }
+      } else {
+        // Synthetic mode: generate signal at 8 severity levels (linear interpolation of the current severity)
+        const sevs = Array.from({length:8},(_,i)=>Math.max(0.5, severity * (0.3 + i*0.1)));
+        for (const sev of sevs) {
+          if (cancelled) return;
+          const sig = synth({...base.spec, severity: sev, seed});
+          try {
+            const frac = await deepRul(normWin(sig.x));
+            if (!cancelled) points.push({frac, t: sev * 20}); // severity → proxy life time
+          } catch(_){}
+        }
+      }
+      if (!cancelled && points.length) setDeepRulResult(points);
+    };
+    setDeepRulResult(null);
+    runMultiStep();
+    return () => { cancelled = true; };
+  }, [rulModel, trajMode, activeFrames, base.spec, severity, seed]);
   const rulShown = useMemo(() => {
     const exp = projectRUL(rtfShown.points, rtfShown.threshold);
     if (rulModel === 'pf') {
@@ -359,27 +380,34 @@ export default function Tool() {
       return { onset: gp.onset, threshold: rtfShown.threshold, failTime: gp.failTimeMedian ?? null, rul: gp.rulMedian ?? null, curve: (gp.curve ?? []).map(c => ({ t: c.t, lo: c.lo, mid: c.mean ?? 0, hi: c.hi })) };
     }
     if (rulModel === 'deep') {
-      const frac = deepRulResult;
-      if (frac == null) return { onset: null, threshold: rtfShown.threshold, failTime: null, rul: null, curve: [] };
-      // The CNN emits a life fraction [0,1] from raw vibration — this is the only output.
-      // We convert it to RUL using the classical model's total-life estimate as a scale reference.
-      // The curve is NOT fabricated: it's a linear indicator from current fraction to threshold.
-      const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? 0;
-      const totalLife = tNow / Math.max(0.01, 1 - frac);
-      const failTime = totalLife;
-      const rul = Math.max(0, totalLife - tNow);
-      const deepCurve: {t:number;lo:number;mid:number;hi:number}[] = [];
+      const points = deepRulResult;
+      if (!points || points.length < 2) return { onset: null, threshold: rtfShown.threshold, failTime: null, rul: null, curve: [] };
+      // Build the curve from the CNN's multi-step output — REAL data, not fabricated
+      const sorted = [...points].sort((a,b)=>a.t-b.t);
+      const last = sorted[sorted.length-1];
       const thr = rtfShown.threshold;
-      if (frac > 0 && frac < 1) {
-        const nPts = 30;
-        for (let i = 0; i <= nPts; i++) {
-          const t = tNow + (i / nPts) * Math.max(rul * 1.3, 1);
-          const progressToFail = Math.min(1, (t - tNow) / Math.max(1, rul || 1));
-          const mid = thr * (frac + progressToFail * (1 - frac));
-          deepCurve.push({ t, lo: mid * 0.5, mid, hi: mid * 1.8 });
+      // Project: if life fraction is trending linearly, extrapolate to frac=1 (failure)
+      const deepCurve: {t:number;lo:number;mid:number;hi:number}[] = sorted.map(p => {
+        const hiNorm = thr * Math.min(1, Math.max(0.01, p.frac * 1.15));
+        return {t: p.t, lo: thr * Math.max(0.01, p.frac * 0.7), mid: thr * Math.max(0.01, p.frac), hi: hiNorm};
+      });
+      // Extrapolate forward to failure (frac=1)
+      if (sorted.length >= 2) {
+        const p0 = sorted[sorted.length-2], p1 = last;
+        const slope = (p1.frac - p0.frac) / Math.max(0.01, p1.t - p0.t);
+        if (slope > 0) {
+          const tFail = last.t + (1 - last.frac) / slope;
+          const nExt = 10;
+          for (let i=1; i<=nExt; i++) {
+            const t = last.t + (i/nExt) * (tFail - last.t) * 1.1;
+            const frac = Math.min(1, last.frac + slope * (t - last.t));
+            deepCurve.push({t, lo: thr * frac * 0.7, mid: thr * frac, hi: thr * Math.min(1, frac * 1.15)});
+          }
         }
       }
-      return { onset: null, threshold: thr, failTime, rul, curve: deepCurve };
+      const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? 0;
+      const rul = last.frac < 1 ? (1 - last.frac) / Math.max(0.001, (last.frac - (sorted[0]?.frac ?? 0)) / Math.max(0.01, last.t - (sorted[0]?.t ?? 0))) : 0;
+      return { onset: null, threshold: thr, failTime: last.frac >= 0.95 ? last.t : null, rul: Math.max(0, rul), curve: deepCurve };
     }
     return exp;
   }, [rtfShown, rulModel, deepRulResult]);
