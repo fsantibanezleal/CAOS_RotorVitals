@@ -34,7 +34,9 @@ def generate(sc: dict) -> dict:
 def run_python(data: dict) -> dict:
     from rotorlab.model.pf_rul import pf_rul
     from rotorlab.model.gp_rul import gp_rul
-    t = np.array(data["t"]); hi = np.array(data["hi"]); thr = data["threshold"]
+    t = np.array(data["t"])
+    hi = np.array(data["hi"])
+    thr = data["threshold"]
     pf = pf_rul(t, hi, thr)
     gp = gp_rul(t, hi, thr)
     return {
@@ -64,8 +66,10 @@ def main():
         ts = run_typescript(data)
         pf_ok = _agree(pyt.get("pf_rul"), ts.get("pf_rul"), name, 0.3)
         gp_ok = _agree(pyt.get("gp_rul"), ts.get("gp_rul"), name, 0.5)
-        if not pf_ok: errors += 1
-        if not gp_ok: errors += 1
+        if not pf_ok:
+            errors += 1
+        if not gp_ok:
+            errors += 1
         pf_mark = "OK" if pf_ok else "FAIL"
         gp_mark = "OK" if gp_ok else "FAIL"
         print(f"{name:<20} {pyt['pf_rul'] or 0:>8.1f} {ts['pf_rul'] or 0:>8.1f} {pf_mark:>6}  "
@@ -79,9 +83,12 @@ def main():
 
 
 def _agree(py_val, ts_val, name, tol):
-    if py_val is None and ts_val is None: return True
-    if py_val is None or ts_val is None: return False
-    if max(py_val, ts_val) < 1e-6: return True
+    if py_val is None and ts_val is None:
+        return True
+    if py_val is None or ts_val is None:
+        return False
+    if max(py_val, ts_val) < 1e-6:
+        return True
     return abs(py_val - ts_val) / max(abs(py_val), abs(ts_val), 1e-6) < tol
 
 

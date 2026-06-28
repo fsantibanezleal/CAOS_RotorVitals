@@ -84,7 +84,6 @@ def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> dict:
     y = np.log(post_hi)
     first_k = min(4, len(y))
     first_ln = float(y[:first_k].mean())  # prior centered on first post-onset points (closest to true lnA)
-    span = float(post_t[-1] - post_t[0]) or 1.0
 
     # Weakly informed prior centered near the true lnA
     particles = np.column_stack([
@@ -133,13 +132,17 @@ def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> dict:
     ln_a_sd = float(np.std(ln_as))
     converged = ln_a_sd < 1.5
 
-    pct = lambda q: float(nrul[max(0, min(k - 1, int(q * (k - 1))))]) if k > 50 else None
+    def _pct(q: float) -> float | None:
+        if k <= 50:
+            return None
+        idx = max(0, min(k - 1, int(q * (k - 1))))
+        return float(nrul[idx])
 
     return {
         "onset": onset_t,
-        "rul_median": pct(0.5),
-        "rul_p10": pct(0.1),
-        "rul_p90": pct(0.9),
+        "rul_median": _pct(0.5),
+        "rul_p10": _pct(0.1),
+        "rul_p90": _pct(0.9),
         "particles": np.column_stack([particles, weights]),
         "rul_ensemble": nrul,
         "converged": converged,
