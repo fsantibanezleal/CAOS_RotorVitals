@@ -82,14 +82,15 @@ def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> dict:
                 "particles": np.empty((0, 4)), "rul_ensemble": np.empty(0), "converged": False}
 
     y = np.log(post_hi)
-    avg_ln = float(y.mean())
+    first_k = min(4, len(y))
+    first_ln = float(y[:first_k].mean())  # prior centered on first post-onset points (closest to true lnA)
     span = float(post_t[-1] - post_t[0]) or 1.0
 
-    # WIDE uninformed prior (NOT from OLS)
+    # Weakly informed prior centered near the true lnA
     particles = np.column_stack([
-        avg_ln + np.random.randn(N) * 2.0,                                  # lnA
-        np.maximum(1e-12, np.exp(np.log(0.05) + np.random.randn(N) * 1.0)),  # b
-        np.maximum(1e-6, np.exp(np.log(0.15) + np.random.randn(N) * 0.6)),   # σ_obs
+        first_ln + np.random.randn(N) * 1.5,                                  # lnA
+        np.maximum(1e-12, np.exp(np.log(0.05) + np.random.randn(N) * 1.0)),   # b
+        np.maximum(1e-6, np.exp(np.log(0.15) + np.random.randn(N) * 0.6)),    # σ_obs
     ])
     weights = np.full(N, 1.0 / N)
     particles = _kernel_regularise(particles, weights)
@@ -106,7 +107,7 @@ def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> dict:
         w_sum = float(w.sum())
         if w_sum < 1e-60:
             particles = np.column_stack([
-                avg_ln + np.random.randn(N) * 2.0,
+                first_ln + np.random.randn(N) * 1.5,
                 np.maximum(1e-12, np.exp(np.log(0.05) + np.random.randn(N) * 1.0)),
                 np.maximum(1e-6, np.exp(np.log(0.15) + np.random.randn(N) * 0.6)),
             ])

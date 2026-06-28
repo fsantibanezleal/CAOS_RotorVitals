@@ -130,9 +130,10 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
   }
   if (post.length < MIN_POST_ONSET) return { ...nope, onset: tOnset };
 
-  // 3. estimate signal amplitude from baseline to set a WIDE prior
+  // 3. estimate signal amplitude from the FIRST post-onset points (closest to true lnA)
   const logHis = post.map(p => Math.log(Math.max(1e-9, p.hi)));
-  const avgLnHi = logHis.reduce((a, v) => a + v, 0) / logHis.length;
+  const firstK = Math.min(4, post.length);
+  const firstLnHi = logHis.slice(0, firstK).reduce((a, v) => a + v, 0) / firstK;
 
   // 4. initialise particles from a WIDE uninformed prior (NOT from OLS)
   //    lnA ~ N(baseline_lnHI, 2.0²)  — wide enough to cover the uncertainty
@@ -140,7 +141,7 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
   //    σ   ~ LogNormal: median 0.15, wide
   const particles: Particle[] = [];
   for (let i = 0; i < N; i++) {
-    const lnA = avgLnHi + randn() * 2.0;
+    const lnA = firstLnHi + randn() * 2.0;
     const b = Math.exp(Math.log(0.05) + randn() * 1.0);
     const sigmaObs = Math.exp(Math.log(0.15) + randn() * 0.6);
     particles.push({ lnA, b: Math.max(1e-12, b), sigmaObs: Math.max(1e-6, sigmaObs), w: 1 / N });
@@ -167,7 +168,7 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
     if (wSum < 1e-60) {
       // total collapse — reinitialise from prior
       for (let i = 0; i < N; i++) {
-        particles[i].lnA = avgLnHi + randn() * 2.0;
+        particles[i].lnA = firstLnHi + randn() * 2.0;
         particles[i].b = Math.max(1e-12, Math.exp(Math.log(0.05) + randn() * 1.0));
         particles[i].sigmaObs = Math.max(1e-6, Math.exp(Math.log(0.15) + randn() * 0.6));
         particles[i].w = 1 / N;

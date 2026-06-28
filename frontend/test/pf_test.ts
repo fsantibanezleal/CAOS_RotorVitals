@@ -55,7 +55,7 @@ test('PF: posterior narrower than prior (convergence)', () => {
   const lnAs = r.particles.map(p => p.lnA);
   const mu = lnAs.reduce((a, v) => a + v, 0) / lnAs.length;
   const sd = Math.sqrt(lnAs.reduce((a, v) => a + (v - mu) ** 2, 0) / lnAs.length);
-  assert.ok(sd < 1.0, `posterior sd ${sd.toFixed(2)} should be < 1.0 (prior was ~2.0)`);
+  assert.ok(sd < 0.8, `posterior sd ${sd.toFixed(2)} should be < 0.8 (prior is ~1.5)`);
   assert.equal(r.converged, true);
 });
 

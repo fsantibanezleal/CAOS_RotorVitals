@@ -1,7 +1,7 @@
 /** Validation of the Gaussian Process RUL implementation (TypeScript). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gpRUL, type GpRulResult } from '../src/dsp/gp_rul.js';
+import { gpRUL } from '../src/dsp/gp_rul.js';
 import { projectRUL, type HIPoint } from '../src/dsp/health.js';
 
 function synth(a: number, b: number, tMax: number, n: number, noise = 0.02): HIPoint[] {
