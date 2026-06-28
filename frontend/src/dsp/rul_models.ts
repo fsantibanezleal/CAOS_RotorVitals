@@ -42,16 +42,27 @@ function classicalResult(points: HIPoint[], threshold: number): UnifiedRulResult
   };
 }
 
-/** Wraps particleFilterRUL. */
+/** Wraps particleFilterRUL with its own projection curve from the particle ensemble. */
 function pfResult(points: HIPoint[], threshold: number): UnifiedRulResult {
   const r = particleFilterRUL(points, threshold);
+  const curve: { t: number; lo: number; mid: number; hi: number }[] = [];
+  const particles = r.particles ?? [];
+  const tNow = points.length ? points[points.length - 1].t : 0;
+  if (particles.length > 10 && r.failTimeMedian != null) {
+    const tEnd = Math.max(tNow + 1, r.failTimeMedian * 1.2);
+    const nPts = 30;
+    for (let i = 0; i <= nPts; i++) {
+      const t = tNow + (i / nPts) * (tEnd - tNow);
+      const his = particles.map(p => Math.exp(p.lnA + p.b * t)).sort((a, b) => a - b);
+      const K = his.length;
+      curve.push({ t, lo: his[Math.floor(K * 0.1)], mid: his[Math.floor(K * 0.5)], hi: his[Math.floor(K * 0.9)] });
+    }
+  }
   return {
-    model: 'pf',
-    onset: r.onset, threshold,
+    model: 'pf', onset: r.onset, threshold,
     failTime: r.failTimeMedian, rul: r.rulMedian,
     rulP10: r.rulP10, rulP90: r.rulP90,
-    curve: [], // PF doesn't produce a smooth curve; use the RUL ensemble instead
-    particles: r.particles, rulEnsemble: r.rulEnsemble,
+    curve, particles: r.particles, rulEnsemble: r.rulEnsemble,
   };
 }
 

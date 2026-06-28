@@ -1,127 +1,150 @@
-"""Particle-filter RUL prognostics — offline pipeline (Python).
+"""Particle-filter RUL prognostics — offline pipeline (Python, numpy).
 
-Same algorithm as frontend/src/dsp/pf_rul.ts: sequential importance resampling (SIR) with
-systematic resampling + jitter regularisation for the exponential degradation model. Numpy
-is the only dependency; runs on the light pipeline lane (no torch needed — pure Bayesian math).
+Proper Bayesian SIR with regularisation (Musso, Oudjane & Le Gland 2001), a WIDE
+uninformed prior (NOT seeded from OLS), and kernel-density jitter. Matches the TypeScript
+frontend implementation algorithmically so cross-validation is meaningful.
 
 References:
-    An, Kim & Choi (2013), doi:10.1016/j.ress.2012.09.011
-    Arulampalam et al. (2002), doi:10.1109/78.978374
-    Orchard & Vachtsevanos (2009), doi:10.1177/0142331208093993
+    Arulampalam et al. (2002), IEEE TSP 50(2):174–188
+    Musso, Oudjane & Le Gland (2001), "Improving regularised particle filters"
+    An, Kim & Choi (2013), RESS 120:50–62
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-N = 500  # particles
-RESIDUAL_SD = 0.2
+N = 500
+ESS_THRESHOLD = 0.60
+MIN_POST_ONSET = 6
 
 
-def _resample(particles: np.ndarray, weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Systematic resampling (O(N), low-variance). Returns (new_particles, uniform_weights)."""
-    inv_n = 1.0 / N
-    u0 = np.random.uniform(0, inv_n)
-    indices = np.zeros(N, dtype=int)
-    cdf = np.cumsum(weights)
-    j = 0
-    for i in range(N):
-        u = u0 + i * inv_n
-        while u > cdf[j] and j < N - 1:
-            j += 1
-        indices[i] = j
-    return particles[indices], np.full(N, inv_n)
-
-
-def _jitter(particles: np.ndarray, s_ln_a: float = 0.04, s_b: float = 0.002) -> np.ndarray:
-    particles[:, 0] += np.random.randn(N) * s_ln_a
-    particles[:, 1] += np.random.randn(N) * s_b
-    particles[:, 1] = np.maximum(1e-9, particles[:, 1])
-    return particles
-
-
-def _onset_idx(points: np.ndarray) -> int | None:
-    """Return the index of degradation onset, or None."""
-    n = len(points)
-    if n < 8:
+def _onset_idx(hi: np.ndarray) -> int | None:
+    n = len(hi)
+    if n < 10:
         return None
-    base_n = max(4, int(n * 0.3))
-    base = points[:base_n]
-    mu0 = base.mean()
-    sd0 = base.std() or 1e-9
-    threshold_val = mu0 + 4 * sd0
-    for i in range(1, n - 1):
-        if points[i] > threshold_val and points[i + 1] > threshold_val:
+    base_n = max(5, int(n * 0.25))
+    base = hi[:base_n]
+    mu0 = float(base.mean())
+    sd0 = float(base.std() or 1e-9)
+    thr = mu0 + 3.5 * sd0
+    for i in range(1, n - 2):
+        if hi[i] > thr and hi[i + 1] > thr and hi[i + 2] > thr:
             return i
     return None
 
 
+def _kernel_regularise(particles: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    """Silverman bandwidth, shrink by 0.5 (regularisation, not full kernel)."""
+    n = len(particles)
+    w_sum = weights.sum() or 1.0
+    means = (particles * weights[:, None]).sum(axis=0) / w_sum
+    diffs = particles - means[None, :]
+    var = (diffs ** 2 * weights[:, None]).sum(axis=0) / w_sum
+    h = 1.06 * np.sqrt(np.maximum(var, 1e-12)) * n ** (-0.2) * 0.5
+    jitter = np.random.randn(n, 3) * h[None, :]
+    particles += jitter
+    particles[:, 1] = np.maximum(1e-12, particles[:, 1])     # b > 0
+    particles[:, 2] = np.maximum(1e-6, particles[:, 2])       # σ > 0
+    return particles
+
+
+def _resample(particles: np.ndarray, weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    n = len(weights)
+    inv_n = 1.0 / n
+    u0 = np.random.uniform(0, inv_n)
+    indices = np.zeros(n, dtype=int)
+    cdf = np.cumsum(weights)
+    j = 0
+    for i in range(n):
+        u = u0 + i * inv_n
+        while u > cdf[j] and j < n - 1:
+            j += 1
+        indices[i] = j
+    return particles[indices], np.full(n, inv_n)
+
+
 def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> dict:
-    """Particle-filter RUL projection.
+    n = len(t)
+    if n < 10:
+        return _empty()
 
-    Args:
-        t: operating time array [hours]
-        hi: health-indicator array (e.g. RMS)
-        threshold: failure threshold
+    onset_idx = _onset_idx(hi)
+    if onset_idx is None:
+        return _empty()
+    onset_t = float(t[onset_idx])
 
-    Returns:
-        dict with onset, failTimeMedian, rulMedian, rulP10, rulP90, particles (N,3) as (lnA,b,w)
-    """
-    # 1. onset
-    idx = _onset_idx(hi)
-    if idx is None:
-        return {"onset": None, "rul_median": None, "rul_p10": None, "rul_p90": None, "particles": np.empty((0, 3))}
-    onset_t = t[idx]
-    post_mask = (t >= onset_t) & (hi > 0)
-    post_t = t[post_mask]
-    post_hi = hi[post_mask]
-    if len(post_t) < 4:
-        return {"onset": float(onset_t), "rul_median": None, "rul_p10": None, "rul_p90": None, "particles": np.empty((0, 3))}
+    mask = t >= onset_t
+    post_t = t[mask]
+    post_hi = np.maximum(hi[mask], 1e-9)
+    if len(post_t) < MIN_POST_ONSET:
+        return {"onset": onset_t, "rul_median": None, "rul_p10": None, "rul_p90": None,
+                "particles": np.empty((0, 4)), "rul_ensemble": np.empty(0), "converged": False}
 
-    # 2. OLS seed
     y = np.log(post_hi)
-    X = np.column_stack([np.ones_like(post_t), post_t])
-    beta = np.linalg.lstsq(X, y, rcond=None)[0]
-    ln_a_ols, b_ols = float(beta[0]), float(beta[1])
-    if b_ols <= 0:
-        return {"onset": float(onset_t), "rul_median": None, "rul_p10": None, "rul_p90": None, "particles": np.empty((0, 3))}
+    avg_ln = float(y.mean())
+    span = float(post_t[-1] - post_t[0]) or 1.0
 
-    # 3. initialise particles
+    # WIDE uninformed prior (NOT from OLS)
     particles = np.column_stack([
-        ln_a_ols + np.random.randn(N) * 0.5,
-        np.maximum(1e-9, b_ols + np.random.randn(N) * 0.03),
+        avg_ln + np.random.randn(N) * 2.0,                                  # lnA
+        np.maximum(1e-12, np.exp(np.log(0.05) + np.random.randn(N) * 1.0)),  # b
+        np.maximum(1e-6, np.exp(np.log(0.15) + np.random.randn(N) * 0.6)),   # σ_obs
     ])
-    particles = _jitter(particles)
+    weights = np.full(N, 1.0 / N)
+    particles = _kernel_regularise(particles, weights)
 
-    # 4. sequential importance resampling
+    # SIR over post-onset observations
     for i in range(len(post_t)):
-        ti = post_t[i]
-        yi = post_hi[i]
+        ti = float(post_t[i])
+        yi = float(post_hi[i])
         pred = particles[:, 0] + particles[:, 1] * ti
-        err = np.log(max(yi, 1e-9)) - pred
-        w = np.exp(-0.5 * (err / RESIDUAL_SD) ** 2)
-        w_sum = w.sum()
-        if w_sum < 1e-30:
-            w = np.full(N, 1.0 / N)
-        else:
-            w /= w_sum
-        ess = 1.0 / (w @ w)
-        if ess < N * 0.5:
-            particles, w = _resample(particles, w)
-            particles = _jitter(particles)
-            w = np.full(N, 1.0 / N)
+        err = np.log(np.maximum(yi, 1e-9)) - pred
+        log_w = -0.5 * (err / particles[:, 2]) ** 2 - np.log(particles[:, 2])
+        max_lw = float(log_w.max())
+        w = np.exp(log_w - max_lw)
+        w_sum = float(w.sum())
+        if w_sum < 1e-60:
+            particles = np.column_stack([
+                avg_ln + np.random.randn(N) * 2.0,
+                np.maximum(1e-12, np.exp(np.log(0.05) + np.random.randn(N) * 1.0)),
+                np.maximum(1e-6, np.exp(np.log(0.15) + np.random.randn(N) * 0.6)),
+            ])
+            weights = np.full(N, 1.0 / N)
+            particles = _kernel_regularise(particles, weights)
+            continue
+        weights = w / w_sum
+        ess = 1.0 / (weights @ weights)
+        if ess < N * ESS_THRESHOLD:
+            particles, weights = _resample(particles, weights)
+            particles = _kernel_regularise(particles, weights)
+            weights = np.full(N, 1.0 / N)
 
-    # 5. RUL ensemble
-    t_last = float(t[-1])
-    rul = np.maximum(0, (np.log(threshold) - particles[:, 0]) / particles[:, 1] - t_last)
-    nrul = np.sort(rul[np.isfinite(rul)])
-    K = len(nrul) or 1
-    pct = lambda q: float(nrul[max(0, min(K - 1, int(q * (K - 1))))]) if K > 0 else None
+    # RUL ensemble
+    t_last = float(post_t[-1])
+    ft = (np.log(threshold) - particles[:, 0]) / particles[:, 1]
+    rul = np.maximum(0, ft - t_last)
+    ok = np.isfinite(rul) & (rul < 1e6)
+    nrul = np.sort(rul[ok])
+    k = len(nrul) or 1
+
+    ln_as = particles[:, 0]
+    ln_a_sd = float(np.std(ln_as))
+    converged = ln_a_sd < 1.5
+
+    pct = lambda q: float(nrul[max(0, min(k - 1, int(q * (k - 1))))]) if k > 50 else None
 
     return {
-        "onset": float(onset_t),
+        "onset": onset_t,
         "rul_median": pct(0.5),
         "rul_p10": pct(0.1),
         "rul_p90": pct(0.9),
-        "particles": np.column_stack([particles, w]) if K > 0 else np.empty((0, 3)),
+        "particles": np.column_stack([particles, weights]),
+        "rul_ensemble": nrul,
+        "converged": converged,
     }
+
+
+def _empty() -> dict:
+    return {"onset": None, "rul_median": None, "rul_p10": None, "rul_p90": None,
+            "particles": np.empty((0, 4)), "rul_ensemble": np.empty(0), "converged": False}

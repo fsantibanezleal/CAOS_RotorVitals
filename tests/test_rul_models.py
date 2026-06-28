@@ -80,7 +80,7 @@ def test_pf_particle_count():
     pf = pf_py(t, hi, 5.0)
     if pf["rul_median"] is not None:
         assert pf["particles"].shape[0] == 500
-        assert pf["particles"].shape[1] == 3  # (lnA, b, w)
+        assert pf["particles"].shape[1] == 4  # (lnA, b, sigmaObs, w)
 
 
 # ── consistency checks ───────────────────────────────────────────────────────

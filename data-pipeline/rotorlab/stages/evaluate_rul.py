@@ -103,6 +103,7 @@ def evaluate_rul_models(data_root: str = "", output_path: str = "") -> dict:
         row["pf_rul_median"] = res_pf.get("rul_median")
         row["pf_rul_p10"] = res_pf.get("rul_p10")
         row["pf_rul_p90"] = res_pf.get("rul_p90")
+        row["pf_converged"] = res_pf.get("converged", False)
         row["gp_rul_median"] = res_gp.get("rul_median")
         row["gp_rul_p10"] = res_gp.get("rul_p10")
         row["gp_rul_p90"] = res_gp.get("rul_p90")
