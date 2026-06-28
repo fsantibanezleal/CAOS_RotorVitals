@@ -333,12 +333,12 @@ export default function Tool() {
           } catch(_){}
         }
       } else {
-        // Synthetic mode: generate signal at 8 severity levels
-        const spec = { faultKind: fault as FaultKind, bearingId, rpm, snr, seed };
+        // Synthetic mode: generate signal at 8 degradation levels
         const sevs = Array.from({length:8},(_,i)=>Math.max(0.5, severity * (0.3 + i*0.1)));
         for (const sev of sevs) {
           if (cancelled) return;
-          const sig = synth({...spec, severity: sev, seed});
+          const s: SignalSpec = { fs: FS, dur: 1, rpm, bearing: bearingById(bearingId), fault, severity: sev, resonance: 3400, zeta: 0.04, snrDb: snr, seed };
+          const sig = synth(s);
           try {
             const frac = await deepRul(normWin(sig.x));
             if (!cancelled) points.push({frac, t: sev * 20});
@@ -350,7 +350,7 @@ export default function Tool() {
     setDeepRulResult(null);
     runMultiStep();
     return () => { cancelled = true; };
-  }, [rulModel, trajMode, activeFrames, base.spec, severity, seed]);
+  }, [rulModel, trajMode, activeFrames, bearingId, fault, severity, rpm, snr, seed]);
   const rulShown = useMemo(() => {
     const exp = projectRUL(rtfShown.points, rtfShown.threshold);
     if (rulModel === 'pf') {
@@ -406,7 +406,6 @@ export default function Tool() {
           }
         }
       }
-      const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? 0;
       const firstFrac = sorted[0]?.frac ?? 0;
       const firstT = sorted[0]?.t ?? 0;
       const avgSlope = (last.frac - firstFrac) / Math.max(0.01, last.t - firstT);
