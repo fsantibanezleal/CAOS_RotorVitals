@@ -958,14 +958,14 @@ export default function Methodology() {
       </p>
 
       {/* CNN-BiLSTM architecture diagram */}
-      <svg viewBox="0 0 820 400" width="100%" role="img" aria-labelledby="cnnBiLstmTitle cnnBiLstmDesc" style={{ fontFamily: 'var(--font-mono)', marginTop: '1.25rem' }}>
+      <svg viewBox="0 0 820 430" width="100%" role="img" aria-labelledby="cnnBiLstmTitle cnnBiLstmDesc" style={{ fontFamily: 'var(--font-mono)', marginTop: '1.25rem' }}>
         <title id="cnnBiLstmTitle">{es ? 'Arquitectura CNN-BiLSTM para Deep-HI / Deep-RUL' : 'CNN-BiLSTM architecture for Deep-HI / Deep-RUL'}</title>
         <desc id="cnnBiLstmDesc">
           {es
             ? 'S ventanas de vibración entran a un backbone CNN 1D (WDCNN, 5 bloques Conv1d→BN→ReLU→MaxPool con pesos compartidos). El vector de features resultante por paso de tiempo alimenta un BiLSTM de 2 capas (128 ocultas). Dos cabezas lineales independientes producen la secuencia HI(t) y el escalar RUL.'
             : 'S vibration windows enter a 1D CNN backbone (WDCNN, 5 Conv1d→BN→ReLU→MaxPool blocks with shared weights). The resulting per-timestep feature vector feeds a 2-layer BiLSTM (128 hidden). Two independent linear heads produce the HI(t) sequence and the scalar RUL.'}
         </desc>
-        <rect x="0" y="0" width="820" height="400" fill="var(--color-bg)" />
+        <rect x="0" y="0" width="820" height="430" fill="var(--color-bg)" />
         {/* Input */}
         <rect x="20" y="140" width="140" height="120" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1.5" />
         <text x="90" y="170" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--color-fg)">{es ? 'Ventanas de' : 'Vibration'}</text>
@@ -1018,13 +1018,19 @@ export default function Methodology() {
         <text x="725" y="292" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">→ Dropout → Linear</text>
         <text x="725" y="306" textAnchor="middle" fontSize="10" fill="var(--color-bad)">→ Sigmoid → RUL</text>
         {/* Training info */}
-        <rect x="20" y="310" width="780" height="36" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1" />
-        <text x="410" y="326" textAnchor="middle" fontSize="10.5" fill="var(--color-fg-subtle)">
-          {es ? 'Entrenada sobre 18 trayectorias reales (XJTU-SY + FEMTO) · 150 épocas · loss 0.38 · exportada a ONNX (opset 14, 3.4 MB) · inferida en vivo con onnxruntime-web' : 'Trained on 18 real trajectories (XJTU-SY + FEMTO) · 150 epochs · loss 0.38 · exported to ONNX (opset 14, 3.4 MB) · inferred live via onnxruntime-web'}
+        <rect x="20" y="310" width="780" height="52" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1" />
+        <text x="410" y="330" textAnchor="middle" fontSize="10.5" fill="var(--color-fg-subtle)">
+          {es ? 'Entrenada sobre 18 trayectorias reales (XJTU-SY + FEMTO) · 150 épocas · loss 0.38' : 'Trained on 18 real trajectories (XJTU-SY + FEMTO) · 150 epochs · loss 0.38'}
+        </text>
+        <text x="410" y="350" textAnchor="middle" fontSize="10.5" fill="var(--color-fg-subtle)">
+          {es ? 'exportada a ONNX (opset 14, 3.4 MB) · inferida en vivo con onnxruntime-web' : 'exported to ONNX (opset 14, 3.4 MB) · inferred live via onnxruntime-web'}
         </text>
         {/* Loss function note */}
-        <text x="410" y="370" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">
-          ℒ = ½MSE(HI, HÎ) + ½MSE(RUL, RÛL) &nbsp;|&nbsp; {es ? 'a diferencia del WDCNN de diagnóstico que clasifica UNA ventana, esta arquitectura aprende la secuencia temporal' : 'unlike the diagnostic WDCNN which classifies ONE window, this architecture learns the temporal sequence'}
+        <text x="410" y="388" textAnchor="middle" fontSize="9.5" fill="var(--color-fg-subtle)">
+          ℒ = ½MSE(HI, HÎ) + ½MSE(RUL, RÛL) &nbsp;|&nbsp; {es ? 'a diferencia del WDCNN de diagnóstico que clasifica UNA ventana,' : 'unlike the diagnostic WDCNN which classifies ONE window,'}
+        </text>
+        <text x="410" y="404" textAnchor="middle" fontSize="9.5" fill="var(--color-fg-subtle)">
+          {es ? 'esta arquitectura aprende la secuencia temporal — la CNN ve el "qué", la BiLSTM aprende el "cuándo"' : 'this architecture learns the temporal sequence — the CNN sees the "what", the BiLSTM learns the "when"'}
         </text>
         <defs>
           <marker id="cnnArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -1042,7 +1048,7 @@ export default function Methodology() {
           ? 'Se reporta la partición (sin fuga del conjunto de referencia) y la prueba cruzada de carga (se deja FUERA una carga entera, 3 HP); la exactitud sin esas salvaguardas es engañosa. El WDCNN, el autoencoder profundo Y los dos clasificadores clásicos (SVM-RBF / Random Forest) SÍ están implementados y corren en vivo en la página Benchmark (diagnóstico interactivo sobre segmentos reales + los números held-out); CWRU es un banco limpio, por eso se reporta la degradación honesta vs ruido y el recall sano por modelo en vez de un 100% pelado.'
           : 'Report the split (no leakage of the reference set) and the cross-load test (an ENTIRE load, 3 HP, is held out); accuracy without those safeguards is misleading. The WDCNN, the deep autoencoder AND the two classical classifiers (SVM-RBF / Random Forest) ARE implemented and run live on the Benchmark page (interactive diagnosis on real segments + the held-out numbers); CWRU is a clean lab rig, so we report the honest noise-degradation curve and the per-model healthy recall rather than a bare 100%.'}</p>
       </Callout>
-      <Refs ids={['smith2015', 'widodo2007svm', 'lei2018']} label={refsLabel} />
+      <Refs ids={['smith2015', 'widodo2007svm', 'lei2018', 'li2018', 'zhu2019', 'zhang2017']} label={refsLabel} />
     </div>
   );
 
