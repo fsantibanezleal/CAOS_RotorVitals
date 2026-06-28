@@ -51,13 +51,13 @@ export default function Implementation() {
         <rect x="40" y="226" width="260" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" />
         <text x="52" y="247">{es ? 'Deconvolución ciega (barridos periodo/ciclo)' : 'Blind deconvolution (period / cyclic sweeps)'}</text>
         <rect x="40" y="268" width="260" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" />
-        <text x="52" y="289">{es ? 'Entrenamiento Deep-RUL CNN (XJTU+FEMTO) → ONNX' : 'Deep-RUL CNN training (XJTU+FEMTO) → ONNX'}</text>
+        <text x="52" y="289">{es ? 'CNN-BiLSTM (Deep-HI/RUL) → ONNX' : 'CNN-BiLSTM (Deep-HI/RUL) → ONNX'}</text>
         <rect x="40" y="310" width="260" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" />
-        <text x="52" y="331">{es ? 'Evaluación RUL: PF + GP sobre FEMTO/XJTU/IMS' : 'RUL benchmark: PF + GP on FEMTO/XJTU/IMS'}</text>
+        <text x="52" y="331">{es ? 'Benchmark RUL 4 modelos: exp·PF·GP·CNN-BiLSTM' : '4-model RUL benchmark: exp·PF·GP·CNN-BiLSTM'}</text>
       </g>
 
       {/* seed note for the offline lane */}
-      <text x="40" y="330" fontSize="10.5" fill="var(--color-fg-subtle)">
+      <text x="40" y="360" fontSize="10.5" fill="var(--color-fg-subtle)">
         {es ? 'semilla entera fija → determinista' : 'fixed integer seed → deterministic'}
       </text>
 
