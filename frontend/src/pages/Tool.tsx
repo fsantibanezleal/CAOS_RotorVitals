@@ -14,7 +14,7 @@ import { runToFailure, loadRealRtf, loadRealFrames, femtoToRunToFailure, RTF_SET
 import { diagnoseRaw, type DiagOut } from '../dsp/learned';
 import { loadSegmentDatasets, type SegDataset } from '../dsp/segments';
 import { projectRUL } from '../dsp/health';
-import { type RulModel, predictRUL } from '../dsp/rul_models';
+import { type RulModel } from '../dsp/rul_models';
 import { particleFilterRUL } from '../dsp/pf_rul';
 import { gpRUL } from '../dsp/gp_rul';
 import { deepRul } from '../lib/ort';

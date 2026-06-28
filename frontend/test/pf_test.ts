@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'fs';
-import { particleFilterRUL, type PfRulResult } from '../src/dsp/pf_rul.js';
+import { particleFilterRUL } from '../src/dsp/pf_rul.js';
 import { projectRUL, type HIPoint } from '../src/dsp/health.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
