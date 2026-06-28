@@ -840,62 +840,62 @@ export default function Methodology() {
 
       <h4>{es ? 'Escalera de modelos de pronóstico' : 'Prognostic model ladder'}</h4>
       <p>{es
-        ? 'El modelo exponencial de primer pasaje descrito arriba es el primer escalón de una escalera de cuatro modelos. Los tres modelos adicionales — un filtro de partículas, un proceso Gaussiano y una CNN profunda — están implementados en ambas líneas (TypeScript en el navegador y Python en el pipeline offline) y se seleccionan desde la pestaña Prognostics·RUL del App mediante un grupo de chips.'
-        : 'The exponential first-passage model described above is the first rung of a four-model ladder. The three additional models — a particle filter, a Gaussian Process, and a deep CNN — are implemented in both lanes (TypeScript in the browser and Python in the offline pipeline) and are selectable from the Prognostics·RUL tab in the App via a chip group.'}</p>
+        ? 'El modelo exponencial descrito arriba es el primer escalón de cuatro. Los tres adicionales — un filtro de partículas, un proceso Gaussiano y una red CNN-BiLSTM — están implementados en ambas líneas (TypeScript en el navegador, Python en el pipeline offline) y se seleccionan desde la pestaña Prognostics·RUL mediante un grupo de chips.'
+        : 'The exponential model described above is the first rung of four. The three additional models — a particle filter, a Gaussian Process, and a CNN-BiLSTM network — are implemented in both lanes (TypeScript in the browser, Python in the offline pipeline) and are selectable from the Prognostics·RUL tab via a chip group.'}{' '}
+        <Cite id="an2013" paren /> <Cite id="arulampalam2002" paren /> <Cite id="rasmussen2006" paren /> <Cite id="liu2020" paren />
+      </p>
 
-      <Callout variant="note" title={es ? 'Filtro de Partículas' : 'Particle Filter'}>
+      <h5>{es ? 'Filtro de Partículas (PF)' : 'Particle Filter (PF)'}</h5>
+      <Equation tex={String.raw`\begin{aligned}
+        x_k &\sim p(x_k \mid x_{k-1}), \quad x_k = (\ln a_k,\; b_k,\; \sigma_{\mathrm{obs},k}) \\
+        w_k^{(i)} &\propto w_{k-1}^{(i)}\; p(y_k \mid x_k^{(i)}), \qquad
+        p(y_k \mid x_k^{(i)}) = \mathcal{N}\!\left(\ln(y_k) \;\middle|\; \ln a_k^{(i)} + b_k^{(i)} t_k,\; (\sigma_{\mathrm{obs},k}^{(i)})^2\right) \\
+        N_{\mathrm{eff}} &= 1\Big/{\textstyle\sum_i (w_k^{(i)})^2},\qquad
+        \text{resample + regularise if } N_{\mathrm{eff}} < 0.6 N
+      \end{aligned}`}
+        caption={es ? 'Filtro SIR con 500 partículas sobre el espacio de estados (ln a, b, σ_obs). Verosimilitud log-normal; remuestreo sistemático cuando el tamaño efectivo de muestra cae bajo el 60%; regularización por densidad de kernel (Silverman, ancho de banda reducido al 50%).' : 'SIR filter with 500 particles over the state space (ln a, b, σ_obs). Log-normal likelihood; systematic resampling when effective sample size drops below 60%; kernel-density regularisation (Silverman bandwidth, shrunk 50%).'}
+      />
       <p>{es
-        ? 'Un filtro de partículas de 500 partículas con remuestreo sistemático de baja varianza (Arulampalam et al. 2002) y perturbación Gaussiana para evitar el empobrecimiento de muestras. Cada partícula porta un par '
-        : 'A 500-particle filter with low-variance systematic resampling (Arulampalam et al. 2002) and Gaussian jitter to avoid sample impoverishment. Each particle carries a pair '}
-        <InlineMath tex={String.raw`(\ln a, b)`} />{es
-        ? ' del modelo exponencial. Sobre cada nueva observación del indicador de salud se actualizan los pesos por verosimilitud logarítmica. Cuando el tamaño efectivo de muestra '
-        : ' of the exponential model. At each new health-indicator observation, weights are updated by log-likelihood. When the effective sample size '}
-        <InlineMath tex={String.raw`N_{\mathrm{eff}} = 1/\sum w_i^2`} />{es
-        ? ' cae bajo 250, las partículas se remuestrean y perturban. El ensemble de 500 tiempos de primer pasaje proyectados produce la distribución posterior completa del RUL: mediana, percentiles 10 y 90, y la nube de partículas para visualización tipo histograma. La proyección forward se construye evaluando '
-        : ' drops below 250, the particles are resampled and jittered. The ensemble of 500 projected first-passage times yields the full posterior RUL distribution: median, 10th and 90th percentiles, and the particle cloud for histogram visualisation. The forward projection is built by evaluating '}
-        <InlineMath tex={String.raw`\mathrm{HI}(t)=\exp(\ln a + b\cdot t)`} />{es
-        ? ' para cada partícula en cada paso de tiempo futuro y tomando los percentiles 10, 50 y 90 del ensemble de valores de HI — la banda es la incertidumbre posterior del filtro. Pipeline: numpy vectorizado. Ref.: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.'
-        : ' for each particle at each future time step and taking the 10th, 50th and 90th percentiles of the HI ensemble — the band IS the filter\'s posterior uncertainty. Pipeline: numpy vectorised. Ref.: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.'}
-      </p></Callout>
+        ? 'El filtro se inicializa desde un prior débilmente informado centrado en los primeros puntos post-onset, no desde el ajuste OLS — el filtro debe ganarse su estimación de los datos. La proyección forward evalúa '
+        : 'The filter is initialised from a weakly informed prior centred on the first post-onset points, not from the OLS fit — the filter must earn its estimate from the data. The forward projection evaluates '}
+        <InlineMath tex={String.raw`\mathrm{HI}(t)=\exp(\ln a^{(i)} + b^{(i)} t)`} />{es
+        ? ' para cada partícula y toma los percentiles 10, 50 y 90 del ensemble — la banda es la incertidumbre posterior completa. Implementado en TypeScript (navegador) y numpy (pipeline).'
+        : ' for each particle and takes the 10th, 50th and 90th percentiles of the ensemble — the band IS the full posterior uncertainty. Implemented in TypeScript (browser) and numpy (pipeline).'}
+      </p>
 
-      <Callout variant="note" title={es ? 'Proceso Gaussiano' : 'Gaussian Process'}>
+      <h5>{es ? 'Proceso Gaussiano (GP)' : 'Gaussian Process (GP)'}</h5>
+      <Equation tex={String.raw`\begin{aligned}
+        f(t) &\sim \mathcal{GP}\!\left(m(t),\; k(t, t')\right), \qquad
+        m(t) = \ln\hat a_{\mathrm{OLS}} + \hat b_{\mathrm{OLS}}\,t \\
+        k(t, t') &= \sigma_f^2 \exp\!\left(-\frac{(t-t')^2}{2\ell^2}\right), \qquad
+        y(t) = f(t) + \varepsilon,\; \varepsilon \sim \mathcal{N}(0, \sigma_n^2) \\
+        \mathbf{f}_* \mid X, \mathbf{y}, X_* &\sim \mathcal{N}\!\left(K_*^{\top} K^{-1}\mathbf{y},\;
+          K_{**} - K_*^{\top} K^{-1} K_*\right)
+      \end{aligned}`}
+        caption={es ? 'GP con kernel RBF y función de media lineal (OLS). Predicción posterior vía Cholesky. Pipeline offline: scikit-learn GaussianProcessRegressor con kernel compuesto RBF + Matérn(ν=2.5) + WhiteKernel, optimización L-BFGS-B con 5 reinicios.' : 'GP with RBF kernel and linear mean function (OLS). Posterior prediction via Cholesky. Offline pipeline: scikit-learn GaussianProcessRegressor with composite RBF + Matérn(ν=2.5) + WhiteKernel, L-BFGS-B with 5 restarts.'}
+      />
       <p>{es
-        ? 'Un proceso Gaussiano con kernel RBF (exponencial al cuadrado) colocado sobre '
-        : 'A Gaussian Process with RBF (squared-exponential) kernel placed on '}
-        <InlineMath tex={String.raw`\ln(\mathrm{HI}(t))`} />{es
-        ? '. La función de media del GP es el ajuste lineal OLS del modelo exponencial — esto evita que el GP revierta a media cero lejos de los datos de entrenamiento y preserva la tendencia de crecimiento exponencial durante la extrapolación. Los hiperparámetros (escala de longitud '
-        : '. The GP mean function is the OLS linear fit of the exponential model — this prevents the GP from reverting to zero mean far from the training data and preserves the exponential growth trend during extrapolation. Hyper-parameters (length-scale '}
-        <InlineMath tex={String.raw`\ell`} />{es
-        ? ', varianza de señal '
-        : ', signal variance '}
-        <InlineMath tex={String.raw`\sigma_f^2`} />{es
-        ? ', varianza de ruido '
-        : ', noise variance '}
-        <InlineMath tex={String.raw`\sigma_n^2`} />{es
-        ? ') se eligen maximizando la verosimilitud marginal logarítmica sobre una grilla. La distribución predictiva se computa vía descomposición de Cholesky de la matriz de kernel. Las bandas de incertidumbre son continuas y se ensanchan con la distancia de extrapolación. Pipeline offline: scikit-learn '
-        : ') are chosen by maximising the log marginal likelihood over a grid. The predictive distribution is computed via Cholesky decomposition of the kernel matrix. The uncertainty bands are continuous and widen with extrapolation distance. Offline pipeline: scikit-learn '}
-        <code>GaussianProcessRegressor</code>{es
-        ? ' con kernel compuesto RBF + Matérn('
-        : ' with composite RBF + Matérn('}
-        <InlineMath tex={String.raw`\nu=2.5`} />{es
-        ? ') + WhiteKernel, optimización L-BFGS-B con 5 reinicios. Ref.: Rasmussen & Williams (2006), ISBN 0-262-18253-X; Liu et al. (2020), DOI 10.1016/j.ymssp.2020.106870.'
-        : ') + WhiteKernel, L-BFGS-B optimisation with 5 restarts. Ref.: Rasmussen & Williams (2006), ISBN 0-262-18253-X; Liu et al. (2020), DOI 10.1016/j.ymssp.2020.106870.'}
-      </p></Callout>
+        ? 'La función de media OLS evita que el GP revierta a cero lejos de los datos. Las bandas de incertidumbre son continuas y se ensanchan con la distancia de extrapolación — su visibilidad está garantizada por un piso mínimo de ruido de observación (σ_n ≥ 0.12).'
+        : 'The OLS mean function prevents the GP from reverting to zero far from the data. The uncertainty bands are continuous and widen with extrapolation distance — their visibility is guaranteed by a minimum observation-noise floor (σ_n ≥ 0.12).'}
+      </p>
 
-      <Callout variant="note" title="Deep-RUL (CNN)">
+      <h5>{es ? 'Deep-HI / Deep-RUL (CNN-BiLSTM)' : 'Deep-HI / Deep-RUL (CNN-BiLSTM)'}</h5>
+      <Equation tex={String.raw`\begin{aligned}
+        \mathbf{h}_t &= \mathrm{CNN}(x_t), \quad x_t \in \mathbb{R}^{2048},\; t = 1\ldots S \\[2pt]
+        \overrightarrow{\mathbf{z}}_t, \overleftarrow{\mathbf{z}}_t &= \mathrm{BiLSTM}(\mathbf{h}_1,\ldots,\mathbf{h}_S),\qquad
+        \mathbf{z}_t = [\overrightarrow{\mathbf{z}}_t; \overleftarrow{\mathbf{z}}_t] \in \mathbb{R}^{2H} \\
+        \hat y_t^{\mathrm{HI}} &= \mathbf{W}_{\mathrm{hi}}\,\mathrm{ReLU}(\mathbf{z}_t) + b_{\mathrm{hi}}, \qquad
+        \hat y^{\mathrm{RUL}} = \sigma\!\left(\mathbf{W}_{\mathrm{rul}}\,\mathrm{ReLU}(\mathbf{z}_S) + b_{\mathrm{rul}}\right)
+      \end{aligned}`}
+        caption={es ? 'CNN-BiLSTM: un extractor CNN 1D (backbone WDCNN, 5 bloques, 64 canales → 256-dim) comparte pesos sobre los S pasos de tiempo; un BiLSTM de 2 capas (128 ocultas) modela la secuencia temporal; dos cabezas lineales producen la curva HI(t) y el RUL. Entrenada sobre XJTU-SY + FEMTO (18 trayectorias, 150 épocas, loss 0.38). Exportada a ONNX (opset 14, 3.4 MB).' : 'CNN-BiLSTM: a 1D CNN extractor (WDCNN backbone, 5 blocks, 64 channels → 256-dim) shares weights across S time steps; a 2-layer BiLSTM (128 hidden) models the temporal sequence; two linear heads output the HI(t) curve and RUL. Trained on XJTU-SY + FEMTO (18 trajectories, 150 epochs, loss 0.38). Exported to ONNX (opset 14, 3.4 MB).'}
+      />
       <p>{es
-        ? 'Una CNN 1-D con el mismo backbone WDCNN del diagnóstico (Zhang et al. 2017, '
-        : 'A 1-D CNN with the same WDCNN backbone as the diagnosis tier (Zhang et al. 2017, '}
-        <InlineMath tex={String.raw`5\times`} />{es
-        ? ' bloques Conv1d→BN→ReLU→MaxPool, kernel ancho de 64 muestras en la primera capa). La cabeza de clasificación de 4 clases se reemplaza por una cabeza de regresión Flatten→100→Dropout(0.35)→1→Sigmoid que emite la fracción de vida '
-        : ' Conv1d→BN→ReLU→MaxPool blocks, wide 64-sample first-layer kernel). The 4-class classification head is replaced by a regression head Flatten→100→Dropout(0.35)→1→Sigmoid outputting the life fraction '}
-        <InlineMath tex={String.raw`\in[0,1]`} />{es
-        ? '. Entrenada sobre ~143 ventanas de vibración etiquetadas por fracción de vida de los benchmarks XJTU-SY (Wang, Lei, Li & Li 2020) y FEMTO/PRONOSTIA, exportada a ONNX (opset 14, entrada '
-        : '. Trained on ~143 vibration windows labelled by life fraction from the XJTU-SY (Wang, Lei, Li & Li 2020) and FEMTO/PRONOSTIA benchmarks, exported to ONNX (opset 14, input '}
-        <InlineMath tex={String.raw`(1,1,2048)`} />{es
-        ? ', salida escalar) e inferida en vivo en el navegador con onnxruntime-web (WASM EP, single-threaded). El pipeline de exportación ONNX es el mismo que sirve los modelos WDCNN, deep-AE, SVM y Random Forest del diagnóstico. Ref.: Li, Ding & Sun (2018), DOI 10.1016/j.ress.2017.11.008; Zhu, Chen & Peng (2019), DOI 10.1016/j.measurement.2019.06.040; Wang et al. (2020), DOI 10.1109/TR.2018.2882682.'
-        : ', scalar output) and inferred live in the browser via onnxruntime-web (WASM EP, single-threaded). The ONNX export pipeline is the same one serving the WDCNN, deep-AE, SVM and Random Forest diagnosis models. Ref.: Li, Ding & Sun (2018), DOI 10.1016/j.ress.2017.11.008; Zhu, Chen & Peng (2019), DOI 10.1016/j.measurement.2019.06.040; Wang et al. (2020), DOI 10.1109/TR.2018.2882682.'}
-      </p></Callout>
+        ? 'A diferencia del WDCNN de diagnóstico que clasifica una ventana única, esta arquitectura procesa una secuencia de ventanas de vibración a lo largo de la vida del rodamiento — la CNN extrae features espaciales por ventana, y la BiLSTM aprende la trayectoria temporal de degradación. La cabeza HI produce la curva de proyección ('
+        : 'Unlike the diagnostic WDCNN which classifies a single window, this architecture processes a sequence of vibration windows across the bearing life — the CNN extracts per-window spatial features, and the BiLSTM learns the temporal degradation trajectory. The HI head produces the projection curve ('}
+        <InlineMath tex={String.raw`\hat y_t^{\mathrm{HI}}`} />{es
+        ? ') que se grafica directamente en la pestaña Prognostics·RUL; la cabeza RUL emite la fracción de vida remanente. La inferencia en vivo corre sobre los frames medidos de trayectorias reales (FEMTO, XJTU-SY, IMS) vía onnxruntime-web.'
+        : ') which is plotted directly in the Prognostics·RUL tab; the RUL head outputs the remaining-life fraction. Live inference runs on measured trajectory frames (FEMTO, XJTU-SY, IMS) via onnxruntime-web.'}
+      </p>
 
       <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'an2013', 'arulampalam2002', 'rasmussen2006', 'liu2020', 'li2018', 'zhu2019', 'zhang2017']} label={refsLabel} />
     </div>
