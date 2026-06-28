@@ -11,7 +11,7 @@ import { particleFilterRUL } from './pf_rul';
 import { gpRUL } from './gp_rul';
 import { deepHiRul } from '../lib/ort';
 
-export type RulModel = 'exponential' | 'pf' | 'gp' | 'deep';
+export type RulModel = 'exponential' | 'pf' | 'gp' | 'wang2020' | 'deep';
 
 export interface UnifiedRulResult {
   model: RulModel;

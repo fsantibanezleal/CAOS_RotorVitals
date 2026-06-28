@@ -686,21 +686,21 @@ export default function Methodology() {
         ? 'Una vez detectado el inicio, el HI debe proyectarse hacia un umbral de fallo. La literatura ofrece una escalera de modelos de potencia y coste crecientes: un ajuste exponencial/ley de potencia simple; crecimiento de grieta por ley de Paris, físicamente fundamentado pero que requiere observar el tamaño de grieta; filtros de partículas y regresión por procesos gaussianos, que portan una posterior completa y producen incertidumbre dependiente del estado; y redes deep-RUL (LSTM/CNN) que aprenden el mapeo HI→RUL de muchas trayectorias. Cada peldaño compra incertidumbre mejor calibrada a costa de más datos y cómputo. Este build ajusta el modelo fundacional en la base de esa escalera, elegido porque es transparente, tiene tiempo de cruce en forma cerrada y coincide con el crecimiento exponencial de fin de vida empíricamente reportado para rodamientos. En concreto: sobre los puntos posteriores al inicio realiza mínimos cuadrados en espacio logarítmico, ln(HI) = ln a + b·t, que es exactamente un ajuste lineal. Ajustar en espacio log es deliberado: hace la optimización lineal y estable, y hace la dispersión residual multiplicativa, el modelo de ruido realista para una cantidad que crece en órdenes de magnitud. El modelo solo se acepta si la tasa de crecimiento b > 0; una pendiente no positiva significa que no está degradándose, y el build se niega a emitir un RUL ficticio.'
         : 'Once onset is detected, the HI must be projected toward a failure threshold. The literature offers a ladder of models of increasing power and cost: a simple exponential/power-law fit; Paris-law crack growth, physically grounded but needing a crack-size observable; particle filters and Gaussian-process regression, which carry a full posterior and produce state-dependent uncertainty; and deep-RUL networks (LSTM/CNN) that learn the HI→RUL map from many trajectories. Each step up buys better-calibrated uncertainty at the cost of more data and compute. This build fits the foundational model at the bottom of that ladder, chosen because it is transparent, has a closed-form crossing time, and matches the empirically exponential late-life growth reported for bearings. Concretely: on the post-onset points it does ordinary least squares in log space, ln(HI) = ln a + b·t, which is exactly a linear fit. Fitting in log space is deliberate: it makes the optimization linear and stable, and makes the residual spread multiplicative, the realistic noise model for a quantity that grows by orders of magnitude. The model is only accepted if the growth rate b > 0; a non-positive slope means not actually degrading, and the build refuses to emit a fictitious RUL.'}{' '}<Cite id="wang2020xjtu" paren /></p>
 
-      {/* Prognostic model ladder — visual ladder of increasing power/cost */}
-      <svg viewBox="0 0 780 340" width="100%" role="img" aria-labelledby="rulLadderTitle rulLadderDesc" style={{ fontFamily: 'var(--font-mono)', margin: '1rem 0' }}>
-        <title id="rulLadderTitle">{es ? 'Escalera de modelos de pronóstico — de cerrado a aprendido' : 'Prognostic model ladder — from closed-form to learned'}</title>
-        <desc id="rulLadderDesc">
+      {/* Prognostic models — four approaches of increasing complexity */}
+      <svg viewBox="0 0 780 340" width="100%" role="img" aria-labelledby="rulModelsTitle rulModelsDesc" style={{ fontFamily: 'var(--font-mono)', margin: '1rem 0' }}>
+        <title id="rulModelsTitle">{es ? 'Modelos de pronóstico' : 'Prognostic models'}</title>
+        <desc id="rulModelsDesc">
           {es
-            ? 'Cuatro peldaños de poder y coste crecientes. Base: ajuste exponencial por MCO en espacio log (forma cerrada, transparente). Segundo: filtro de partículas SIR bayesiano (posterior completa, 500 partículas). Tercero: proceso gaussiano con kernel RBF (incertidumbre calibrada, bandas ±1.645σ). Cuarto: CNN-BiLSTM (Deep-HI/RUL) que aprende el mapeo HI→RUL de múltiples trayectorias completo, inferido vía ONNX en vivo.'
-            : 'Four rungs of increasing power and cost. Base: exponential OLS fit in log space (closed-form, transparent). Second: Bayesian SIR particle filter (full posterior, 500 particles). Third: Gaussian process with RBF kernel (calibrated uncertainty, ±1.645σ bands). Fourth: CNN-BiLSTM (Deep-HI/RUL) learning the full HI→RUL map from multiple trajectories, inferred live via ONNX.'}
+            ? 'Cuatro modelos de complejidad creciente. Exponencial: ajuste por MCO en espacio log (forma cerrada, transparente). Filtro de partículas SIR bayesiano (posterior completa, 500 partículas). Proceso gaussiano con kernel RBF (incertidumbre calibrada, bandas ±1.645σ). CNN-BiLSTM (Deep-HI/RUL) que aprende el mapeo HI→RUL de múltiples trayectorias, inferido vía ONNX en vivo.'
+            : 'Four models of increasing complexity. Exponential: OLS fit in log space (closed-form, transparent). Bayesian SIR particle filter (full posterior, 500 particles). Gaussian process with RBF kernel (calibrated uncertainty, ±1.645σ bands). CNN-BiLSTM (Deep-HI/RUL) learning the full HI→RUL map from multiple trajectories, inferred live via ONNX.'}
         </desc>
         <rect x="0" y="0" width="780" height="340" fill="var(--color-bg)" />
-        {/* Arrow up the ladder */}
+        {/* Models ordered by complexity */}
         <line x1="60" y1="290" x2="60" y2="55" stroke="var(--color-fg-faint)" strokeWidth="2" markerEnd="url(#ladArrow)" />
         <text x="30" y="175" textAnchor="middle" fontSize="10" fill="var(--color-fg-faint)" transform="rotate(-90 30 175)">
-          {es ? 'poder · cómputo · datos requeridos' : 'power · compute · data required'}
+          {es ? 'complejidad · cómputo · datos' : 'complexity · compute · data'}
         </text>
-        {/* Rung 1: Exponential */}
+        {/* 1: Exponential */}
         <rect x="90" y="270" width="660" height="52" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1.5" />
         <rect x="100" y="278" width="6" height="36" rx="3" fill="var(--color-fg-subtle)" />
         <text x="120" y="294" fontSize="13" fontWeight="700" fill="var(--color-fg)">{es ? '1. Exponencial (MCO en log)' : '1. Exponential (log-space OLS)'}</text>
@@ -888,7 +888,7 @@ export default function Methodology() {
       <p>{es
         ? 'El modelo exponencial descrito arriba es el primer escalón de cuatro. Los tres adicionales — un filtro de partículas, un proceso Gaussiano y una red CNN-BiLSTM — están implementados en ambas líneas (TypeScript en el navegador, Python en el pipeline offline) y se seleccionan desde la pestaña Prognostics·RUL mediante un grupo de chips.'
         : 'The exponential model described above is the first rung of four. The three additional models — a particle filter, a Gaussian Process, and a CNN-BiLSTM network — are implemented in both lanes (TypeScript in the browser, Python in the offline pipeline) and are selectable from the Prognostics·RUL tab via a chip group.'}{' '}
-        <Cite id="an2015" paren /> <Cite id="arulampalam2002" paren /> <Cite id="rasmussen2006" paren /> <Cite id="aye2017" paren />
+        <Cite id="arulampalam2002" paren /> <Cite id="rasmussen2006" paren /> <Cite id="aye2017" paren />
       </p>
 
       <h5>{es ? 'Filtro de Partículas (PF)' : 'Particle Filter (PF)'}</h5>
@@ -930,7 +930,7 @@ export default function Methodology() {
         : 'The CNN-BiLSTM prognostic model (Deep-HI/RUL) is documented in the ML / Deep Learning tab — it belongs to the learned-model family, not to the physics-based prognostic methods.'}
       </p>
 
-      <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'an2015', 'arulampalam2002', 'rasmussen2006', 'aye2017']} label={refsLabel} />
+      <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'arulampalam2002', 'rasmussen2006', 'aye2017']} label={refsLabel} />
     </div>
   );
 
