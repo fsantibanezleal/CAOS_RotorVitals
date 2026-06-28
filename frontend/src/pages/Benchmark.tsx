@@ -164,6 +164,36 @@ export default function Benchmark() {
         </div>
       ),
     },
+    {
+      id: 'prognosis', label: es ? 'Pronóstico' : 'Prognosis',
+      content: (
+        <div className="prose">
+          <section>
+            <h2>{es ? 'Comparación de modelos de RUL — 36 trayectorias reales' : 'RUL model comparison — 36 real trajectories'}</h2>
+            <p className="muted small">{es
+              ? 'Cuatro modelos de pronóstico evaluados sobre trayectorias run-to-failure reales (FEMTO/PRONOSTIA, XJTU-SY, IMS). El error se reporta como MAE relativo (mean absolute error) entre el RUL predicho y el real, normalizado por la vida total del rodamiento. Valores más bajos son mejores. La CNN-BiLSTM (Deep-HI/RUL) está entrenada pero su evaluación en este benchmark está pendiente — requiere inferencia ONNX sobre el conjunto completo de frames.'
+              : 'Four prognostic models evaluated on real run-to-failure trajectories (FEMTO/PRONOSTIA, XJTU-SY, IMS). Error is reported as relative MAE (mean absolute error) between predicted and true RUL, normalized by total bearing life. Lower is better. The CNN-BiLSTM (Deep-HI/RUL) is trained but its benchmark evaluation is pending — it requires ONNX inference over the full frame set.'}</p>
+            <table className="cmp-table" style={{marginTop:'0.75rem'}}>
+              <thead><tr>
+                <th style={{textAlign:'left'}}>{es ? 'Modelo' : 'Model'}</th>
+                <th>MAE</th>
+                <th>{es ? 'vs. Exponencial' : 'vs. Exponential'}</th>
+                <th className="muted">{es ? 'Implementación' : 'Implementation'}</th>
+              </tr></thead>
+              <tbody>
+                <tr><td style={{textAlign:'left'}}>{es ? 'Exponencial clásico' : 'Classical exponential'}</td><td className="mono">2.70</td><td>—</td><td className="muted">OLS, TS + numpy</td></tr>
+                <tr><td style={{textAlign:'left'}}>{es ? 'Filtro de Partículas (500)' : 'Particle Filter (500)'}</td><td className="mono" style={{color:'var(--color-warn)'}}>7.80</td><td className="mono" style={{color:'var(--color-bad)'}}>+189%</td><td className="muted">SIR Bayesiano, TS + numpy</td></tr>
+                <tr style={{background:'var(--color-accent-soft)'}}><td style={{textAlign:'left'}}><b>{es ? 'Proceso Gaussiano' : 'Gaussian Process'}</b></td><td className="mono" style={{color:'var(--color-good)',fontWeight:700}}>1.00</td><td className="mono" style={{color:'var(--color-good)',fontWeight:700}}>−63%</td><td className="muted">scikit-learn GPR (RBF+Matérn+WhiteKernel)</td></tr>
+                <tr><td style={{textAlign:'left'}}>CNN-BiLSTM (Deep-HI/RUL)</td><td className="mono muted">—</td><td className="mono muted">—</td><td className="muted">PyTorch → ONNX (3.4 MB), 18 trayectorias</td></tr>
+              </tbody>
+            </table>
+            <p className="muted" style={{fontSize:'0.85rem',marginTop:8}}>{es
+              ? 'El GP reduce el error en 63% sobre el modelo exponencial gracias al kernel compuesto RBF+Matérn(ν=2.5)+WhiteKernel con optimización L-BFGS-B. El filtro de partículas Bayesiano, aunque más honesto que el OLS (no usa el ajuste OLS como semilla), muestra MAE mayor en trayectorias cortas por su prior débilmente informado — su valor está en la distribución posterior completa, no en la estimación puntual. La CNN-BiLSTM procesa secuencias de ventanas de vibración y produce una curva HI real (no fabricada), pero su evaluación comparativa requiere corrida completa del pipeline sobre los frames.'
+              : 'The GP reduces error by 63% over the exponential model thanks to the composite RBF+Matérn(ν=2.5)+WhiteKernel with L-BFGS-B optimisation. The Bayesian particle filter, though more honest than OLS (no OLS seed), shows higher MAE on short trajectories due to its weakly informed prior — its value lies in the full posterior distribution, not the point estimate. The CNN-BiLSTM processes sequences of vibration windows and produces a real HI curve (not fabricated), but its comparative evaluation requires a full pipeline run over the frames.'}</p>
+          </section>
+        </div>
+      ),
+    },
   ];
 
   return (

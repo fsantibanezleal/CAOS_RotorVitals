@@ -4,6 +4,12 @@ Architecture (SOTA 2023-2024): a shared 1D CNN backbone extracts spatial feature
 each raw vibration window; a BiLSTM models the temporal degradation sequence; two output
 heads produce either a sequence of HI values (Deep-HI) or a scalar RUL (Deep-RUL).
 
+The BiLSTM sees the full sequence context (bidirectional). This is the correct choice for
+offline/batch analysis where the complete trajectory is available. For online prognosis
+where only past windows exist, the App gates the output on the detected degradation onset
+and labels the estimate as "offline quality" — the bidirectional context provides an
+upper-bound smoothness that a purely causal model would not achieve in production.
+
 References:
     Muthukumar & Philip (2024), "CNN-LSTM Hybrid Deep Learning Model for RUL Estimation"
     Yang et al. (2024), "PSO-CNN-BiLSTM-MHSA for bearing RUL prediction", Electronics
@@ -44,12 +50,16 @@ class CnnFeatureExtractor(nn.Module):
 
 
 class DeepHIRUL(nn.Module):
-    """CNN-BiLSTM for bearing degradation sequence modelling.
+    """CNN-BiLSTM for bearing degradation sequence modelling (offline / batch analysis).
 
     Input:  (batch, seq_len, 1, 2048) — a trajectory of raw vibration windows
     Output: two heads —
         hi:   (batch, seq_len)         — predicted HI value at each time step
         rul:  (batch,)                 — predicted RUL (scalar, normalised)
+
+    The BiLSTM sees the full forward+backward sequence context. This is the correct
+    choice for offline analysis where the complete trajectory is available. For online
+    prognosis where only past windows exist, see CausalDeepHIRUL below.
     """
 
     def __init__(self, cnn_out_dim: int = 256, lstm_hidden: int = 128,
@@ -81,6 +91,48 @@ class DeepHIRUL(nn.Module):
         # heads
         hi = self.hi_head(lstm_out).squeeze(-1)   # (B, S)
         rul = self.rul_head(lstm_out[:, -1, :]).squeeze(-1)  # (B,) — last time step
+        return {"hi": hi, "rul": rul}
+
+
+class CausalDeepHIRUL(nn.Module):
+    """CNN-LSTM (unidirectional) for ONLINE bearing prognosis.
+
+    Same CNN backbone as DeepHIRUL, but the LSTM is deliberately unidirectional:
+    at time step t the model only sees windows 0..t, matching the online prognosis
+    constraint where future vibration is unavailable. This gives honest (slightly
+    noisier) HI curves that reflect what a production deployment would actually see.
+
+    Input:  (batch, seq_len, 1, 2048)
+    Output: hi (batch, seq_len), rul (batch,)
+    """
+
+    def __init__(self, cnn_out_dim: int = 256, lstm_hidden: int = 128,
+                 lstm_layers: int = 2, dropout: float = 0.3) -> None:
+        super().__init__()
+        self.cnn = CnnFeatureExtractor()
+        self.lstm = nn.LSTM(
+            input_size=cnn_out_dim, hidden_size=lstm_hidden,
+            num_layers=lstm_layers, batch_first=True,
+            bidirectional=False, dropout=dropout if lstm_layers > 1 else 0.0,
+        )
+        lstm_out = lstm_hidden  # unidirectional
+        self.hi_head = nn.Sequential(nn.Linear(lstm_out, 64), nn.ReLU(), nn.Linear(64, 1))
+        self.rul_head = nn.Sequential(
+            nn.Linear(lstm_out, 64), nn.ReLU(), nn.Dropout(dropout),
+            nn.Linear(64, 1), nn.Sigmoid(),
+        )
+
+    def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
+        """x: (batch, seq_len, 1, 2048)"""
+        B, S, C, L = x.shape
+        x_flat = x.view(B * S, C, L)
+        feats = self.cnn(x_flat)
+        feats = feats.view(B * S, -1)
+        feats = feats.view(B, S, -1)
+        # Unidirectional LSTM (causal: step t sees only 0..t)
+        lstm_out, _ = self.lstm(feats)        # (B, S, hidden)
+        hi = self.hi_head(lstm_out).squeeze(-1)
+        rul = self.rul_head(lstm_out[:, -1, :]).squeeze(-1)
         return {"hi": hi, "rul": rul}
 
 

@@ -1,6 +1,5 @@
 """Validation of the particle-filter RUL (Python pipeline)."""
 import numpy as np
-import pytest
 from rotorlab.model.pf_rul import pf_rul
 
 

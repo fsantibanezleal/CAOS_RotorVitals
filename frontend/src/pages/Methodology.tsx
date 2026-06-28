@@ -686,6 +686,52 @@ export default function Methodology() {
         ? 'Una vez detectado el inicio, el HI debe proyectarse hacia un umbral de fallo. La literatura ofrece una escalera de modelos de potencia y coste crecientes: un ajuste exponencial/ley de potencia simple; crecimiento de grieta por ley de Paris, físicamente fundamentado pero que requiere observar el tamaño de grieta; filtros de partículas y regresión por procesos gaussianos, que portan una posterior completa y producen incertidumbre dependiente del estado; y redes deep-RUL (LSTM/CNN) que aprenden el mapeo HI→RUL de muchas trayectorias. Cada peldaño compra incertidumbre mejor calibrada a costa de más datos y cómputo. Este build ajusta el modelo fundacional en la base de esa escalera, elegido porque es transparente, tiene tiempo de cruce en forma cerrada y coincide con el crecimiento exponencial de fin de vida empíricamente reportado para rodamientos. En concreto: sobre los puntos posteriores al inicio realiza mínimos cuadrados en espacio logarítmico, ln(HI) = ln a + b·t, que es exactamente un ajuste lineal. Ajustar en espacio log es deliberado: hace la optimización lineal y estable, y hace la dispersión residual multiplicativa, el modelo de ruido realista para una cantidad que crece en órdenes de magnitud. El modelo solo se acepta si la tasa de crecimiento b > 0; una pendiente no positiva significa que no está degradándose, y el build se niega a emitir un RUL ficticio.'
         : 'Once onset is detected, the HI must be projected toward a failure threshold. The literature offers a ladder of models of increasing power and cost: a simple exponential/power-law fit; Paris-law crack growth, physically grounded but needing a crack-size observable; particle filters and Gaussian-process regression, which carry a full posterior and produce state-dependent uncertainty; and deep-RUL networks (LSTM/CNN) that learn the HI→RUL map from many trajectories. Each step up buys better-calibrated uncertainty at the cost of more data and compute. This build fits the foundational model at the bottom of that ladder, chosen because it is transparent, has a closed-form crossing time, and matches the empirically exponential late-life growth reported for bearings. Concretely: on the post-onset points it does ordinary least squares in log space, ln(HI) = ln a + b·t, which is exactly a linear fit. Fitting in log space is deliberate: it makes the optimization linear and stable, and makes the residual spread multiplicative, the realistic noise model for a quantity that grows by orders of magnitude. The model is only accepted if the growth rate b > 0; a non-positive slope means not actually degrading, and the build refuses to emit a fictitious RUL.'}{' '}<Cite id="wang2020xjtu" paren /></p>
 
+      {/* Prognostic model ladder — visual ladder of increasing power/cost */}
+      <svg viewBox="0 0 780 340" width="100%" role="img" aria-labelledby="rulLadderTitle rulLadderDesc" style={{ fontFamily: 'var(--font-mono)', margin: '1rem 0' }}>
+        <title id="rulLadderTitle">{es ? 'Escalera de modelos de pronóstico — de cerrado a aprendido' : 'Prognostic model ladder — from closed-form to learned'}</title>
+        <desc id="rulLadderDesc">
+          {es
+            ? 'Cuatro peldaños de poder y coste crecientes. Base: ajuste exponencial por MCO en espacio log (forma cerrada, transparente). Segundo: filtro de partículas SIR bayesiano (posterior completa, 500 partículas). Tercero: proceso gaussiano con kernel RBF (incertidumbre calibrada, bandas ±1.645σ). Cuarto: CNN-BiLSTM (Deep-HI/RUL) que aprende el mapeo HI→RUL de múltiples trayectorias completo, inferido vía ONNX en vivo.'
+            : 'Four rungs of increasing power and cost. Base: exponential OLS fit in log space (closed-form, transparent). Second: Bayesian SIR particle filter (full posterior, 500 particles). Third: Gaussian process with RBF kernel (calibrated uncertainty, ±1.645σ bands). Fourth: CNN-BiLSTM (Deep-HI/RUL) learning the full HI→RUL map from multiple trajectories, inferred live via ONNX.'}
+        </desc>
+        <rect x="0" y="0" width="780" height="340" fill="var(--color-bg)" />
+        {/* Arrow up the ladder */}
+        <line x1="60" y1="290" x2="60" y2="55" stroke="var(--color-fg-faint)" strokeWidth="2" markerEnd="url(#ladArrow)" />
+        <text x="30" y="175" textAnchor="middle" fontSize="10" fill="var(--color-fg-faint)" transform="rotate(-90 30 175)">
+          {es ? 'poder · cómputo · datos requeridos' : 'power · compute · data required'}
+        </text>
+        {/* Rung 1: Exponential */}
+        <rect x="90" y="270" width="660" height="52" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1.5" />
+        <rect x="100" y="278" width="6" height="36" rx="3" fill="var(--color-fg-subtle)" />
+        <text x="120" y="294" fontSize="13" fontWeight="700" fill="var(--color-fg)">{es ? '1. Exponencial (MCO en log)' : '1. Exponential (log-space OLS)'}</text>
+        <text x="120" y="312" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? 'Forma cerrada · tiempo de cruce invertible · residual multiplicativo ±2σ · línea base del benchmark' : 'Closed-form · invertible crossing time · multiplicative ±2σ residual · benchmark baseline'}</text>
+        <text x="730" y="302" textAnchor="end" fontSize="10" fill="var(--color-accent)">MAE 2.70</text>
+        {/* Rung 2: PF */}
+        <rect x="90" y="202" width="660" height="52" rx="8" fill="var(--color-surface)" stroke="var(--color-accent)" strokeWidth="1.5" />
+        <rect x="100" y="210" width="6" height="36" rx="3" fill="var(--color-accent)" />
+        <text x="120" y="226" fontSize="13" fontWeight="700" fill="var(--color-fg)">{es ? '2. Filtro de Partículas (SIR bayesiano)' : '2. Particle Filter (Bayesian SIR)'}</text>
+        <text x="120" y="244" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? '500 partículas · remuestreo sistemático · regularización kernel · posterior completa no paramétrica · P10/P50/P90' : '500 particles · systematic resampling · kernel regularisation · full non-parametric posterior · P10/P50/P90'}</text>
+        <text x="730" y="234" textAnchor="end" fontSize="10" fill="var(--color-accent)">MAE 7.80</text>
+        {/* Rung 3: GP */}
+        <rect x="90" y="134" width="660" height="52" rx="8" fill="var(--color-surface)" stroke="var(--color-warn)" strokeWidth="1.5" />
+        <rect x="100" y="142" width="6" height="36" rx="3" fill="var(--color-warn)" />
+        <text x="120" y="158" fontSize="13" fontWeight="700" fill="var(--color-fg)">{es ? '3. Proceso Gaussiano (kernel RBF + media OLS)' : '3. Gaussian Process (RBF kernel + OLS mean)'}</text>
+        <text x="120" y="176" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? 'Cholesky · búsqueda en grilla (ℓ, σₙ≥0.12) · bandas ±1.645σ con cobertura · forward cap exponencial' : 'Cholesky · grid search (ℓ, σₙ≥0.12) · ±1.645σ bands with coverage · exponential forward cap'}</text>
+        <text x="730" y="166" textAnchor="end" fontSize="10" fill="var(--color-warn)">MAE 1.00</text>
+        {/* Rung 4: Deep-RUL */}
+        <rect x="90" y="48" width="660" height="70" rx="8" fill="var(--color-surface)" stroke="var(--color-good)" strokeWidth="2" />
+        <rect x="100" y="56" width="6" height="54" rx="3" fill="var(--color-good)" />
+        <text x="120" y="74" fontSize="13" fontWeight="700" fill="var(--color-fg)">{es ? '4. CNN-BiLSTM (Deep-HI / Deep-RUL) — aprendido extremo a extremo' : '4. CNN-BiLSTM (Deep-HI / Deep-RUL) — end-to-end learned'}</text>
+        <text x="120" y="94" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? 'WDCNN + BiLSTM(2×128) · 18 trayectorias XJTU-SY+FEMTO · 150 épocas · ONNX opset 14 (3.4 MB) · onnxruntime-web WASM en vivo' : 'WDCNN + BiLSTM(2×128) · 18 XJTU-SY+FEMTO trajectories · 150 epochs · ONNX opset 14 (3.4 MB) · live onnxruntime-web WASM'}</text>
+        <text x="120" y="112" fontSize="10" fill="var(--color-fg-subtle)">{es ? 'A diferencia del WDCNN que clasifica UNA ventana, la BiLSTM aprende el "cuándo" de la degradación en la secuencia temporal' : 'Unlike the WDCNN classifying ONE window, the BiLSTM learns the "when" of degradation in the temporal sequence'}</text>
+        <text x="730" y="90" textAnchor="end" fontSize="10" fill="var(--color-good)">{es ? 'pendiente' : 'pending'}</text>
+        <defs>
+          <marker id="ladArrow" viewBox="0 0 10 10" refX="5" refY="9" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L5 10 L10 0 z" fill="var(--color-fg-faint)" />
+          </marker>
+        </defs>
+      </svg>
+
       <p>{es
         ? 'Con ln a y b en mano, el tiempo de fallo es el primer cruce de la curva media por el umbral HI_thr, que se invierte en forma cerrada: t_fail = (ln HI_thr − ln a)/b, y la vida útil remanente en la última observación es RUL = t_fail − t_now (fijada a cero si la curva ya cruzó). La banda de incertidumbre se construye a partir de la dispersión del residuo logarítmico: tras el ajuste se calcula la desviación estándar residual s = √(RSS/(m−2)) en escala log (el divisor m−2 es la corrección correcta de grados de libertad para un ajuste de dos parámetros), y luego se dibuja el abanico como exp(ln_mid ± 2s) en cada tiempo futuro. Como la banda es ±2σ en escala multiplicativa, es asimétrica en unidades lineales y se ensancha con el tiempo —exactamente la forma de la incertidumbre física cuando la propia tasa de crecimiento es incierta. El abanico se dibuja hasta ~1.15·t_fail, de modo que el cruce del umbral de las trazas inferior, central y superior enmarca un rango de tiempos de fallo plausibles en vez de un único instante de falsa precisión.'
         : 'With ln a and b in hand, the failure time is the first passage of the mean curve through the threshold HI_thr, which inverts in closed form: t_fail = (ln HI_thr − ln a)/b, and the remaining useful life at the last observation is RUL = t_fail − t_now (clamped to zero if the curve has already crossed). The uncertainty band is built from the log-residual spread: after fitting, the residual standard deviation s = √(RSS/(m−2)) on the log scale (the m−2 divisor is the correct degrees-of-freedom correction for a two-parameter fit), then the fan is drawn as exp(ln_mid ± 2s) at each future time. Because the band is ±2σ on a multiplicative scale, it is asymmetric in linear units and widens with time — exactly the shape physical uncertainty takes when a growth rate is itself uncertain. The fan is drawn forward to roughly 1.15·t_fail, so the threshold crossing of the lower, central, and upper traces brackets a range of plausible failure times rather than a single false-precision instant.'}</p>
@@ -840,64 +886,51 @@ export default function Methodology() {
 
       <h4>{es ? 'Escalera de modelos de pronóstico' : 'Prognostic model ladder'}</h4>
       <p>{es
-        ? 'El modelo exponencial de primer pasaje descrito arriba es el primer escalón de una escalera de cuatro modelos. Los tres modelos adicionales — un filtro de partículas, un proceso Gaussiano y una CNN profunda — están implementados en ambas líneas (TypeScript en el navegador y Python en el pipeline offline) y se seleccionan desde la pestaña Prognostics·RUL del App mediante un grupo de chips.'
-        : 'The exponential first-passage model described above is the first rung of a four-model ladder. The three additional models — a particle filter, a Gaussian Process, and a deep CNN — are implemented in both lanes (TypeScript in the browser and Python in the offline pipeline) and are selectable from the Prognostics·RUL tab in the App via a chip group.'}</p>
+        ? 'El modelo exponencial descrito arriba es el primer escalón de cuatro. Los tres adicionales — un filtro de partículas, un proceso Gaussiano y una red CNN-BiLSTM — están implementados en ambas líneas (TypeScript en el navegador, Python en el pipeline offline) y se seleccionan desde la pestaña Prognostics·RUL mediante un grupo de chips.'
+        : 'The exponential model described above is the first rung of four. The three additional models — a particle filter, a Gaussian Process, and a CNN-BiLSTM network — are implemented in both lanes (TypeScript in the browser, Python in the offline pipeline) and are selectable from the Prognostics·RUL tab via a chip group.'}{' '}
+        <Cite id="an2015" paren /> <Cite id="arulampalam2002" paren /> <Cite id="rasmussen2006" paren /> <Cite id="aye2017" paren />
+      </p>
 
-      <Callout variant="note" title={es ? 'Filtro de Partículas' : 'Particle Filter'}>
+      <h5>{es ? 'Filtro de Partículas (PF)' : 'Particle Filter (PF)'}</h5>
+      <Equation tex={String.raw`\begin{aligned}
+        x_k &\sim p(x_k \mid x_{k-1}), \quad x_k = (\ln a_k,\; b_k,\; \sigma_{\mathrm{obs},k}) \\
+        w_k^{(i)} &\propto w_{k-1}^{(i)}\; p(y_k \mid x_k^{(i)}), \qquad
+        p(y_k \mid x_k^{(i)}) = \mathcal{N}\!\left(\ln(y_k) \;\middle|\; \ln a_k^{(i)} + b_k^{(i)} t_k,\; (\sigma_{\mathrm{obs},k}^{(i)})^2\right) \\
+        N_{\mathrm{eff}} &= 1\Big/{\textstyle\sum_i (w_k^{(i)})^2},\qquad
+        \text{resample + regularise if } N_{\mathrm{eff}} < 0.6 N
+      \end{aligned}`}
+        caption={es ? 'Filtro SIR con 500 partículas sobre el espacio de estados (ln a, b, σ_obs). Verosimilitud log-normal; remuestreo sistemático cuando el tamaño efectivo de muestra cae bajo el 60%; regularización por densidad de kernel (Silverman, ancho de banda reducido al 50%).' : 'SIR filter with 500 particles over the state space (ln a, b, σ_obs). Log-normal likelihood; systematic resampling when effective sample size drops below 60%; kernel-density regularisation (Silverman bandwidth, shrunk 50%).'}
+      />
       <p>{es
-        ? 'Un filtro de partículas de 500 partículas con remuestreo sistemático de baja varianza (Arulampalam et al. 2002) y perturbación Gaussiana para evitar el empobrecimiento de muestras. Cada partícula porta un par '
-        : 'A 500-particle filter with low-variance systematic resampling (Arulampalam et al. 2002) and Gaussian jitter to avoid sample impoverishment. Each particle carries a pair '}
-        <InlineMath tex={String.raw`(\ln a, b)`} />{es
-        ? ' del modelo exponencial. Sobre cada nueva observación del indicador de salud se actualizan los pesos por verosimilitud logarítmica. Cuando el tamaño efectivo de muestra '
-        : ' of the exponential model. At each new health-indicator observation, weights are updated by log-likelihood. When the effective sample size '}
-        <InlineMath tex={String.raw`N_{\mathrm{eff}} = 1/\sum w_i^2`} />{es
-        ? ' cae bajo 250, las partículas se remuestrean y perturban. El ensemble de 500 tiempos de primer pasaje proyectados produce la distribución posterior completa del RUL: mediana, percentiles 10 y 90, y la nube de partículas para visualización tipo histograma. La proyección forward se construye evaluando '
-        : ' drops below 250, the particles are resampled and jittered. The ensemble of 500 projected first-passage times yields the full posterior RUL distribution: median, 10th and 90th percentiles, and the particle cloud for histogram visualisation. The forward projection is built by evaluating '}
-        <InlineMath tex={String.raw`\mathrm{HI}(t)=\exp(\ln a + b\cdot t)`} />{es
-        ? ' para cada partícula en cada paso de tiempo futuro y tomando los percentiles 10, 50 y 90 del ensemble de valores de HI — la banda es la incertidumbre posterior del filtro. Pipeline: numpy vectorizado. Ref.: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.'
-        : ' for each particle at each future time step and taking the 10th, 50th and 90th percentiles of the HI ensemble — the band IS the filter\'s posterior uncertainty. Pipeline: numpy vectorised. Ref.: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.'}
-      </p></Callout>
+        ? 'El filtro se inicializa desde un prior débilmente informado centrado en los primeros puntos post-onset, no desde el ajuste OLS — el filtro debe ganarse su estimación de los datos. La proyección forward evalúa '
+        : 'The filter is initialised from a weakly informed prior centred on the first post-onset points, not from the OLS fit — the filter must earn its estimate from the data. The forward projection evaluates '}
+        <InlineMath tex={String.raw`\mathrm{HI}(t)=\exp(\ln a^{(i)} + b^{(i)} t)`} />{es
+        ? ' para cada partícula y toma los percentiles 10, 50 y 90 del ensemble — la banda es la incertidumbre posterior completa. Implementado en TypeScript (navegador) y numpy (pipeline).'
+        : ' for each particle and takes the 10th, 50th and 90th percentiles of the ensemble — the band IS the full posterior uncertainty. Implemented in TypeScript (browser) and numpy (pipeline).'}
+      </p>
 
-      <Callout variant="note" title={es ? 'Proceso Gaussiano' : 'Gaussian Process'}>
+      <h5>{es ? 'Proceso Gaussiano (GP)' : 'Gaussian Process (GP)'}</h5>
+      <Equation tex={String.raw`\begin{aligned}
+        f(t) &\sim \mathcal{GP}\!\left(m(t),\; k(t, t')\right), \qquad
+        m(t) = \ln\hat a_{\mathrm{OLS}} + \hat b_{\mathrm{OLS}}\,t \\
+        k(t, t') &= \sigma_f^2 \exp\!\left(-\frac{(t-t')^2}{2\ell^2}\right), \qquad
+        y(t) = f(t) + \varepsilon,\; \varepsilon \sim \mathcal{N}(0, \sigma_n^2) \\
+        \mathbf{f}_* \mid X, \mathbf{y}, X_* &\sim \mathcal{N}\!\left(K_*^{\top} K^{-1}\mathbf{y},\;
+          K_{**} - K_*^{\top} K^{-1} K_*\right)
+      \end{aligned}`}
+        caption={es ? 'GP con kernel RBF y función de media lineal (OLS). Predicción posterior vía Cholesky. Pipeline offline: scikit-learn GaussianProcessRegressor con kernel compuesto RBF + Matérn(ν=2.5) + WhiteKernel, optimización L-BFGS-B con 5 reinicios.' : 'GP with RBF kernel and linear mean function (OLS). Posterior prediction via Cholesky. Offline pipeline: scikit-learn GaussianProcessRegressor with composite RBF + Matérn(ν=2.5) + WhiteKernel, L-BFGS-B with 5 restarts.'}
+      />
       <p>{es
-        ? 'Un proceso Gaussiano con kernel RBF (exponencial al cuadrado) colocado sobre '
-        : 'A Gaussian Process with RBF (squared-exponential) kernel placed on '}
-        <InlineMath tex={String.raw`\ln(\mathrm{HI}(t))`} />{es
-        ? '. La función de media del GP es el ajuste lineal OLS del modelo exponencial — esto evita que el GP revierta a media cero lejos de los datos de entrenamiento y preserva la tendencia de crecimiento exponencial durante la extrapolación. Los hiperparámetros (escala de longitud '
-        : '. The GP mean function is the OLS linear fit of the exponential model — this prevents the GP from reverting to zero mean far from the training data and preserves the exponential growth trend during extrapolation. Hyper-parameters (length-scale '}
-        <InlineMath tex={String.raw`\ell`} />{es
-        ? ', varianza de señal '
-        : ', signal variance '}
-        <InlineMath tex={String.raw`\sigma_f^2`} />{es
-        ? ', varianza de ruido '
-        : ', noise variance '}
-        <InlineMath tex={String.raw`\sigma_n^2`} />{es
-        ? ') se eligen maximizando la verosimilitud marginal logarítmica sobre una grilla. La distribución predictiva se computa vía descomposición de Cholesky de la matriz de kernel. Las bandas de incertidumbre son continuas y se ensanchan con la distancia de extrapolación. Pipeline offline: scikit-learn '
-        : ') are chosen by maximising the log marginal likelihood over a grid. The predictive distribution is computed via Cholesky decomposition of the kernel matrix. The uncertainty bands are continuous and widen with extrapolation distance. Offline pipeline: scikit-learn '}
-        <code>GaussianProcessRegressor</code>{es
-        ? ' con kernel compuesto RBF + Matérn('
-        : ' with composite RBF + Matérn('}
-        <InlineMath tex={String.raw`\nu=2.5`} />{es
-        ? ') + WhiteKernel, optimización L-BFGS-B con 5 reinicios. Ref.: Rasmussen & Williams (2006), ISBN 0-262-18253-X; Liu et al. (2020), DOI 10.1016/j.ymssp.2020.106870.'
-        : ') + WhiteKernel, L-BFGS-B optimisation with 5 restarts. Ref.: Rasmussen & Williams (2006), ISBN 0-262-18253-X; Liu et al. (2020), DOI 10.1016/j.ymssp.2020.106870.'}
-      </p></Callout>
+        ? 'La función de media OLS evita que el GP revierta a cero lejos de los datos. Las bandas de incertidumbre son continuas y se ensanchan con la distancia de extrapolación — su visibilidad está garantizada por un piso mínimo de ruido de observación (σ_n ≥ 0.12).'
+        : 'The OLS mean function prevents the GP from reverting to zero far from the data. The uncertainty bands are continuous and widen with extrapolation distance — their visibility is guaranteed by a minimum observation-noise floor (σ_n ≥ 0.12).'}
+      </p>
 
-      <Callout variant="note" title="Deep-RUL (CNN)">
       <p>{es
-        ? 'Una CNN 1-D con el mismo backbone WDCNN del diagnóstico (Zhang et al. 2017, '
-        : 'A 1-D CNN with the same WDCNN backbone as the diagnosis tier (Zhang et al. 2017, '}
-        <InlineMath tex={String.raw`5\times`} />{es
-        ? ' bloques Conv1d→BN→ReLU→MaxPool, kernel ancho de 64 muestras en la primera capa). La cabeza de clasificación de 4 clases se reemplaza por una cabeza de regresión Flatten→100→Dropout(0.35)→1→Sigmoid que emite la fracción de vida '
-        : ' Conv1d→BN→ReLU→MaxPool blocks, wide 64-sample first-layer kernel). The 4-class classification head is replaced by a regression head Flatten→100→Dropout(0.35)→1→Sigmoid outputting the life fraction '}
-        <InlineMath tex={String.raw`\in[0,1]`} />{es
-        ? '. Entrenada sobre ~143 ventanas de vibración etiquetadas por fracción de vida de los benchmarks XJTU-SY (Wang, Lei, Li & Li 2020) y FEMTO/PRONOSTIA, exportada a ONNX (opset 14, entrada '
-        : '. Trained on ~143 vibration windows labelled by life fraction from the XJTU-SY (Wang, Lei, Li & Li 2020) and FEMTO/PRONOSTIA benchmarks, exported to ONNX (opset 14, input '}
-        <InlineMath tex={String.raw`(1,1,2048)`} />{es
-        ? ', salida escalar) e inferida en vivo en el navegador con onnxruntime-web (WASM EP, single-threaded). El pipeline de exportación ONNX es el mismo que sirve los modelos WDCNN, deep-AE, SVM y Random Forest del diagnóstico. Ref.: Li, Ding & Sun (2018), DOI 10.1016/j.ress.2017.11.008; Zhu, Chen & Peng (2019), DOI 10.1016/j.measurement.2019.06.040; Wang et al. (2020), DOI 10.1109/TR.2018.2882682.'
-        : ', scalar output) and inferred live in the browser via onnxruntime-web (WASM EP, single-threaded). The ONNX export pipeline is the same one serving the WDCNN, deep-AE, SVM and Random Forest diagnosis models. Ref.: Li, Ding & Sun (2018), DOI 10.1016/j.ress.2017.11.008; Zhu, Chen & Peng (2019), DOI 10.1016/j.measurement.2019.06.040; Wang et al. (2020), DOI 10.1109/TR.2018.2882682.'}
-      </p></Callout>
+        ? 'El modelo CNN-BiLSTM de prognosis (Deep-HI/RUL) se documenta en la pestaña ML / Deep Learning — pertenece a la familia de modelos aprendidos, no a los métodos físicos de pronóstico.'
+        : 'The CNN-BiLSTM prognostic model (Deep-HI/RUL) is documented in the ML / Deep Learning tab — it belongs to the learned-model family, not to the physics-based prognostic methods.'}
+      </p>
 
-      <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'an2013', 'arulampalam2002', 'rasmussen2006', 'liu2020', 'li2018', 'zhu2019', 'zhang2017']} label={refsLabel} />
+      <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'an2015', 'arulampalam2002', 'rasmussen2006', 'aye2017']} label={refsLabel} />
     </div>
   );
 
@@ -919,6 +952,94 @@ export default function Methodology() {
         : 'The held-out result is honest and revealing: the deep WDCNN reaches 100%, while the SVM-RBF and the Random Forest sit at ~85.6%. The column that explains it is the "healthy-class recall": the classical ML nails the faults (outer/inner ~100%, ball ~90%) but false-alarms on HALF the healthy windows — the hand-crafted comb prominences also fire on healthy signals with transients. The deep CNN learns the healthy/fault boundary the fixed features cannot. Not a fabricated win: the split is identical, all three run live on the same segments, and the number is reported as it lands.'}{' '}<Cite id="smith2015" paren /></p>
 
       <p>{es
+        ? 'El ladder de pronóstico extiende el aprendizaje profundo a la dimensión temporal. Una red CNN-BiLSTM (Deep-HI/RUL) procesa secuencias de ventanas de vibración a lo largo de la vida del rodamiento: el backbone CNN 1D (el mismo WDCNN del diagnóstico) extrae features espaciales por ventana compartiendo pesos sobre los S pasos de tiempo, y un BiLSTM de 2 capas con 128 unidades ocultas modela la trayectoria de degradación. Dos cabezas lineales independientes producen la curva HI(t) proyectada y el RUL escalar. Entrenada sobre 18 trayectorias XJTU-SY + FEMTO (150 épocas, loss 0.38), exportada a ONNX (opset 14, 3.4 MB) e inferida en vivo con onnxruntime-web sobre los frames medidos de trayectorias reales. A diferencia del WDCNN de diagnóstico que clasifica UNA ventana, esta arquitectura aprende la secuencia temporal — la CNN ve el "qué", la BiLSTM aprende el "cuándo" en la degradación. Ref.: Li, Ding & Sun (2018), Zhu, Chen & Peng (2019), Zhang et al. (2017).'
+        : 'The prognostic ladder extends deep learning into the temporal dimension. A CNN-BiLSTM network (Deep-HI/RUL) processes sequences of vibration windows across the bearing life: the 1D CNN backbone (the same WDCNN as the diagnosis tier) extracts per-window spatial features with shared weights over S time steps, and a 2-layer BiLSTM with 128 hidden units models the degradation trajectory. Two independent linear heads produce the projected HI(t) curve and scalar RUL. Trained on 18 XJTU-SY + FEMTO trajectories (150 epochs, loss 0.38), exported to ONNX (opset 14, 3.4 MB) and inferred live via onnxruntime-web on measured trajectory frames. Unlike the diagnostic WDCNN which classifies ONE window, this architecture learns the temporal sequence — the CNN sees the "what", the BiLSTM learns the "when" of degradation. Ref.: Li, Ding & Sun (2018), Zhu, Chen & Peng (2019), Zhang et al. (2017).'}{' '}
+        <Cite id="li2018" paren /> <Cite id="zhu2019" paren /> <Cite id="zhang2017" paren />
+      </p>
+
+      {/* CNN-BiLSTM architecture diagram */}
+      <svg viewBox="0 0 820 430" width="100%" role="img" aria-labelledby="cnnBiLstmTitle cnnBiLstmDesc" style={{ fontFamily: 'var(--font-mono)', marginTop: '1.25rem' }}>
+        <title id="cnnBiLstmTitle">{es ? 'Arquitectura CNN-BiLSTM para Deep-HI / Deep-RUL' : 'CNN-BiLSTM architecture for Deep-HI / Deep-RUL'}</title>
+        <desc id="cnnBiLstmDesc">
+          {es
+            ? 'S ventanas de vibración entran a un backbone CNN 1D (WDCNN, 5 bloques Conv1d→BN→ReLU→MaxPool con pesos compartidos). El vector de features resultante por paso de tiempo alimenta un BiLSTM de 2 capas (128 ocultas). Dos cabezas lineales independientes producen la secuencia HI(t) y el escalar RUL.'
+            : 'S vibration windows enter a 1D CNN backbone (WDCNN, 5 Conv1d→BN→ReLU→MaxPool blocks with shared weights). The resulting per-timestep feature vector feeds a 2-layer BiLSTM (128 hidden). Two independent linear heads produce the HI(t) sequence and the scalar RUL.'}
+        </desc>
+        <rect x="0" y="0" width="820" height="430" fill="var(--color-bg)" />
+        {/* Input */}
+        <rect x="20" y="140" width="140" height="120" rx="8" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1.5" />
+        <text x="90" y="170" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--color-fg)">{es ? 'Ventanas de' : 'Vibration'}</text>
+        <text x="90" y="190" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--color-fg)">{es ? 'vibración' : 'windows'}</text>
+        <text x="90" y="216" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">S × 2048 × 1</text>
+        <text x="90" y="234" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">{es ? 'secuencia temporal' : 'time sequence'}</text>
+        <text x="90" y="252" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">t₁, t₂, …, t_S</text>
+        {/* Arrow input → CNN */}
+        <line x1="160" y1="200" x2="195" y2="200" stroke="var(--color-fg-faint)" strokeWidth="1.5" markerEnd="url(#cnnArrow)" />
+        {/* CNN backbone box */}
+        <rect x="200" y="100" width="200" height="200" rx="8" fill="var(--color-surface)" stroke="var(--color-accent)" strokeWidth="2" />
+        <text x="300" y="128" textAnchor="middle" fontSize="13" fontWeight="700" fill="var(--color-accent)">{es ? 'CNN 1D (WDCNN)' : '1D CNN (WDCNN)'}</text>
+        <text x="300" y="148" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">{es ? 'pesos compartidos sobre S pasos' : 'shared weights across S steps'}</text>
+        <g fontSize="9.5" fill="var(--color-fg)">
+          <rect x="215" y="158" width="170" height="18" rx="4" fill="var(--color-bg)" />
+          <text x="300" y="171" textAnchor="middle">Conv1d → BN → ReLU → MaxPool</text>
+          <rect x="215" y="180" width="170" height="18" rx="4" fill="var(--color-bg)" />
+          <text x="300" y="193" textAnchor="middle">1→16 (k64, s16) · 16→32 (k3)</text>
+          <rect x="215" y="202" width="170" height="18" rx="4" fill="var(--color-bg)" />
+          <text x="300" y="215" textAnchor="middle">32→64 (k3) · 64→64 (k3)</text>
+          <rect x="215" y="224" width="170" height="18" rx="4" fill="var(--color-bg)" />
+          <text x="300" y="237" textAnchor="middle">64→64 (k3) → 256-dim</text>
+          <rect x="215" y="246" width="170" height="18" rx="4" fill="var(--color-bg)" />
+          <text x="300" y="259" textAnchor="middle">5 bloques · 64 canales final</text>
+        </g>
+        <text x="300" y="286" textAnchor="middle" fontSize="10" fill="var(--color-accent)">ℝ{'^{'}S×256{'}'}</text>
+        {/* Arrow CNN → BiLSTM */}
+        <line x1="400" y1="200" x2="435" y2="200" stroke="var(--color-fg-faint)" strokeWidth="1.5" markerEnd="url(#cnnArrow)" />
+        {/* BiLSTM box */}
+        <rect x="440" y="140" width="170" height="120" rx="8" fill="var(--color-surface)" stroke="var(--color-warn)" strokeWidth="2" />
+        <text x="525" y="168" textAnchor="middle" fontSize="13" fontWeight="700" fill="var(--color-warn)">BiLSTM</text>
+        <text x="525" y="186" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">2 capas · 128 ocultas</text>
+        <text x="525" y="204" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">{es ? 'bidireccional' : 'bidirectional'}</text>
+        <text x="525" y="226" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">{es ? 'modela la trayectoria' : 'models degradation'}</text>
+        <text x="525" y="244" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">{es ? 'de degradación' : 'trajectory'}</text>
+        <text x="525" y="254" textAnchor="middle" fontSize="10" fill="var(--color-warn)">ℝ{'^{'}S×256{'}'}</text>
+        {/* Arrow BiLSTM → heads */}
+        <line x1="610" y1="180" x2="645" y2="150" stroke="var(--color-fg-faint)" strokeWidth="1.5" markerEnd="url(#cnnArrow)" />
+        <line x1="610" y1="220" x2="645" y2="260" stroke="var(--color-fg-faint)" strokeWidth="1.5" markerEnd="url(#cnnArrow)" />
+        {/* HI head */}
+        <rect x="650" y="110" width="150" height="80" rx="8" fill="var(--color-bg)" stroke="var(--color-good)" strokeWidth="2" />
+        <text x="725" y="138" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--color-good)">{es ? 'Cabeza HI' : 'HI head'}</text>
+        <text x="725" y="156" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">Linear → ReLU</text>
+        <text x="725" y="172" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">→ Linear → HI(t)</text>
+        <text x="725" y="186" textAnchor="middle" fontSize="10" fill="var(--color-good)">{es ? 'curva de salud' : 'health curve'}</text>
+        {/* RUL head */}
+        <rect x="650" y="230" width="150" height="80" rx="8" fill="var(--color-bg)" stroke="var(--color-bad)" strokeWidth="2" />
+        <text x="725" y="258" textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--color-bad)">{es ? 'Cabeza RUL' : 'RUL head'}</text>
+        <text x="725" y="276" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">Linear → ReLU</text>
+        <text x="725" y="292" textAnchor="middle" fontSize="10" fill="var(--color-fg-subtle)">→ Dropout → Linear</text>
+        <text x="725" y="306" textAnchor="middle" fontSize="10" fill="var(--color-bad)">→ Sigmoid → RUL</text>
+        {/* Training info */}
+        <rect x="20" y="310" width="780" height="52" rx="6" fill="var(--color-surface)" stroke="var(--color-border)" strokeWidth="1" />
+        <text x="410" y="330" textAnchor="middle" fontSize="10.5" fill="var(--color-fg-subtle)">
+          {es ? 'Entrenada sobre 18 trayectorias reales (XJTU-SY + FEMTO) · 150 épocas · loss 0.38' : 'Trained on 18 real trajectories (XJTU-SY + FEMTO) · 150 epochs · loss 0.38'}
+        </text>
+        <text x="410" y="350" textAnchor="middle" fontSize="10.5" fill="var(--color-fg-subtle)">
+          {es ? 'exportada a ONNX (opset 14, 3.4 MB) · inferida en vivo con onnxruntime-web' : 'exported to ONNX (opset 14, 3.4 MB) · inferred live via onnxruntime-web'}
+        </text>
+        {/* Loss function note */}
+        <text x="410" y="388" textAnchor="middle" fontSize="9.5" fill="var(--color-fg-subtle)">
+          ℒ = ½MSE(HI, HÎ) + ½MSE(RUL, RÛL) &nbsp;|&nbsp; {es ? 'a diferencia del WDCNN de diagnóstico que clasifica UNA ventana,' : 'unlike the diagnostic WDCNN which classifies ONE window,'}
+        </text>
+        <text x="410" y="404" textAnchor="middle" fontSize="9.5" fill="var(--color-fg-subtle)">
+          {es ? 'esta arquitectura aprende la secuencia temporal — la CNN ve el "qué", la BiLSTM aprende el "cuándo"' : 'this architecture learns the temporal sequence — the CNN sees the "what", the BiLSTM learns the "when"'}
+        </text>
+        <defs>
+          <marker id="cnnArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="var(--color-fg-faint)" />
+          </marker>
+        </defs>
+      </svg>
+
+      <p>{es
         ? 'La generalización entre dominios (la "adaptación de dominio" mencionada arriba) se pone a prueba de forma honesta en el App: el WDCNN entrenado SOLO en CWRU se ejecuta CROSS-DOMAIN sobre otros bancos —Ottawa y MaFaulDa— sin haber visto un registro suyo, sobre una ventana re-muestreada a 12 kHz para igualar su entrada. Como el modelo predice en el vocabulario de clases de CWRU, cada clase del banco destino se mapea a su contraparte de CWRU para el chequeo (la jaula de MaFaulDa no tiene contraparte y se omite). El resultado se etiqueta como lo que es: en MaFaulDa la falla de pista externa transfiere (externa→externa ✓), mientras que en Ottawa el modelo a veces no acierta —el dominio difiere en banco, rodamiento y régimen de velocidad—. Esa brecha de dominio es el resultado honesto, no algo que se esconda; es justamente por qué la adaptación de dominio es un problema abierto y no una casilla resuelta.'
         : 'Cross-domain generalization (the "domain adaptation" mentioned above) is tested honestly in the App: the WDCNN trained ONLY on CWRU runs CROSS-DOMAIN on other rigs — Ottawa and MaFaulDa — never having seen a record of theirs, on a window resampled to 12 kHz to match its input. Since the model predicts in CWRU\'s class vocabulary, each target-rig class is mapped to its CWRU counterpart for the check (MaFaulDa\'s cage has no counterpart and is skipped). The result is labelled as what it is: on MaFaulDa the outer-race fault transfers (outer→outer ✓), while on Ottawa the model sometimes misses — the domain differs in rig, bearing and speed regime. That domain gap is the honest result, not something hidden; it is exactly why domain adaptation is an open problem and not a solved checkbox.'}{' '}<Cite id="lei2018" paren /></p>
 
@@ -927,7 +1048,13 @@ export default function Methodology() {
           ? 'Se reporta la partición (sin fuga del conjunto de referencia) y la prueba cruzada de carga (se deja FUERA una carga entera, 3 HP); la exactitud sin esas salvaguardas es engañosa. El WDCNN, el autoencoder profundo Y los dos clasificadores clásicos (SVM-RBF / Random Forest) SÍ están implementados y corren en vivo en la página Benchmark (diagnóstico interactivo sobre segmentos reales + los números held-out); CWRU es un banco limpio, por eso se reporta la degradación honesta vs ruido y el recall sano por modelo en vez de un 100% pelado.'
           : 'Report the split (no leakage of the reference set) and the cross-load test (an ENTIRE load, 3 HP, is held out); accuracy without those safeguards is misleading. The WDCNN, the deep autoencoder AND the two classical classifiers (SVM-RBF / Random Forest) ARE implemented and run live on the Benchmark page (interactive diagnosis on real segments + the held-out numbers); CWRU is a clean lab rig, so we report the honest noise-degradation curve and the per-model healthy recall rather than a bare 100%.'}</p>
       </Callout>
-      <Refs ids={['smith2015', 'widodo2007svm', 'lei2018']} label={refsLabel} />
+
+      <Callout variant="honest" title={es ? 'Deep-HI/RUL en el App: onset-gating, banda honesta y contexto bidirectional' : 'Deep-HI/RUL in the App: onset-gating, honest band, and bidirectional context'}>
+        <p>{es
+          ? 'A diferencia de los modelos clásicos (exp/PF/GP) que operan sobre la curva de HI extraída, la CNN-BiLSTM procesa las ventanas de vibración cruda y emite un valor HI para cada una. Para mantener consistencia en la visualización, el App aplica el MISMO detector de onset que los otros modelos (línea base μ+4σ, 2 puntos consecutivos) y solo muestra la curva a partir de ese punto. La banda de incertidumbre se muestra como línea simple (lo=mid=hi): el modelo no produce una posterior como el PF ni bandas calibradas como el GP, y una banda falsa (±30% fijo) sería deshonesta. Adicionalmente, la BiLSTM ve la secuencia completa (forward+backward), lo cual es correcto para análisis offline pero proporciona un contexto que un despliegue puramente online no tendría — la curva es una estimación de "calidad offline". Para prognosis online causal existe la variante CausalDeepHIRUL (LSTM unidireccional) en el pipeline de entrenamiento.'
+          : 'Unlike the classical models (exp/PF/GP) that operate on the extracted HI curve, the CNN-BiLSTM processes raw vibration windows and outputs one HI value per window. For display consistency, the App applies the SAME onset detector as the other models (baseline μ+4σ, 2 consecutive points) and only shows the curve from that point onward. The uncertainty band is shown as a single line (lo=mid=hi): the model produces neither a posterior like the PF nor calibrated bands like the GP, and a fake band (fixed ±30%) would be dishonest. Additionally, the BiLSTM sees the full sequence (forward+backward), which is correct for offline analysis but provides context a purely online deployment would not have — the curve is an "offline-quality" estimate. For causal online prognosis, the CausalDeepHIRUL variant (unidirectional LSTM) exists in the training pipeline.'}</p>
+      </Callout>
+      <Refs ids={['smith2015', 'widodo2007svm', 'lei2018', 'li2018', 'zhu2019', 'zhang2017']} label={refsLabel} />
     </div>
   );
 
