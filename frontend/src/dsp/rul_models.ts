@@ -9,7 +9,7 @@
 import { type HIPoint, projectRUL } from './health';
 import { particleFilterRUL } from './pf_rul';
 import { gpRUL } from './gp_rul';
-import { deepRul } from '../lib/ort';
+import { deepHiRul } from '../lib/ort';
 
 export type RulModel = 'exponential' | 'pf' | 'gp' | 'deep';
 
@@ -99,7 +99,7 @@ export async function predictRUL(
 
   if (model === 'deep') {
     if (!rawWindow || rawWindow.length !== 2048) return null;
-    const frac = await deepRul(rawWindow);
+    const result = await deepHiRul([rawWindow]); if (!result) return null; const frac = result.rul;
     if (frac == null || frac <= 0) return null;
     // The model outputs a life fraction; we need total life to project RUL.
     // Use the classical exponential fit to get total life, then the deep-RUL fraction as a correction.

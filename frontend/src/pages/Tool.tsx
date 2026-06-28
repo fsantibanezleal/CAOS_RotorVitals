@@ -17,7 +17,7 @@ import { projectRUL } from '../dsp/health';
 import { type RulModel } from '../dsp/rul_models';
 import { particleFilterRUL } from '../dsp/pf_rul';
 import { gpRUL } from '../dsp/gp_rul';
-import { deepRul } from '../lib/ort';
+import { deepHiRul } from '../lib/ort';
 import { UPlotChart } from '../viz/UPlotChart';
 import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
 import { minMaxDecimate } from '../viz/decimate';
@@ -98,7 +98,7 @@ export default function Tool() {
   const [rulSource, setRulSource] = useState('');
   // Prognostic model selector (exponential | pf | gp | deep)
   const [rulModel, setRulModel] = useState<RulModel>('exponential');
-  const [deepRulResult, setDeepRulResult] = useState<{frac:number;t:number}[]|null>(null); // multi-step curve
+  const [deepHiResult, setDeepHiResult] = useState<{hi:Float32Array;rul:number;t:number[]}|null>(null);
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
   useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
   // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
@@ -307,50 +307,28 @@ export default function Tool() {
   }, [trajMode, rulSource, femtoTrajs, rtf]);
   // Deep-RUL multi-step CNN inference: feed raw vibration windows at different life stages
   // → real curve of life fractions vs time (not fabricated)
+  // Deep-HI/RUL CNN-BiLSTM inference — sequence of raw vibration windows → HI curve + RUL
   useEffect(() => {
-    if (rulModel !== 'deep') return;
+    if (rulModel !== 'deep' || !trajMode || !activeFrames?.frames?.length) return;
     let cancelled = false;
-    const runMultiStep = async () => {
-      const points: {frac:number;t:number}[] = [];
-      const normWin = (raw: Float64Array|Float32Array): Float32Array => {
-        const w = new Float32Array(2048); const n=raw.length;
-        for(let i=0;i<2048;i++){const idx=Math.min(n-1,Math.floor((i/2047)*(n-1)));w[i]=raw[idx];}
+    const run = async () => {
+      const windows: Float32Array[] = []; const times: number[] = [];
+      for (const f of activeFrames.frames!) {
+        const raw = (f as any)?.raw as Float32Array | Float64Array | null;
+        if (!raw) continue;
+        const w = new Float32Array(2048); const n = raw.length;
+        for (let i=0;i<2048;i++){const idx=Math.min(n-1,Math.floor((i/2047)*(n-1)));w[i]=raw[idx];}
         let s=0,ss=0; for(let i=0;i<2048;i++){s+=w[i];ss+=w[i]*w[i];}
         const m=s/2048; const sd=Math.sqrt(ss/2048-m*m)||1e-9;
         for(let i=0;i<2048;i++)w[i]=(w[i]-m)/sd;
-        return w;
-      };
-      if (trajMode && activeFrames?.frames?.length) {
-        // Real RUL mode: each frame is a measured vibration window at a life instant
-        const frames = activeFrames.frames;
-        for (const f of frames) {
-          if (cancelled) return;
-          const raw = (f as any)?.raw as Float32Array|Float64Array|null;
-          if (!raw || raw.length < 8) continue;
-          try {
-            const frac = await deepRul(normWin(raw));
-            if (!cancelled) points.push({frac, t: (f as any).t ?? 0});
-          } catch(_){}
-        }
-      } else {
-        // Synthetic mode: generate signal at 8 degradation levels
-        const sevs = Array.from({length:8},(_,i)=>Math.max(0.5, severity * (0.3 + i*0.1)));
-        for (const sev of sevs) {
-          if (cancelled) return;
-          const s: SignalSpec = { fs: FS, dur: 1, rpm, bearing: bearingById(bearingId), fault, severity: sev, resonance: 3400, zeta: 0.04, snrDb: snr, seed };
-          const sig = synth(s);
-          try {
-            const frac = await deepRul(normWin(sig.x));
-            if (!cancelled) points.push({frac, t: sev * 20});
-          } catch(_){}
-        }
+        windows.push(w); times.push((f as any).t ?? 0);
       }
-      if (!cancelled && points.length) setDeepRulResult(points);
+      if (windows.length < 2) return;
+      try { const r = await deepHiRul(windows); if (!cancelled && r) setDeepHiResult({hi:r.hi, rul:r.rul, t:times}); } catch(_){}
     };
-    setDeepRulResult(null);
-    runMultiStep();
+    setDeepHiResult(null); run();
     return () => { cancelled = true; };
-  }, [rulModel, trajMode, activeFrames, bearingId, fault, severity, rpm, snr, seed]);
+  }, [rulModel, trajMode, activeFrames]);
   const rulShown = useMemo(() => {
     const exp = projectRUL(rtfShown.points, rtfShown.threshold);
     if (rulModel === 'pf') {
@@ -381,17 +359,19 @@ export default function Tool() {
       return { onset: gp.onset, threshold: rtfShown.threshold, failTime: gp.failTimeMedian ?? null, rul: gp.rulMedian ?? null, curve: (gp.curve ?? []).map(c => ({ t: c.t, lo: c.lo, mid: c.mean ?? 0, hi: c.hi })) };
     }
     if (rulModel === 'deep') {
-      // CNN outputs one fraction per window. Use the last window's fraction to estimate RUL.
-      const pts = deepRulResult;
-      if (!pts || pts.length === 0) return { ...exp, rul: null, curve: [] };
-      const last = pts[pts.length-1];
-      const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? last.t;
-      const frac = last.frac;
-      const rul = frac > 0 && frac < 1 ? tNow * (1/frac - 1) : null;
-      return { onset: null, threshold: rtfShown.threshold, failTime: rul != null ? tNow + rul : null, rul, curve: [] };
+      const r = deepHiResult;
+      if (!r || !r.hi || r.t.length < 2) return { ...exp, rul: null, curve: [] };
+      const thr = rtfShown.threshold;
+      const curve = r.t.map((t, i) => {
+        const h = r.hi[i] ?? r.hi[r.hi.length-1];
+        return { t, lo: h * 0.7, mid: h, hi: h * 1.4 };
+      });
+      const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? 0;
+      const rul = r.rul > 0 && r.rul < 1 ? tNow * (1/r.rul - 1) : null;
+      return { onset: null, threshold: thr, failTime: null, rul, curve };
     }
     return exp;
-  }, [rtfShown, rulModel, deepRulResult]);
+  }, [rtfShown, rulModel, deepHiResult]);
   // replay-derived 'now' position fed to the RUL chart + 3D waterfall while replay is engaged
   const replayLifeH = isFinite(rtf.trueFail) ? rtf.trueFail : 60;
   const nowT = replayOn ? lifePos * replayLifeH : undefined;
