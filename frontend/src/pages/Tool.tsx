@@ -381,20 +381,14 @@ export default function Tool() {
       return { onset: gp.onset, threshold: rtfShown.threshold, failTime: gp.failTimeMedian ?? null, rul: gp.rulMedian ?? null, curve: (gp.curve ?? []).map(c => ({ t: c.t, lo: c.lo, mid: c.mean ?? 0, hi: c.hi })) };
     }
     if (rulModel === 'deep') {
+      // CNN outputs one fraction per window. Use the last window's fraction to estimate RUL.
       const pts = deepRulResult;
-      if (!pts || pts.length < 2) return { ...exp, rul: null, curve: [] };
-      const thr = rtfShown.threshold;
-      const sorted = [...pts].sort((a,b)=>a.t-b.t);
-      const curve = sorted.map(p => ({
-        t: p.t,
-        lo: thr * Math.max(0.01, p.frac * 0.85),
-        mid: thr * Math.max(0.01, p.frac),
-        hi: thr * Math.min(1.0, p.frac * 1.15),
-      }));
-      const last = sorted[sorted.length-1];
-      const fracSlope = sorted.length>=2 ? (last.frac - sorted[0].frac) / Math.max(0.01, last.t - sorted[0].t) : 0;
-      const rul = fracSlope > 0 && last.frac < 1 ? (1 - last.frac) / fracSlope : 0;
-      return { onset: null, threshold: thr, failTime: null, rul: Math.max(0, rul), curve };
+      if (!pts || pts.length === 0) return { ...exp, rul: null, curve: [] };
+      const last = pts[pts.length-1];
+      const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? last.t;
+      const frac = last.frac;
+      const rul = frac > 0 && frac < 1 ? tNow * (1/frac - 1) : null;
+      return { onset: null, threshold: rtfShown.threshold, failTime: rul != null ? tNow + rul : null, rul, curve: [] };
     }
     return exp;
   }, [rtfShown, rulModel, deepRulResult]);
