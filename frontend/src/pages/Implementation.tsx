@@ -68,9 +68,10 @@ export default function Implementation() {
       {/* ---------- COMPACT ARTIFACT ---------- */}
       <rect x="40" y="384" width="260" height="92" rx="8" fill="var(--color-bg)" stroke="var(--color-accent)" strokeWidth="2" />
       <text x="56" y="408" fontSize="13" fontWeight="700" fill="var(--color-accent)">{es ? 'Artefacto compacto' : 'Compact artifact'}</text>
-      <text x="56" y="430" fontSize="10.5" fill="var(--color-fg)">{es ? 'bandas · tablas de frec. de falla' : 'selected bands · fault-freq tables'}</text>
-      <text x="56" y="446" fontSize="10.5" fill="var(--color-fg)">{es ? 'tendencias HI · curvas de vida' : 'HI trends · projected-life curves'}</text>
-      <text x="56" y="466" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? 'pequeño · congelado · una descarga' : 'small · frozen · single fetch'}</text>
+      <text x="56" y="428" fontSize="10.5" fill="var(--color-fg)">{es ? 'bandas · tablas de frec. de falla' : 'selected bands · fault-freq tables'}</text>
+      <text x="56" y="444" fontSize="10.5" fill="var(--color-fg)">{es ? 'tendencias HI · curvas de vida' : 'HI trends · projected-life curves'}</text>
+      <text x="56" y="460" fontSize="10.5" fill="var(--color-fg)">{es ? 'deep_hi.onnx (3.4 MB) · ONNX runtime' : 'deep_hi.onnx (3.4 MB) · ONNX runtime'}</text>
+      <text x="56" y="476" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? 'pequeño · congelado · una descarga' : 'small · frozen · single fetch'}</text>
 
       {/* artifact ships right to the live lane */}
       <line x1="320" y1="430" x2="372" y2="430" stroke="var(--color-accent)" strokeWidth="2" markerEnd="url(#rv-arrow-accent)" />
@@ -116,19 +117,25 @@ export default function Implementation() {
         <text x="554" y="287">{es ? 'frec. cinemáticas' : 'kinematic frequencies'}</text>
       </g>
 
-      {/* diagnosis + prognosis consuming live + artifact */}
-      <rect x="396" y="318" width="280" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-good)" strokeWidth="1.5" />
-      <text x="410" y="340" fontSize="11.5" fill="var(--color-good)">
+      {/* diagnosis consuming live + artifact */}
+      <rect x="396" y="310" width="280" height="28" rx="6" fill="var(--color-bg)" stroke="var(--color-good)" strokeWidth="1.5" />
+      <text x="410" y="329" fontSize="11" fill="var(--color-good)">
         {es ? 'diagnóstico: prominencia + controles neg.' : 'diagnosis: harmonic prominence + neg-controls'}
       </text>
 
-      <rect x="396" y="360" width="280" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-warn)" strokeWidth="1.5" />
-      <text x="410" y="382" fontSize="11.5" fill="var(--color-warn)">
-        {es ? 'pronóstico: HI exponencial → RUL' : 'prognosis: exponential HI → first-passage RUL'}
+      {/* Prognostic model ladder in the live lane */}
+      <rect x="396" y="346" width="280" height="90" rx="8" fill="var(--color-bg)" stroke="var(--color-warn)" strokeWidth="1.5" />
+      <text x="410" y="366" fontSize="11.5" fontWeight="700" fill="var(--color-warn)">
+        {es ? 'pronóstico (ladder de 4 modelos)' : 'prognosis (4-model ladder)'}
       </text>
+      <text x="410" y="383" fontSize="10" fill="var(--color-fg)">{es ? 'exp.: MCO log → forma cerrada' : 'exp.: log-space OLS → closed-form'}</text>
+      <text x="410" y="398" fontSize="10" fill="var(--color-fg)">{es ? 'PF: SIR 500 partículas → posterior' : 'PF: SIR 500 particles → posterior'}</text>
+      <text x="410" y="413" fontSize="10" fill="var(--color-fg)">{es ? 'GP: kernel RBF + Cholesky → bandas' : 'GP: RBF kernel + Cholesky → bands'}</text>
+      <text x="410" y="428" fontSize="10" fill="var(--color-fg)">{es ? 'Deep: ONNX runtime web → HI(t)+RUL' : 'Deep: ONNX runtime web → HI(t)+RUL'}</text>
 
-      <rect x="396" y="402" width="280" height="34" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" />
-      <text x="410" y="424" fontSize="11.5" fill="var(--color-fg)">{es ? 'medidor de severidad ISO A/B/C/D' : 'ISO A/B/C/D severity gauge'}</text>
+      {/* ISO gauge */}
+      <rect x="396" y="444" width="280" height="28" rx="6" fill="var(--color-bg)" stroke="var(--color-border)" />
+      <text x="410" y="463" fontSize="11" fill="var(--color-fg)">{es ? 'medidor de severidad ISO A/B/C/D' : 'ISO A/B/C/D severity gauge'}</text>
 
       <text x="396" y="462" fontSize="10.5" fill="var(--color-fg-subtle)">
         {es ? 'modelo directo sintético sembrado → recupera la falla' : 'seeded synthetic forward model → recovers planted fault'}
