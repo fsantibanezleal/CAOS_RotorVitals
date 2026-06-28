@@ -14,9 +14,6 @@ from pathlib import Path
 
 import numpy as np
 
-from ..io.femto import read_femto_trajs
-from ..io.ims import read_ims_trajs
-from ..io.xjtu import read_xjtu_trajs
 from ..model.gp_rul import gp_rul
 from ..model.pf_rul import pf_rul
 
@@ -66,22 +63,29 @@ def evaluate_rul_models(data_root: str = "", output_path: str = "") -> dict:
     results: list[dict] = []
     models_used = ["exponential", "pf", "gp"]
 
-    # load trajectories
+    # load trajectories from the already-processed frontend JSON artifacts
     trajs: list[dict] = []
-    for loader, name in [(read_femto_trajs, "femto"), (read_xjtu_trajs, "xjtu"), (read_ims_trajs, "ims")]:
+    rtf_files = [
+        ("femto", frontend_pub / "rv-femto-rtf.json"),
+        ("xjtu", frontend_pub / "rv-xjtu-rtf.json"),
+        ("ims", frontend_pub / "rv-ims-rtf.json"),
+    ]
+    for name, fp in rtf_files:
         try:
-            for tr in loader():
-                tr["_source"] = name
-                trajs.append(tr)
+            if fp.exists():
+                data = json.loads(fp.read_text(encoding="utf-8"))
+                for tr in data.get("trajectories", data.get("trajs", [])):
+                    tr["_source"] = name
+                    trajs.append(tr)
         except (FileNotFoundError, Exception):
             continue
 
     for tr in trajs:
-        points = np.array(tr.get("points", []))
-        if len(points) < 8:
+        pts = tr.get("points", [])
+        if len(pts) < 8:
             continue
-        t = points[:, 0]
-        hi = points[:, 1]
+        t = np.array([p["t"] for p in pts])
+        hi = np.array([p["hi"] for p in pts])
         threshold = float(tr.get("threshold", 0))
 
         row: dict = {
