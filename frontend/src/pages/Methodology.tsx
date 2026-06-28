@@ -842,7 +842,7 @@ export default function Methodology() {
       <p>{es
         ? 'El modelo exponencial descrito arriba es el primer escalón de cuatro. Los tres adicionales — un filtro de partículas, un proceso Gaussiano y una red CNN-BiLSTM — están implementados en ambas líneas (TypeScript en el navegador, Python en el pipeline offline) y se seleccionan desde la pestaña Prognostics·RUL mediante un grupo de chips.'
         : 'The exponential model described above is the first rung of four. The three additional models — a particle filter, a Gaussian Process, and a CNN-BiLSTM network — are implemented in both lanes (TypeScript in the browser, Python in the offline pipeline) and are selectable from the Prognostics·RUL tab via a chip group.'}{' '}
-        <Cite id="an2013" paren /> <Cite id="arulampalam2002" paren /> <Cite id="rasmussen2006" paren /> <Cite id="liu2020" paren />
+        <Cite id="an2015" paren /> <Cite id="arulampalam2002" paren /> <Cite id="rasmussen2006" paren /> <Cite id="aye2017" paren />
       </p>
 
       <h5>{es ? 'Filtro de Partículas (PF)' : 'Particle Filter (PF)'}</h5>
@@ -897,7 +897,7 @@ export default function Methodology() {
         : ') which is plotted directly in the Prognostics·RUL tab; the RUL head outputs the remaining-life fraction. Live inference runs on measured trajectory frames (FEMTO, XJTU-SY, IMS) via onnxruntime-web.'}
       </p>
 
-      <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'an2013', 'arulampalam2002', 'rasmussen2006', 'liu2020', 'li2018', 'zhu2019', 'zhang2017']} label={refsLabel} />
+      <Refs ids={['lei2018', 'iso20816', 'iso20816_3_2022', 'wang2020xjtu', 'randall2011', 'smith2015', 'an2015', 'arulampalam2002', 'rasmussen2006', 'aye2017', 'li2018', 'zhu2019', 'zhang2017']} label={refsLabel} />
     </div>
   );
 
