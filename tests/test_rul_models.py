@@ -3,7 +3,6 @@ classical exponential model as reference, covers edge cases, and ensures consist
 degradation regimes. The synthetic generator is deterministic (seeded)."""
 
 import numpy as np
-import pytest
 
 from rotorlab.model.pf_rul import pf_rul as pf_py
 from rotorlab.model.gp_rul import gp_rul as gp_py
@@ -16,20 +15,26 @@ def _exp_degradation(t: np.ndarray, a: float, b: float, noise: float = 0.02, see
 def _classical_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> float | None:
     """Reference implementation — same as evaluate_rul.py::_exponential_rul."""
     n = len(t)
-    if n < 8: return None
+    if n < 8:
+        return None
     base = hi[:max(4, n // 3)]
     mu0, sd0 = float(base.mean()), float(base.std() or 1e-9)
     onset = None
     for i in range(1, n - 1):
         if hi[i] > mu0 + 4 * sd0 and hi[i + 1] > mu0 + 4 * sd0:
-            onset = i; break
-    if onset is None: return None
+            onset = i
+            break
+    if onset is None:
+        return None
     pt, ph = t[onset:], np.maximum(hi[onset:], 1e-9)
-    if len(pt) < 4: return None
-    y = np.log(ph); X = np.column_stack([np.ones_like(pt), pt])
+    if len(pt) < 4:
+        return None
+    y = np.log(ph)
+    X = np.column_stack([np.ones_like(pt), pt])
     beta = np.linalg.lstsq(X, y, rcond=None)[0]
     ln_a, b_hat = float(beta[0]), float(beta[1])
-    if b_hat <= 0: return None
+    if b_hat <= 0:
+        return None
     return max(0.0, (np.log(threshold) - ln_a) / b_hat - float(t[-1]))
 
 
@@ -41,7 +46,7 @@ def test_normal_degradation_pf_close_to_classical():
     ref = _classical_rul(t, hi, 30.0)  # threshold=30: crossing ~t=25, at t=18 => RUL~7h
     assert ref is not None and ref > 0, f"classical ref failed: {ref}"
     pf = pf_py(t, hi, 30.0)
-    assert pf["rul_median"] is not None and pf["rul_median"] > 0, f"PF returned None/zero RUL"
+    assert pf["rul_median"] is not None and pf["rul_median"] > 0, "PF returned None/zero RUL"
     assert abs(pf["rul_median"] - ref) / ref < 0.70, f"PF {pf['rul_median']:.1f} far from classical {ref:.1f}"
 
 
