@@ -18,6 +18,7 @@ import { type RulModel } from '../dsp/rul_models';
 import { particleFilterRUL } from '../dsp/pf_rul';
 import { gpRUL } from '../dsp/gp_rul';
 import { deepHiRul } from '../lib/ort';
+import { wang2020RUL, type Wang2020Ref } from '../dsp/wang2020';
 import { UPlotChart } from '../viz/UPlotChart';
 import { lineOpts, combsPlugin, regionsPlugin, vmarksPlugin, selectPlugin, type Comb } from '../viz/uplotKit';
 import { minMaxDecimate } from '../viz/decimate';
@@ -100,7 +101,9 @@ export default function Tool() {
   const [rulModel, setRulModel] = useState<RulModel>('exponential');
   const [deepHiResult, setDeepHiResult] = useState<{hi:Float32Array;rul:number;t:number[]}|null>(null);
   const [femtoTrajs, setFemtoTrajs] = useState<FemtoTraj[]>([]);
+  const [wang2020Refs, setWang2020Refs] = useState<Wang2020Ref[]>([]);
   useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
+  useEffect(() => { fetch('/rv-wang2020-refs.json').then(r => r.json()).then(setWang2020Refs).catch(() => {}); }, []);
   // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
   // knobs) vs 'cwru' (a REAL held-out CWRU segment — the measured signal flows through the EXACT same tools; the
   // scenario knobs become read-only sample metadata, the analysis knobs stay live).
@@ -358,6 +361,14 @@ export default function Tool() {
       const gp = gpRUL(rtfShown.points, rtfShown.threshold);
       return { onset: gp.onset, threshold: rtfShown.threshold, failTime: gp.failTimeMedian ?? null, rul: gp.rulMedian ?? null, curve: (gp.curve ?? []).map(c => ({ t: c.t, lo: c.lo, mid: c.mean ?? 0, hi: c.hi })) };
     }
+    if (rulModel === 'wang2020') {
+      const wr = wang2020RUL(rtfShown.points, rtfShown.threshold, wang2020Refs);
+      return {
+        onset: wr.onset, threshold: rtfShown.threshold,
+        failTime: wr.failTime, rul: wr.rul,
+        curve: wr.curve.map(c => ({ t: c.t, lo: c.lo, mid: c.mid, hi: c.hi })),
+      };
+    }
     if (rulModel === 'deep') {
       const r = deepHiResult;
       if (!r || !r.hi || r.t.length < 2) return { ...exp, rul: null, curve: [] };
@@ -485,10 +496,10 @@ export default function Tool() {
       <div className="rv-vizstack">
         {!trajMode && replayBar()}
         <div className="rul-model-bar" style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
-          {(['exponential','pf','gp',...(trajMode?['deep'] as RulModel[]:[])] as RulModel[]).map(m => (
+          {(['exponential','pf','gp','wang2020',...(trajMode?['deep'] as RulModel[]:[])] as RulModel[]).map(m => (
             <button key={m} className={`chip ${rulModel===m?'on':''}`} onClick={()=>setRulModel(m)}
               title={m==='deep'&&!trajMode?(lang==='es'?'Deep-RUL requiere datos reales (modo Real: RUL)':'Deep-RUL needs real data (Real: RUL mode)'):undefined}>
-              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':m==='deep'?'Deep-RUL':''}
+              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':m==='wang2020'?'Wang 2020':m==='deep'?'Deep-RUL':''}
             </button>
           ))}
         </div>
