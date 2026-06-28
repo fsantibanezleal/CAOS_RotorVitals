@@ -133,7 +133,6 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
   // 3. estimate signal amplitude from baseline to set a WIDE prior
   const logHis = post.map(p => Math.log(Math.max(1e-9, p.hi)));
   const avgLnHi = logHis.reduce((a, v) => a + v, 0) / logHis.length;
-  const span = post[post.length - 1].t - post[0].t || 1;
 
   // 4. initialise particles from a WIDE uninformed prior (NOT from OLS)
   //    lnA ~ N(baseline_lnHI, 2.0²)  — wide enough to cover the uncertainty
