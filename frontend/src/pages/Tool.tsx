@@ -381,36 +381,20 @@ export default function Tool() {
       return { onset: gp.onset, threshold: rtfShown.threshold, failTime: gp.failTimeMedian ?? null, rul: gp.rulMedian ?? null, curve: (gp.curve ?? []).map(c => ({ t: c.t, lo: c.lo, mid: c.mean ?? 0, hi: c.hi })) };
     }
     if (rulModel === 'deep') {
-      const points = deepRulResult;
-      if (!points || points.length < 2) return { onset: null, threshold: rtfShown.threshold, failTime: null, rul: null, curve: [] };
-      // Build the curve from the CNN's multi-step output — REAL data, not fabricated
-      const sorted = [...points].sort((a,b)=>a.t-b.t);
-      const last = sorted[sorted.length-1];
+      const pts = deepRulResult;
+      if (!pts || pts.length < 2) return { ...exp, rul: null, curve: [] };
       const thr = rtfShown.threshold;
-      // Project: if life fraction is trending linearly, extrapolate to frac=1 (failure)
-      const deepCurve: {t:number;lo:number;mid:number;hi:number}[] = sorted.map(p => {
-        const hiNorm = thr * Math.min(1, Math.max(0.01, p.frac * 1.15));
-        return {t: p.t, lo: thr * Math.max(0.01, p.frac * 0.7), mid: thr * Math.max(0.01, p.frac), hi: hiNorm};
-      });
-      // Extrapolate forward to failure (frac=1)
-      if (sorted.length >= 2) {
-        const p0 = sorted[sorted.length-2], p1 = last;
-        const slope = (p1.frac - p0.frac) / Math.max(0.01, p1.t - p0.t);
-        if (slope > 0) {
-          const tFail = last.t + (1 - last.frac) / slope;
-          const nExt = 10;
-          for (let i=1; i<=nExt; i++) {
-            const t = last.t + (i/nExt) * (tFail - last.t) * 1.1;
-            const frac = Math.min(1, last.frac + slope * (t - last.t));
-            deepCurve.push({t, lo: thr * frac * 0.7, mid: thr * frac, hi: thr * Math.min(1, frac * 1.15)});
-          }
-        }
-      }
-      const firstFrac = sorted[0]?.frac ?? 0;
-      const firstT = sorted[0]?.t ?? 0;
-      const avgSlope = (last.frac - firstFrac) / Math.max(0.01, last.t - firstT);
-      const rul = last.frac < 1 ? Math.max(0, (1 - last.frac) / Math.max(0.001, avgSlope)) : 0;
-      return { onset: null, threshold: thr, failTime: last.frac >= 0.95 ? last.t : null, rul: Math.max(0, rul), curve: deepCurve };
+      const sorted = [...pts].sort((a,b)=>a.t-b.t);
+      const curve = sorted.map(p => ({
+        t: p.t,
+        lo: thr * Math.max(0.01, p.frac * 0.85),
+        mid: thr * Math.max(0.01, p.frac),
+        hi: thr * Math.min(1.0, p.frac * 1.15),
+      }));
+      const last = sorted[sorted.length-1];
+      const fracSlope = sorted.length>=2 ? (last.frac - sorted[0].frac) / Math.max(0.01, last.t - sorted[0].t) : 0;
+      const rul = fracSlope > 0 && last.frac < 1 ? (1 - last.frac) / fracSlope : 0;
+      return { onset: null, threshold: thr, failTime: null, rul: Math.max(0, rul), curve };
     }
     return exp;
   }, [rtfShown, rulModel, deepRulResult]);
