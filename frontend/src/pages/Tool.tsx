@@ -507,9 +507,10 @@ export default function Tool() {
       <div className="rv-vizstack">
         {!trajMode && replayBar()}
         <div className="rul-model-bar" style={{display:'flex',gap:6,marginBottom:8,flexWrap:'wrap'}}>
-          {(['exponential','pf','gp','deep'] as RulModel[]).map(m => (
-            <button key={m} className={`chip ${rulModel===m?'on':''}`} onClick={()=>setRulModel(m)}>
-              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':'Deep-RUL'}
+          {(['exponential','pf','gp',...(trajMode?['deep'] as RulModel[]:[])] as RulModel[]).map(m => (
+            <button key={m} className={`chip ${rulModel===m?'on':''}`} onClick={()=>setRulModel(m)}
+              title={m==='deep'&&!trajMode?(lang==='es'?'Deep-RUL requiere datos reales (modo Real: RUL)':'Deep-RUL needs real data (Real: RUL mode)'):undefined}>
+              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':m==='deep'?'Deep-RUL':''}
             </button>
           ))}
         </div>

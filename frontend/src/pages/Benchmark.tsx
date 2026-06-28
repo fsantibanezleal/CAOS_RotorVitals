@@ -395,26 +395,6 @@ function LeakageBlock({ lk, es }: { lk: Leakage; es: boolean }) {
         <span key={i}>{i > 0 ? ' · ' : ''}{r.doi ? <a href={`https://doi.org/${r.doi}`} target="_blank" rel="noreferrer">{r.label}</a> : r.label}</span>
       ))}</p>
     </section>
-
-    <section>
-      <h2>{es ? 'Pronóstico — comparación de modelos de RUL' : 'Prognosis — RUL model comparison'}</h2>
-      <p>{es
-        ? 'Cuatro modelos de pronóstico evaluados sobre 36 trayectorias reales run-to-failure (FEMTO, XJTU-SY, IMS). El error se reporta como error absoluto medio relativo (MAE) entre el RUL predicho y el real, normalizado por la vida total del rodamiento. Valores más bajos son mejores.'
-        : 'Four prognostic models evaluated on 36 real run-to-failure trajectories (FEMTO, XJTU-SY, IMS). Error is reported as relative mean absolute error (MAE) between predicted and true RUL, normalized by total bearing life. Lower is better.'}</p>
-      <table className="tbl"><thead><tr>
-        <th>{es ? 'Modelo' : 'Model'}</th>
-        <th>MAE</th>
-        <th>{es ? 'vs. Exponencial' : 'vs. Exponential'}</th>
-        <th>{es ? 'Implementación' : 'Implementation'}</th>
-      </tr></thead><tbody>
-        <tr><td>{es ? 'Exponencial clásico' : 'Classical exponential'}</td><td className="mono">2.70</td><td>—</td><td className="muted">OLS, TypeScript + numpy</td></tr>
-        <tr><td>{es ? 'Filtro de Partículas (500)' : 'Particle Filter (500)'}</td><td className="mono" style={{color:'var(--color-warn)'}}>2.20</td><td className="mono" style={{color:'var(--color-good)'}}>−19%</td><td className="muted">SIR, TypeScript + numpy</td></tr>
-        <tr style={{background:'var(--color-accent-soft)'}}><td><b>{es ? 'Proceso Gaussiano' : 'Gaussian Process'}</b></td><td className="mono" style={{color:'var(--color-good)',fontWeight:700}}>1.00</td><td className="mono" style={{color:'var(--color-good)',fontWeight:700}}>−63%</td><td className="muted">scikit-learn GPR (RBF+Matérn+WhiteKernel)</td></tr>
-      </tbody></table>
-      <p className="muted" style={{fontSize:'0.85rem',marginTop:8}}>{es
-        ? 'El GP reduce el error en un 63% respecto al modelo exponencial clásico gracias a su kernel compuesto que captura tanto el crecimiento suave (RBF) como las desviaciones menos diferenciables (Matérn 5/2). El filtro de partículas mejora un 19% al incorporar la incertidumbre Bayesiana sobre los parámetros del modelo. La CNN profunda (Deep-RUL) está entrenada pero pendiente de evaluación en este benchmark. Datos: 36 trayectorias reales (FEMTO/PRONOSTIA + XJTU-SY + IMS). Artefacto: rv-rul-benchmark.json.'
-        : 'The GP reduces error by 63% over the classical exponential model thanks to its composite kernel capturing both smooth growth (RBF) and less-differentiable deviations (Matérn 5/2). The particle filter improves 19% by incorporating Bayesian uncertainty over model parameters. The Deep-RUL CNN is trained but pending evaluation in this benchmark. Data: 36 real trajectories (FEMTO/PRONOSTIA + XJTU-SY + IMS). Artifact: rv-rul-benchmark.json.'}</p>
-    </section>
   );
 }
 
