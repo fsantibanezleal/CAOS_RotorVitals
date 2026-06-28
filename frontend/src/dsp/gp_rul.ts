@@ -164,9 +164,11 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
     }
   }
 
-  // predict forward
+  // predict forward — project to a horizon anchored on the exponential model's failure estimate
+  // (not the full training span, which causes absurd HI values at b > 0.1)
   const tLast = X[X.length - 1];
-  const tEnd = tLast + span * 4;  // project further forward so the GP has room to reach the threshold
+  const expFailTime = (Math.log(threshold) - lnAMean) / bMean;
+  const tEnd = Math.min(tLast + span * 2.5, expFailTime * 1.3);  // bounded by the physical failure horizon
   const Nq = 60;
   const Xq: number[] = [];
   for (let i = 0; i <= Nq; i++) Xq.push(tLast + (i / Nq) * (tEnd - tLast));

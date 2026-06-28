@@ -333,14 +333,15 @@ export default function Tool() {
           } catch(_){}
         }
       } else {
-        // Synthetic mode: generate signal at 8 severity levels (linear interpolation of the current severity)
+        // Synthetic mode: generate signal at 8 severity levels
+        const spec = { faultKind: fault as FaultKind, bearingId, rpm, snr, seed };
         const sevs = Array.from({length:8},(_,i)=>Math.max(0.5, severity * (0.3 + i*0.1)));
         for (const sev of sevs) {
           if (cancelled) return;
-          const sig = synth({...base.spec, severity: sev, seed});
+          const sig = synth({...spec, severity: sev, seed});
           try {
             const frac = await deepRul(normWin(sig.x));
-            if (!cancelled) points.push({frac, t: sev * 20}); // severity → proxy life time
+            if (!cancelled) points.push({frac, t: sev * 20});
           } catch(_){}
         }
       }
@@ -406,7 +407,10 @@ export default function Tool() {
         }
       }
       const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? 0;
-      const rul = last.frac < 1 ? (1 - last.frac) / Math.max(0.001, (last.frac - (sorted[0]?.frac ?? 0)) / Math.max(0.01, last.t - (sorted[0]?.t ?? 0))) : 0;
+      const firstFrac = sorted[0]?.frac ?? 0;
+      const firstT = sorted[0]?.t ?? 0;
+      const avgSlope = (last.frac - firstFrac) / Math.max(0.01, last.t - firstT);
+      const rul = last.frac < 1 ? Math.max(0, (1 - last.frac) / Math.max(0.001, avgSlope)) : 0;
       return { onset: null, threshold: thr, failTime: last.frac >= 0.95 ? last.t : null, rul: Math.max(0, rul), curve: deepCurve };
     }
     return exp;
