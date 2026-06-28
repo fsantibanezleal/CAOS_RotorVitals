@@ -362,13 +362,33 @@ export default function Tool() {
       const r = deepHiResult;
       if (!r || !r.hi || r.t.length < 2) return { ...exp, rul: null, curve: [] };
       const thr = rtfShown.threshold;
-      const curve = r.t.map((t, i) => {
-        const h = r.hi[i] ?? r.hi[r.hi.length-1];
-        return { t, lo: h * 0.7, mid: h, hi: h * 1.4 };
-      });
+      // Detect onset from deep HI values (same method as classical: baseline μ+4σ, 2 consecutive)
+      const n = r.t.length;
+      const nBase = Math.max(4, Math.floor(n * 0.3));
+      let sumHi = 0, sumSq = 0;
+      for (let i = 0; i < nBase; i++) { sumHi += r.hi[i]; sumSq += r.hi[i] * r.hi[i]; }
+      const meanBase = sumHi / nBase;
+      const sdBase = Math.sqrt(sumSq / nBase - meanBase * meanBase) || 1e-9;
+      let onsetIdx = -1;
+      for (let i = nBase; i < n - 1; i++) {
+        if (r.hi[i] > meanBase + 4 * sdBase && r.hi[i+1] > meanBase + 4 * sdBase) { onsetIdx = i; break; }
+      }
+      const onset = onsetIdx >= 0 ? r.t[onsetIdx] : null;
+      // Only emit curve from onset onward — same behaviour as exp/PF/GP
+      const curve: {t:number;lo:number;mid:number;hi:number}[] = [];
+      const startI = onsetIdx >= 0 ? onsetIdx : 0;
+      for (let i = startI; i < n; i++) {
+        const h = r.hi[i];
+        // The deep model outputs a point estimate with no built-in uncertainty (unlike PF posterior
+        // or GP ±1.645σ bands). We show it as a single line (lo=mid=hi), honestly labelled.
+        curve.push({ t: r.t[i], lo: h, mid: h, hi: h });
+      }
+      // RUL from the RUL head: r.rul is a sigmoid output ∈ (0,1) = fraction of life consumed.
+      // If r.rul = 0.6 at time tNow, then tNow / 0.6 = total life → RUL = total − tNow.
       const tNow = rtfShown.points[rtfShown.points.length-1]?.t ?? 0;
-      const rul = r.rul > 0 && r.rul < 1 ? tNow * (1/r.rul - 1) : null;
-      return { onset: null, threshold: thr, failTime: null, rul, curve };
+      const rul = r.rul > 0.01 && r.rul < 0.99 ? tNow * (1 / r.rul - 1) : null;
+      const failTime = rul != null && rul > 0 ? tNow + rul : null;
+      return { onset, threshold: thr, failTime, rul, curve };
     }
     return exp;
   }, [rtfShown, rulModel, deepHiResult]);
