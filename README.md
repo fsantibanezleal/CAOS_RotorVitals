@@ -1,5 +1,10 @@
 # RotorVitals — rotating-machinery condition monitoring & prognostics
 
+[![CI](https://img.shields.io/github/actions/workflow/status/fsantibanezleal/CAOS_RotorVitals/ci.yml?branch=main&label=CI)](https://github.com/fsantibanezleal/CAOS_RotorVitals/actions)
+[![License](https://img.shields.io/github/license/fsantibanezleal/CAOS_RotorVitals)](LICENSE)
+[![Version](https://img.shields.io/github/v/tag/fsantibanezleal/CAOS_RotorVitals?label=version&sort=semver)](https://github.com/fsantibanezleal/CAOS_RotorVitals/tags)
+[![Live demo](https://img.shields.io/badge/demo-live-2ea44f)](https://rotorvitals.fasl-work.com)
+
 > A real, in-browser bearing/rotating-machinery diagnosis & prognostics workbench: pick a real held-out CWRU
 > recording and a trained **WDCNN** + **deep-autoencoder** run **live** to diagnose it, alongside the full
 > classical signal-processing chain (envelope/SES, spectral kurtosis & kurtogram, cyclostationary CMS, Campbell/
