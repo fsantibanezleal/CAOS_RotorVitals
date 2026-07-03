@@ -3,6 +3,179 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.45.011] · 2026-07-03
+
+### Fixed
+- Version reconciliation. `VERSION` (0.45.006), `pyproject` (0.45.006) and the `rotorlab` engine
+  (`__version__` 0.30.000) all lagged the shipped frontend + git tag `0.45.010`; every surface is synced to
+  `0.45.011`. Backfilled the CHANGELOG for `0.43.001`–`0.45.010` below (the RUL-prognostics series) from the
+  release history: those versions were tagged but never written up.
+
+## [0.45.010] · 2026-06-28
+
+### Added
+- Wang et al. (2020) RVM + Fréchet adaptive RUL model.
+
+### Fixed
+- Lint in `pf_rul.py` / `cross_validate_rul.py`; add scikit-learn to `requirements-dev.txt` (CI).
+
+## [0.45.009] · 2026-06-28
+
+### Fixed
+- Deep-HI onset-gating + an honest uncertainty band; add the `CausalDeepHIRUL` class; Methodology Deep-HI docs.
+
+## [0.45.008] · 2026-06-28
+
+### Fixed
+- Split the overflowing text in the CNN-BiLSTM SVG; add missing citations to the ML-tab references.
+
+## [0.45.007] · 2026-06-28
+
+### Added
+- Architecture SVGs on the Methodology and Implementation pages.
+
+## [0.45.006] · 2026-06-27
+
+### Changed
+- Docs: ML / Deep-Learning section with CNN-BiLSTM; Experiments extended with PF / GP / Deep-HI; citations verified.
+
+## [0.45.005] · 2026-06-27
+
+### Fixed
+- Replace unverified references with verified DOIs (liu2020→aye2017, an2013→an2015, li2018 corrected).
+
+## [0.45.004] · 2026-06-27
+
+### Added
+- 7 missing RUL citations (an2013, arulampalam2002, rasmussen2006, liu2020, li2018, zhu2019, zhang2017).
+
+## [0.45.003] · 2026-06-27
+
+### Changed
+- Methodology (PF / GP / CNN-BiLSTM with KaTeX equations), Implementation (CNN-BiLSTM rename), Benchmark
+  (new Prognosis tab with a comparison table).
+
+## [0.45.002] · 2026-06-27
+
+### Changed
+- Housekeeping over 0.45.000.
+
+## [0.45.000] · 2026-06-27
+
+### Added
+- Deep-HI/RUL **CNN-BiLSTM** integrated in the Tool: a real HI curve from the raw vibration sequence (not
+  fabricated). Trained on XJTU + FEMTO (18 sequences, 150 epochs, loss 0.38), ONNX-exported, frontend loader
+  in `ort.ts`; verified distinct HI per step.
+
+## [0.44.005] · 2026-06-27
+
+### Changed
+- Housekeeping over 0.44.004.
+
+## [0.44.004] · 2026-06-27
+
+### Fixed
+- PF prior centred on the first post-onset points (MAE 8.99 → 7.80); GP tests + cross-validation.
+
+## [0.44.003] · 2026-06-27
+
+### Added
+- GP: 5 TypeScript tests, cross-validated vs sklearn (RUL concordance < 8%); sigmaN floor for visible bands.
+
+## [0.44.002] · 2026-06-27
+
+### Changed
+- GP: mean function + a visible sigmaN floor (0.12) + bounded horizon (differs from exponential on noisy data,
+  matches on clean). PF v2: wide uninformed prior + kernel regularisation. 17 tests.
+
+## [0.44.001] · 2026-06-27
+
+### Fixed
+- Remove unused variables / imports.
+
+## [0.44.000] · 2026-06-27
+
+### Changed
+- PF: proper Bayesian SIR with a wide uninformed prior, kernel regularisation and adaptive ESS (the TS and
+  Python lanes match). Deep-RUL made honest: the CNN emits a life fraction, RUL = t·(1/frac − 1), no fabricated curve.
+
+## [0.43.015] · 2026-06-27
+
+### Fixed
+- Benchmark prognostics section; Deep-RUL only in Real-RUL mode; TS fixes.
+
+## [0.43.014] · 2026-06-27
+
+### Added
+- Benchmark page: RUL model comparison table with real MAE results (GP 1.0 best, PF −19% vs exponential).
+
+## [0.43.013] · 2026-06-27
+
+### Added
+- RUL benchmark: 36 trajectories, GP MAE = 1.0 (best), PF MAE = 2.2; `evaluate_rul` reads the frontend JSON artifacts.
+
+## [0.43.012] · 2026-06-27
+
+### Fixed
+- All TS errors resolved; GP forward horizon capped to failTime·1.3 (no more absurd 10^22 HI values).
+
+## [0.43.011] · 2026-06-27
+
+### Fixed
+- Deep-RUL multi-step real curve (CNN inference over multiple raw-vibration windows, not fabricated).
+
+## [0.43.010] · 2026-06-27
+
+### Fixed
+- Deep-RUL type handling (`Float64Array | Float32Array`) on real raw-vibration input.
+
+## [0.43.009] · 2026-06-27
+
+### Fixed
+- Deep-RUL uses the real raw vibration signal (not a fake HI); input normalised to unit variance; honest
+  linear curve from the CNN fraction.
+
+## [0.43.008] · 2026-06-27
+
+### Changed
+- Methodology RUL section rewritten with callouts + inline math + DOIs.
+
+## [0.43.007] · 2026-06-27
+
+### Fixed
+- Deep-RUL uses its own curve from the CNN life fraction (not exponential data).
+
+## [0.43.006] · 2026-06-27
+
+### Added
+- `pipeline.py` integrated with `--retrain-rul` / `--eval-rul`; Deep-RUL wired; Implementation page updated.
+
+## [0.43.005] · 2026-06-27
+
+### Changed
+- Deep-RUL async ONNX wired (after the RTF is shown); Implementation page updated.
+
+## [0.43.004] · 2026-06-27
+
+### Changed
+- Deep-RUL async ONNX wired in `Tool.tsx`; Implementation page updated with the RUL stages.
+
+## [0.43.003] · 2026-06-27
+
+### Fixed
+- PF projection curve from the particle ensemble (P10 / P50 / P90 bands).
+
+## [0.43.002] · 2026-06-27
+
+### Added
+- GP with an OLS mean function; Deep-RUL chip in the UI; Methodology page updated with the model ladder.
+
+## [0.43.001] · 2026-06-27
+
+### Added
+- Cross-validated PF (4/5 OK, TS vs Python); trained Deep-RUL ONNX (143 train / 25 val, MSE 0.056); GP
+  forward-span fix; model-selector UI; a cross-validation harness; 9 Python + 6 TypeScript RUL tests.
+
 ## [0.43.000] — 2026-06-27
 
 ### Added — Prognostic model ladder
