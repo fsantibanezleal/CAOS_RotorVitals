@@ -36,9 +36,11 @@ for (const [src, dst] of rootArtifacts) {
   }
 }
 
-// 2) keep the bundled benchmark (imported by the Benchmark/Experiments pages) in lock-step with the canonical one
+// 2) keep the bundled benchmarks (imported by the Benchmark/Experiments pages) in lock-step with the canonical ones
 const bench = join(DERIVED, 'cwru-benchmark.json');
 if (existsSync(bench)) copyFileSync(bench, join(ROOT, 'frontend', 'src', 'data', 'cwru-benchmark.json'));
+const rulBench = join(DERIVED, 'rv-rul-benchmark.json');
+if (existsSync(rulBench)) copyFileSync(rulBench, join(ROOT, 'frontend', 'src', 'data', 'rv-rul-benchmark.json'));
 
 // 3) the CONTRACT-2 manifests + per-case traces -> public/data (the index loader reads /data/manifests/index.json)
 mkdirSync(join(PUB, 'data'), { recursive: true });

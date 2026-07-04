@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useShellLang, Cite, Tabs } from '@fasl-work/caos-app-shell';
 import bench from '../data/cwru-benchmark.json';
+import rulBench from '../data/rv-rul-benchmark.json';
 import { viridis } from '../viz/Heatmap2D';
 import { loadMetrics, type Metrics } from '../dsp/learned';
 import { LiveDiagnosisPanel } from '../viz/LiveDiagnosisPanel';
@@ -169,28 +170,47 @@ export default function Benchmark() {
       content: (
         <div className="prose">
           <section>
-            <h2>{es ? 'Comparación de modelos de RUL — agregado en re-evaluación' : 'RUL model comparison — aggregate under re-evaluation'}</h2>
-            <p className="muted small">{es
-              ? 'Cuatro modelos de pronóstico corren sobre trayectorias run-to-failure reales (FEMTO/PRONOSTIA, XJTU-SY, IMS); 23 de las 36 trayectorias tienen una falla real por primer cruce y son evaluables. Los números agregados que esta tabla mostraba fueron RETIRADOS: el protocolo offline comparaba el RUL predicho en el último instante contra el tiempo ABSOLUTO de falla (cantidades distintas — al final de la vida el RUL verdadero es ~0, así que predecir siempre cero obtenía el mejor puntaje) y además emparejaba predicciones con trayectorias equivocadas al filtrar las que no tienen falla real. La re-evaluación con protocolo de checkpoints (predicción a 50/70/90% de la vida contra el RUL remanente verdadero, métricas α-λ de Saxena) está en curso: '
-              : 'Four prognostic models run on real run-to-failure trajectories (FEMTO/PRONOSTIA, XJTU-SY, IMS); 23 of the 36 trajectories have a real first-passage failure and are evaluable. The aggregate numbers this table used to show were WITHDRAWN: the offline protocol compared the last-instant predicted RUL against the ABSOLUTE failure time (different quantities — at end of life the true RUL is ~0, so always predicting zero scored best) and additionally paired predictions against the wrong trajectories after filtering out those without a real failure. Re-evaluation under a checkpoint protocol (predict at 50/70/90% of life against true remaining life, Saxena α-λ metrics) is in progress: '}
+            <h2>{es ? 'Comparación de modelos de RUL — protocolo de checkpoints (Saxena 2010)' : 'RUL model comparison — checkpoint protocol (Saxena 2010)'}</h2>
+            <p className="muted small">{(() => {
+              const s = rulBench.summary as { trajectories_evaluable: number; alpha: number; life_fractions: number[] };
+              const lf = s.life_fractions.map((x) => `${Math.round(x * 100)}%`).join('/');
+              return es
+                ? `Los modelos de pronóstico se evalúan sobre ${s.trajectories_evaluable} trayectorias run-to-failure reales (FEMTO/PRONOSTIA, XJTU-SY, IMS) con falla real por primer cruce. Protocolo estándar de campo: en cada punto de control (${lf} de la vida) el modelo ve SOLO los datos hasta ahí y predice el RUL, comparado contra el RUL remanente verdadero. Métricas: exactitud α-λ (predicción dentro de ±${Math.round(s.alpha * 100)}% del RUL verdadero), Exactitud Relativa acumulada (CRA) y horizonte de pronóstico. Esto reemplaza el agregado roto anterior (comparaba el RUL del último instante contra el tiempo ABSOLUTO de falla, premiando predecir cero al final de la vida): `
+                : `The prognostic models are evaluated on ${s.trajectories_evaluable} real run-to-failure trajectories (FEMTO/PRONOSTIA, XJTU-SY, IMS) with a real first-passage failure. Field-standard protocol: at each checkpoint (${lf} of life) the model sees ONLY the data up to that point and predicts the RUL, compared against the true remaining life. Metrics: α-λ accuracy (prediction within ±${Math.round(s.alpha * 100)}% of the true RUL), cumulative Relative Accuracy (CRA) and prognostic horizon. This replaces the previous broken aggregate (which compared last-instant RUL against the ABSOLUTE failure time, rewarding predicting zero at end of life): `;
+            })()}
               <a href="https://github.com/fsantibanezleal/CAOS_RotorVitals/issues/128" target="_blank" rel="noreferrer">issue #128</a>.</p>
             <table className="cmp-table" style={{marginTop:'0.75rem'}}>
               <thead><tr>
                 <th style={{textAlign:'left'}}>{es ? 'Modelo' : 'Model'}</th>
-                <th>MAE</th>
-                <th>{es ? 'vs. Exponencial' : 'vs. Exponential'}</th>
+                <th>{es ? 'Exactitud α-λ' : 'α-λ accuracy'}</th>
+                <th>CRA</th>
+                <th>n</th>
                 <th className="muted">{es ? 'Implementación' : 'Implementation'}</th>
               </tr></thead>
               <tbody>
-                <tr><td style={{textAlign:'left'}}>{es ? 'Exponencial clásico' : 'Classical exponential'}</td><td className="mono muted">{es ? 'en re-evaluación' : 'under re-evaluation'}</td><td className="mono muted">—</td><td className="muted">OLS, TS + numpy</td></tr>
-                <tr><td style={{textAlign:'left'}}>{es ? 'Filtro de Partículas (500)' : 'Particle Filter (500)'}</td><td className="mono muted">{es ? 'en re-evaluación' : 'under re-evaluation'}</td><td className="mono muted">—</td><td className="muted">SIR Bayesiano, TS + numpy</td></tr>
-                <tr><td style={{textAlign:'left'}}>{es ? 'Proceso Gaussiano' : 'Gaussian Process'}</td><td className="mono muted">{es ? 'en re-evaluación' : 'under re-evaluation'}</td><td className="mono muted">—</td><td className="muted">scikit-learn GPR (RBF+Matérn+WhiteKernel)</td></tr>
-                <tr><td style={{textAlign:'left'}}>CNN-BiLSTM (Deep-HI/RUL)</td><td className="mono muted">{es ? 'pendiente' : 'pending'}</td><td className="mono muted">—</td><td className="muted">PyTorch → ONNX (3.4 MB), 18 trayectorias</td></tr>
+                {([
+                  ['exponential', es ? 'Exponencial clásico' : 'Classical exponential', 'OLS, TS + numpy'],
+                  ['pf', es ? 'Filtro de Partículas (500)' : 'Particle Filter (500)', es ? 'SIR Bayesiano, TS + numpy' : 'Bayesian SIR, TS + numpy'],
+                  ['gp', es ? 'Proceso Gaussiano' : 'Gaussian Process', 'scikit-learn GPR (RBF+Matérn+WhiteKernel)'],
+                ] as const).map(([id, label, impl]) => {
+                  const m = (rulBench.summary.models as Record<string, { alpha_lambda_accuracy: number | null; cra: number | null; n_predictions: number }>)[id];
+                  const pct = (v: number | null) => v == null ? '—' : `${(v * 100).toFixed(1)}%`;
+                  return (
+                    <tr key={id}>
+                      <td style={{textAlign:'left'}}>{label}</td>
+                      <td className="mono">{pct(m?.alpha_lambda_accuracy)}</td>
+                      <td className="mono">{m?.cra == null ? '—' : m.cra.toFixed(3)}</td>
+                      <td className="mono muted">{m?.n_predictions ?? 0}</td>
+                      <td className="muted">{impl}</td>
+                    </tr>
+                  );
+                })}
+                <tr><td style={{textAlign:'left'}}>CNN-BiLSTM (Deep-HI/RUL)</td><td className="mono muted">{es ? 'pendiente' : 'pending'}</td><td className="mono muted">—</td><td className="mono muted">—</td><td className="muted">{es ? 'PyTorch → ONNX (3.4 MB), 18 trayectorias' : 'PyTorch → ONNX (3.4 MB), 18 trajectories'}</td></tr>
               </tbody>
             </table>
             <p className="muted" style={{fontSize:'0.85rem',marginTop:8}}>{es
-              ? 'Ningún ranking de modelos se afirma hasta que el artefacto corregido esté publicado. Lo que sí es verificable hoy, en vivo: cada modelo proyecta sobre la curva HI medida en la pestaña RUL del App (con el tiempo de falla real de la trayectoria como referencia) y la pestaña Eval RUL calcula la curva α-λ por trayectoria en el navegador. El filtro de partículas Bayesiano entrega la distribución posterior completa (su valor está en la distribución, no en la estimación puntual). La CNN-BiLSTM está entrenada (18 trayectorias XJTU-SY+FEMTO) y produce una curva HI real (no fabricada), pero su evaluación comparativa sigue pendiente — requiere corrida completa del pipeline sobre los frames. El App ofrece además Wang 2020 (matching de librería de degradación), todavía fuera de esta comparación offline.'
-              : 'No model ranking is claimed until the corrected artifact ships. What is verifiable today, live: each model projects on the measured HI curve in the App RUL tab (with the trajectory’s true failure time as the reference) and the RUL Eval tab computes the per-trajectory α-λ curve in the browser. The Bayesian particle filter delivers the full posterior distribution (its value lies in the distribution, not the point estimate). The CNN-BiLSTM is trained (18 XJTU-SY+FEMTO trajectories) and produces a real HI curve (not fabricated), but its comparative evaluation is still pending — it requires a full pipeline run over the frames. The App additionally offers Wang 2020 (degradation-library matching), not yet part of this offline comparison.'}</p>
+              ? 'Lectura honesta: bajo el protocolo estándar, la predicción PUNTUAL de RUL en estos rodamientos es difícil — las exactitudes α-λ son bajas para los tres modelos clásicos de primer cruce (a 50% de vida el onset de degradación aún no es discernible; a 90% la ventana de extrapolación es corta). Ningún modelo "gana" por un margen significativo; el resultado negativo es real y se reporta como tal. El valor operativo del pronóstico aquí está en la distribución posterior del filtro de partículas y en la proyección EN VIVO sobre la curva HI medida (pestaña RUL del App) con la curva α-λ por trayectoria (pestaña Eval RUL), no en un puntaje puntual agregado. La CNN-BiLSTM está entrenada (18 trayectorias) y produce una curva HI real, pero su evaluación por checkpoints sigue pendiente. Wang 2020 (matching de librería) aún fuera de esta comparación offline.'
+              : 'Honest reading: under the field-standard protocol, POINT RUL prediction on these bearings is hard — the α-λ accuracies are low for all three classical first-passage models (at 50% of life the degradation onset is not yet discernible; at 90% the extrapolation window is short). No model "wins" by a meaningful margin; the negative result is real and reported as such. The operational value of prognostics here is in the particle filter’s posterior distribution and the LIVE projection on the measured HI curve (App RUL tab) with the per-trajectory α-λ curve (RUL Eval tab), not an aggregate point score. The CNN-BiLSTM is trained (18 trajectories) and produces a real HI curve, but its checkpoint evaluation is still pending. Wang 2020 (library matching) is not yet part of this offline comparison.'}</p>
           </section>
         </div>
       ),

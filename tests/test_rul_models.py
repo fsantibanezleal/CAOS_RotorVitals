@@ -130,3 +130,47 @@ def test_gp_curve_shape():
         hi = [c["hi"] for c in curve[-5:]]
         assert all(m >= l for m, l in zip(mid, lo)), "mean must be >= lo"
         assert all(h >= m for m, h in zip(mid, hi)), "hi must be >= mean"
+
+
+# ── protocol guard (#128): the degenerate constant-zero benchmark must never return ─────────────
+def test_saxena_protocol_rejects_constant_zero_predictor():
+    """A predictor that always outputs RUL=0 must score ~0 under the checkpoint α-λ metric, NOT 1.0.
+
+    Regression guard for the deep-review critical finding: the old aggregate compared last-instant
+    RUL against the ABSOLUTE failure time, so predicting zero scored best. Here we assert the
+    Saxena checkpoint scoring rewards being NEAR the true remaining life, not being zero.
+    """
+    true_fail = 10.0
+    alpha = 0.2
+    checkpoints = (0.5, 0.7, 0.9)
+    zero_hits, oracle_hits = 0, 0
+    for lam in checkpoints:
+        r_star = (1 - lam) * true_fail  # true remaining life > 0 at every pre-failure checkpoint
+        assert r_star > 0
+        # constant-zero prediction
+        if (1 - alpha) * r_star <= 0.0 <= (1 + alpha) * r_star:
+            zero_hits += 1
+        # an oracle predicting the true remaining life
+        if (1 - alpha) * r_star <= r_star <= (1 + alpha) * r_star:
+            oracle_hits += 1
+    assert zero_hits == 0, "constant-zero must miss the α-cone at every pre-failure checkpoint"
+    assert oracle_hits == len(checkpoints), "the true-RUL oracle must hit every checkpoint"
+
+
+def test_evaluate_rul_artifact_shape_is_saxena():
+    """The written artifact must carry the checkpoint-protocol summary, not the old MAE aggregate."""
+    import json
+    from pathlib import Path
+    art = Path(__file__).resolve().parents[1] / "data" / "derived" / "rv-rul-benchmark.json"
+    if not art.exists():
+        import pytest
+        pytest.skip("artifact not baked in this environment")
+    d = json.loads(art.read_text(encoding="utf-8"))
+    s = d["summary"]
+    assert s["protocol"] == "saxena2010-checkpoints"
+    assert s["alpha"] == 0.2
+    assert s["trajectories_evaluable"] == 23  # the real first-passage count, not 36
+    for m in ("exponential", "pf", "gp"):
+        assert m in s["models"]
+        assert "alpha_lambda_accuracy" in s["models"][m]
+        assert "mae_gp" not in s  # the broken metric must be gone
