@@ -1,4 +1,4 @@
-# RotorVitals — rotating-machinery condition monitoring & prognostics
+# RotorVitals, rotating-machinery condition monitoring & prognostics
 
 [![CI](https://img.shields.io/github/actions/workflow/status/fsantibanezleal/CAOS_RotorVitals/ci.yml?branch=main&label=CI)](https://github.com/fsantibanezleal/CAOS_RotorVitals/actions)
 [![License](https://img.shields.io/github/license/fsantibanezleal/CAOS_RotorVitals)](LICENSE)
@@ -21,26 +21,26 @@ analyse it live, or drive the synthetic signal generator + the classical chain w
 
 ## The six pages
 
-- **App** — a **first-level source selector** decides what the whole workbench operates on, and the tool set
+- **App**, a **first-level source selector** decides what the whole workbench operates on, and the tool set
   reacts to the kind of data loaded:
-  - **Synthetic** — the full signal generator: every scenario knob (fault, severity, rpm, SNR) and every one of
+  - **Synthetic**, the full signal generator: every scenario knob (fault, severity, rpm, SNR) and every one of
     the 13 tools, to explore the space.
-  - **Real: segment (diagnosis)** — a measured segment from **CWRU** (12 kHz, the WDCNN's native domain),
+  - **Real: segment (diagnosis)**, a measured segment from **CWRU** (12 kHz, the WDCNN's native domain),
     **Ottawa** (time-varying speed, computed-**order-tracked** → defect frequencies are constant orders) or
     **MaFaulDa** (50 kHz; outer/ball/cage). The signal-analysis tools run on the measured window; the **WDCNN (ONNX)**
-    runs live — in-domain on CWRU, cross-domain on Ottawa/MaFaulDa (labelled, the honest domain-gap test). Scenario
-    knobs become read-only metadata; the analysis knobs stay live — you really can re-process real data.
-  - **Real: RUL (prognosis)** — a real run-to-failure trajectory from **FEMTO/PRONOSTIA, XJTU-SY or IMS** (23 total).
+    runs live, in-domain on CWRU, cross-domain on Ottawa/MaFaulDa (labelled, the honest domain-gap test). Scenario
+    knobs become read-only metadata; the analysis knobs stay live, you really can re-process real data.
+  - **Real: RUL (prognosis)**, a real run-to-failure trajectory from **FEMTO/PRONOSTIA, XJTU-SY or IMS** (23 total).
     A life-instant slider scrubs ~8 measured raw windows (healthy→failure): the full signal suite runs on each
     instant, the **3D waterfall is the real degradation surface**, the **feature space is the measured degradation
     trajectory**, and `projectRUL` runs on the HI(t) curve against the experiment's true failure time.
-- **Introduction** — problem, who it's for, approach, honest scope.
-- **Methodology** — term-by-term math per family (band selection, envelope, kurtosis, cyclostationarity, RUL,
+- **Introduction**, problem, who it's for, approach, honest scope.
+- **Methodology**, term-by-term math per family (band selection, envelope, kurtosis, cyclostationarity, RUL,
   learned tier) with SVG figures + DOI refs.
-- **Implementation** — the two-lane architecture (offline precompute → committed artifacts; live in-browser DSP +
+- **Implementation**, the two-lane architecture (offline precompute → committed artifacts; live in-browser DSP +
   ONNX inference).
-- **Experiments** — design, leakage-safe protocol, coverage, results.
-- **Benchmark** — **learned-vs-classical on held-out real CWRU**: WDCNN vs envelope/SES, the noise-robustness
+- **Experiments**, design, leakage-safe protocol, coverage, results.
+- **Benchmark**, **learned-vs-classical on held-out real CWRU**: WDCNN vs envelope/SES, the noise-robustness
   curve, the deep-AE one-class metrics, and the classical per-band confusion matrices. Real numbers only.
 
 ## Architecture
@@ -60,7 +60,7 @@ OFFLINE  data-pipeline/rotorlab/ (torch+scipy)     LIVE  frontend/src/ (browser,
   pipeline (numpy) → data/derived/<case>/trace.json + manifests/  (Contract 2; copy-data overlays into frontend/public)
 ```
 
-No application server, no database — static files on a CDN; all numerical work is either precomputed into compact
+No application server, no database, static files on a CDN; all numerical work is either precomputed into compact
 committed artifacts or runs live in the browser on one bounded signal segment. The default pipeline is **numpy-only**
 (rebuilds the replay layer from the committed artifacts), so a clone replays without torch or a CWRU download.
 
@@ -81,9 +81,9 @@ cd frontend && npm run build  # tsc --noEmit && vite build (+ copy-data overlay 
 
 The learned models are trained on **real CWRU recordings**; the held-out split holds out an entire load (3 HP) so
 no test recording is seen in training. CWRU is a clean lab rig (Smith & Randall 2015), so clean accuracy is
-optimistic — Benchmark reports the **noise-robustness curve**, not a bare 100%. The synthetic source's demo signal
+optimistic, Benchmark reports the **noise-robustness curve**, not a bare 100%. The synthetic source's demo signal
 (a damped-resonance impulse train) and its run-to-failure trend are **labelled synthetic**; the real sources are
-**measured data** — CWRU segments for diagnosis, and FEMTO/XJTU/IMS run-to-failure curves for prognosis, each
+**measured data**, CWRU segments for diagnosis, and FEMTO/XJTU/IMS run-to-failure curves for prognosis, each
 reduced offline to a compact artifact with the dataset's real first-passage failure time (raw archives are
 link-only, gitignored). The kinematic fault frequencies and all DSP outputs are exact. No fabricated numbers.
 

@@ -1,10 +1,10 @@
-// Order map — a synthetic speed sweep (run-up) of the ENVELOPE spectrum. For each RPM we synthesize a
+// Order map, a synthetic speed sweep (run-up) of the ENVELOPE spectrum. For each RPM we synthesize a
 // stationary frame, band-pass around the structural resonance, take the Hilbert envelope, and its
 // spectrum: the defect frequency (BPFO/BPFI/2·BSF) is a clean line there, and because it is fixed by
-// kinematics it scales LINEARLY with shaft speed — a ray in (rpm, Hz). Because we control every frame's
+// kinematics it scales LINEARLY with shaft speed, a ray in (rpm, Hz). Because we control every frame's
 // speed exactly, order tracking is analytic: resampling each column onto order = f/(rpm/60) straightens
 // the defect line to a constant order, separating speed-dependent fault lines from any fixed line.
-// Labeled synthetic. (Raw-spectrum shaft orders / structural resonance are NOT shown here — the
+// Labeled synthetic. (Raw-spectrum shaft orders / structural resonance are NOT shown here, the
 // envelope band-pass removes them; this view is the bearing-defect order map.)
 import { synth } from './signal';
 import { envelopeSpectrum } from './envelope';
@@ -18,9 +18,9 @@ export interface CampbellSpec {
 export interface OrderMult { mult: number; color: string; label: string }
 export interface CampbellMap {
   rpms: Float64Array;       // x axis (rpm)
-  freqsHz: Float64Array;    // y axis (Hz) — Hz mode
+  freqsHz: Float64Array;    // y axis (Hz), Hz mode
   colsHz: Float64Array[];   // colsHz[rpmIdx][hzIdx] dB
-  orders: Float64Array;     // y axis (order ×) — order mode
+  orders: Float64Array;     // y axis (order ×), order mode
   colsOrd: Float64Array[];  // colsOrd[rpmIdx][ordIdx] dB
   fmaxHz: number; ordMax: number; rpmMin: number; rpmMax: number;
   orderMults: OrderMult[];  // defect fundamental + 2nd harmonic of the active fault
@@ -59,7 +59,7 @@ export function buildCampbell(spec: CampbellSpec): CampbellMap {
     colsOrd.push(colO);
   }
 
-  // defect fundamental order (value at fr=1 Hz) + its 2nd harmonic — the lines that carry envelope energy
+  // defect fundamental order (value at fr=1 Hz) + its 2nd harmonic, the lines that carry envelope energy
   const dm = defectFreqs(spec.bearing, 1);
   const orderMults: OrderMult[] = [];
   if (spec.fault === 'outer') { orderMults.push({ mult: dm.bpfo, color: C.outer, label: `BPFO ${dm.bpfo.toFixed(2)}X` }, { mult: 2 * dm.bpfo, color: C.outer, label: `2·BPFO` }); }

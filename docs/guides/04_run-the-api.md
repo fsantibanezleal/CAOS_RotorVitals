@@ -1,4 +1,4 @@
-# 04 — The `app/` backend (DORMANT)
+# 04, The `app/` backend (DORMANT)
 
 RotorVitals is static deterministic-replay: the SPA + the committed artifacts serve from GitHub Pages with **no
 backend at request time**. The `app/` FastAPI module ships dormant (it compiles; `requirements-api.txt` is

@@ -46,7 +46,7 @@ const Waterfall3D = lazy(() => import('../viz/Waterfall3D').then((m) => ({ defau
 const FAULTS: FaultKind[] = ['healthy', 'outer', 'inner', 'ball'];
 const C = { outer: '#f59f00', inner: '#f06595', ball: '#7c5cff', shaft: '#3fb950', band: '#58a6ff', outlier: '#f85149', window: '#d29922' };
 const FS = 12000;
-// XJTU-SY test bearing (LDK UER204) — the one run-to-failure set with published geometry, so its envelope/SES and
+// XJTU-SY test bearing (LDK UER204), the one run-to-failure set with published geometry, so its envelope/SES and
 // cyclostationary tabs can mark real fault frequencies. FEMTO/IMS publish none → those run without order markers.
 const XJTU_BEARING = { id: 'ldk-uer204', label: 'LDK UER204 (XJTU-SY)', n: 8, d: 7.92, D: 34.55, contactDeg: 0 };
 const NO_GEOM = { ftf: NaN, bpfo: NaN, bpfi: NaN, bsf: NaN }; // unknown geometry → no fault-frequency markers drawn
@@ -55,9 +55,9 @@ const T = {
   en: { bearing: 'Bearing', fault: 'Planted fault', severity: 'Severity', rpm: 'Shaft speed (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnosis', conf: 'confidence', sev: 'Fault severity index', band: 'Demod band', clickKg: 'Click a kurtogram cell to set the band → SES updates live.',
     f_healthy: 'Healthy', f_outer: 'Outer race (BPFO)', f_inner: 'Inner race (BPFI)', f_ball: 'Ball (2·BSF)',
-    tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tGram: 'Infogram', tCam: 'Campbell / order', tRul: 'Prognostics · RUL', tEval: 'RUL eval', tIso: 'ISO trend', tFeat: 'Feature space', tWat: '3D waterfall', tSpec: 'Spectrogram', tRec: 'Recommendation · report', cep: 'Cepstrum (1/fr · 1/BPFO rahmonics marked)', spectroT: 'STFT spectrogram (dB) — hover reads (t,f,dB); box = demod band', spectroNote: 'Time-frequency: WHEN and in which band the impulsive fault energy appears (confirms stationarity).', tCsc: 'Cyclostationary', cscT: 'Fast Spectral Correlation (Fast-SC) — vertical α-ridges at the fault frequencies', cscNote: 'Carrier f × cyclic frequency α. A real bearing fault is cyclostationary: it forms a vertical α-ridge family at BPFO/BPFI/2·BSF (independent of carrier), separating it from coincidental peaks. Phase-retaining Fast-SC + exact CKN significance + EES marginal.',
-    waveform: 'Vibration waveform — drag to zoom, hover to read; ▼=impact at the fault frequency, shaded=fault-frequency windows', spectrum: 'Raw spectrum (dB) — drag to zoom; click to set a harmonic comb; shaded=demod band',
-    ses: 'Squared-envelope spectrum — defect-frequency combs (BPFO/BPFI/2·BSF/fr)', watNote: 'Run-to-failure spectral waterfall (synthetic): each row is a life snapshot, height is amplitude. Watch the BPFO ridge emerge and grow. Drag to rotate.',
+    tSig: 'Signal & spectrum', tEnv: 'Envelope · SES', tKur: 'Kurtogram', tGram: 'Infogram', tCam: 'Campbell / order', tRul: 'Prognostics · RUL', tEval: 'RUL eval', tIso: 'ISO trend', tFeat: 'Feature space', tWat: '3D waterfall', tSpec: 'Spectrogram', tRec: 'Recommendation · report', cep: 'Cepstrum (1/fr · 1/BPFO rahmonics marked)', spectroT: 'STFT spectrogram (dB), hover reads (t,f,dB); box = demod band', spectroNote: 'Time-frequency: WHEN and in which band the impulsive fault energy appears (confirms stationarity).', tCsc: 'Cyclostationary', cscT: 'Fast Spectral Correlation (Fast-SC), vertical α-ridges at the fault frequencies', cscNote: 'Carrier f × cyclic frequency α. A real bearing fault is cyclostationary: it forms a vertical α-ridge family at BPFO/BPFI/2·BSF (independent of carrier), separating it from coincidental peaks. Phase-retaining Fast-SC + exact CKN significance + EES marginal.',
+    waveform: 'Vibration waveform, drag to zoom, hover to read; ▼=impact at the fault frequency, shaded=fault-frequency windows', spectrum: 'Raw spectrum (dB), drag to zoom; click to set a harmonic comb; shaded=demod band',
+    ses: 'Squared-envelope spectrum, defect-frequency combs (BPFO/BPFI/2·BSF/fr)', watNote: 'Run-to-failure spectral waterfall (synthetic): each row is a life snapshot, height is amplitude. Watch the BPFO ridge emerge and grow. Drag to rotate.',
     rulNote: 'Health-indicator trend with onset, failure threshold and the RUL projection fan (±2σ).',
     onset: 'Onset', rul: 'RUL', fail: 'Proj. failure', h: 'h', freqs: 'Kinematic frequencies', replay: 'Replay degradation',
     anlys: 'Analysis', aBand: 'Demod band', aEnv: 'Envelope', aHarm: 'Harmonics (comb)', aIso: 'ISO scale',
@@ -65,9 +65,9 @@ const T = {
   es: { bearing: 'Rodamiento', fault: 'Falla plantada', severity: 'Severidad', rpm: 'Velocidad eje (rpm)', snr: 'SNR (dB)',
     diag: 'Diagnóstico', conf: 'confianza', sev: 'Índice de severidad', band: 'Banda demod', clickKg: 'Clic en una celda del kurtograma para fijar la banda → el SES se actualiza en vivo.',
     f_healthy: 'Sano', f_outer: 'Pista externa (BPFO)', f_inner: 'Pista interna (BPFI)', f_ball: 'Bola (2·BSF)',
-    tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tGram: 'Infograma', tCam: 'Campbell / orden', tRul: 'Prognóstico · RUL', tEval: 'Eval RUL', tIso: 'Tendencia ISO', tFeat: 'Espacio features', tWat: 'Waterfall 3D', tSpec: 'Espectrograma', tRec: 'Recomendación · reporte', cep: 'Cepstrum (rahmónicos 1/fr · 1/BPFO marcados)', spectroT: 'Espectrograma STFT (dB) — hover lee (t,f,dB); caja = banda demod', spectroNote: 'Tiempo-frecuencia: CUÁNDO y en qué banda aparece la energía impulsiva de falla (confirma estacionariedad).', tCsc: 'Cicloestacionario', cscT: 'Correlación espectral rápida (Fast-SC) — crestas α verticales en las frecuencias de falla', cscNote: 'Portadora f × frecuencia cíclica α. Una falla real es cicloestacionaria: forma una familia de crestas α verticales en BPFO/BPFI/2·BSF (independiente de la portadora), separándola de picos casuales. Fast-SC con fase + significancia CKN exacta + marginal EES.',
-    waveform: 'Forma de onda — arrastra para zoom, hover para leer; ▼=impacto en la frecuencia de falla, sombreado=ventanas de frecuencia de falla', spectrum: 'Espectro crudo (dB) — arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
-    ses: 'Espectro de envolvente al cuadrado — peines de frecuencias de falla (BPFO/BPFI/2·BSF/fr)', watNote: 'Waterfall espectral run-to-failure (sintético): cada fila es una instantánea de vida, la altura es amplitud. Observa la cresta BPFO emerger y crecer. Arrastra para rotar.',
+    tSig: 'Señal y espectro', tEnv: 'Envolvente · SES', tKur: 'Kurtograma', tGram: 'Infograma', tCam: 'Campbell / orden', tRul: 'Prognóstico · RUL', tEval: 'Eval RUL', tIso: 'Tendencia ISO', tFeat: 'Espacio features', tWat: 'Waterfall 3D', tSpec: 'Espectrograma', tRec: 'Recomendación · reporte', cep: 'Cepstrum (rahmónicos 1/fr · 1/BPFO marcados)', spectroT: 'Espectrograma STFT (dB), hover lee (t,f,dB); caja = banda demod', spectroNote: 'Tiempo-frecuencia: CUÁNDO y en qué banda aparece la energía impulsiva de falla (confirma estacionariedad).', tCsc: 'Cicloestacionario', cscT: 'Correlación espectral rápida (Fast-SC), crestas α verticales en las frecuencias de falla', cscNote: 'Portadora f × frecuencia cíclica α. Una falla real es cicloestacionaria: forma una familia de crestas α verticales en BPFO/BPFI/2·BSF (independiente de la portadora), separándola de picos casuales. Fast-SC con fase + significancia CKN exacta + marginal EES.',
+    waveform: 'Forma de onda, arrastra para zoom, hover para leer; ▼=impacto en la frecuencia de falla, sombreado=ventanas de frecuencia de falla', spectrum: 'Espectro crudo (dB), arrastra para zoom; clic para fijar un peine de armónicos; sombreado=banda demod',
+    ses: 'Espectro de envolvente al cuadrado, peines de frecuencias de falla (BPFO/BPFI/2·BSF/fr)', watNote: 'Waterfall espectral run-to-failure (sintético): cada fila es una instantánea de vida, la altura es amplitud. Observa la cresta BPFO emerger y crecer. Arrastra para rotar.',
     rulNote: 'Tendencia del indicador de salud con onset, umbral de falla y el abanico de proyección de RUL (±2σ).',
     onset: 'Onset', rul: 'RUL', fail: 'Falla proy.', h: 'h', freqs: 'Frecuencias cinemáticas', replay: 'Reproducir degradación',
     anlys: 'Análisis', aBand: 'Banda demod', aEnv: 'Envolvente', aHarm: 'Armónicos (peine)', aIso: 'Escala ISO',
@@ -84,7 +84,7 @@ export default function Tool() {
   const [snr, setSnr] = useState(2);
   const [band, setBand] = useState<[number, number] | null>(null);
   const [fund, setFund] = useState<number | null>(null);
-  // T7 — configurable analysis parameters (drive the always-visible sidebar diagnosis + the relevant tabs)
+  // T7, configurable analysis parameters (drive the always-visible sidebar diagnosis + the relevant tabs)
   const [bandMethod, setBandMethod] = useState<'auto' | 'fixed' | 'manual' | 'iesfo'>('auto'); // demod-band selection
   const [envSquared, setEnvSquared] = useState(false);  // magnitude envelope (the diagnosis gates are tuned on it) vs squared (SES)
   const [nHarm, setNHarm] = useState(5);                 // harmonics averaged in the comb prominence
@@ -104,8 +104,8 @@ export default function Tool() {
   const [wang2020Refs, setWang2020Refs] = useState<Wang2020Ref[]>([]);
   useEffect(() => { loadRealRtf().then(setFemtoTrajs).catch(() => {}); }, []);
   useEffect(() => { fetch('/rv-wang2020-refs.json').then(r => r.json()).then(setWang2020Refs).catch(() => {}); }, []);
-  // APP SOURCE — the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
-  // knobs) vs 'cwru' (a REAL held-out CWRU segment — the measured signal flows through the EXACT same tools; the
+  // APP SOURCE, the first-level decision of the workbench: 'synthetic' (a fabricated case, with all the scenario
+  // knobs) vs 'cwru' (a REAL held-out CWRU segment, the measured signal flows through the EXACT same tools; the
   // scenario knobs become read-only sample metadata, the analysis knobs stay live).
   const [source, setSource] = useState<'synthetic' | 'cwru' | 'femto'>('synthetic');
   const [segDatasets, setSegDatasets] = useState<SegDataset[]>([]);
@@ -154,7 +154,7 @@ export default function Tool() {
     let useFr = fr;
     let trueCls: string | null = null;
     if (realMode && activeSeg && activeSample) {
-      // REAL diagnosis segment — CWRU (12 kHz), Ottawa (computed-order-tracked, order domain) or MaFaulDa (50 kHz).
+      // REAL diagnosis segment, CWRU (12 kHz), Ottawa (computed-order-tracked, order domain) or MaFaulDa (50 kHz).
       // The exact same tools run on the measured signal; scenario knobs don't apply, analysis knobs do. In the order
       // domain (Ottawa) fr=1 so the kinematic frequencies are constant ORDERS (immune to the varying speed).
       const x = Float64Array.from(activeSample.raw);
@@ -177,10 +177,10 @@ export default function Tool() {
     const fsB = sig.fs; // the ACTIVE sample rate (12 kHz CWRU / 25.6 kHz FEMTO-XJTU / 20 kHz IMS / order-domain), not a constant
     const raw = magSpectrum(sig.x, fsB);
     const kg = kurtogram(sig.x, fsB, 5);
-    // unknown-geometry run-to-failure sets (FEMTO/IMS) draw no fault-frequency markers — honest over invented lines
+    // unknown-geometry run-to-failure sets (FEMTO/IMS) draw no fault-frequency markers, honest over invented lines
     const noGeom = trajMode && !!activeFrames && !activeFrames.faultOrders;
     const f = noGeom ? NO_GEOM : defectFreqs(bearing, useFr);
-    // band-INDEPENDENT diagnosis (from the kurtogram band) — seeds the IESFOgram target without the
+    // band-INDEPENDENT diagnosis (from the kurtogram band), seeds the IESFOgram target without the
     // effBand→ses→dx→α₀→effBand cycle that using the live dx would create.
     const kgBand: [number, number] = [Math.max(kg.best.f1, 0.02 * fsB), kg.best.f2];
     const dx0 = diagnose(envelopeSpectrum(sig.x, fsB, kgBand, false), f, 5);
@@ -190,7 +190,7 @@ export default function Tool() {
   useEffect(() => { setBand(null); setFund(null); }, [base]);
   const fsEff = base.sig.fs; // every tool that consumes base.sig must use this, not the synthetic FS constant
 
-  // the diagnosed fault's cyclic frequency (BPFO/BPFI/2·BSF) — the IESFOgram target. From the band-independent dx0.
+  // the diagnosed fault's cyclic frequency (BPFO/BPFI/2·BSF), the IESFOgram target. From the band-independent dx0.
   const faultAlpha = useMemo(() => {
     const t = base.dx0.top;
     return t === 'inner' ? base.f.bpfi : t === 'ball' ? 2 * base.f.bsf : base.f.bpfo;   // default BPFO
@@ -231,7 +231,7 @@ export default function Tool() {
     for (let i = 0; i < f.length; i++) { if (f[i] > sesXmax) break; xs.push(f[i]); ys.push(m[i]); }
     return [xs, ys];
   }, [ses, sesXmax]);
-  // degradation replay snapshots — built only while replay is engaged (zero cost when off)
+  // degradation replay snapshots, built only while replay is engaged (zero cost when off)
   const replaySnaps = useMemo(() => (replayOn ? buildLifeSnapshots({ bearing: bearingById(bearingId), fault, severityEnd: severity, rpm, snrDb: snr, sesXmax }) : null), [replayOn, bearingId, fault, severity, rpm, snr, sesXmax]);
   const curSnap = replaySnaps ? replaySnaps[Math.round(lifePos * (replaySnaps.length - 1))] : null;
   const sesData = curSnap ? (curSnap.sesData as uPlot.AlignedData) : liveSesData;
@@ -245,7 +245,7 @@ export default function Tool() {
     // ▼ marks the impact peak inside each predicted defect-frequency window. PHYSICS-anchored: the windows come from
     // the bearing's defect frequency for the selected fault (BPFO/BPFI/2·BSF), so it shows exactly the impacts a real
     // fault produces, gives ONE mark per impact (not one per resonance-ring cycle), never fires on a healthy signal
-    // (no defect frequency → no windows), and never marks noise (it takes the max inside a narrow physics window — a
+    // (no defect frequency → no windows), and never marks noise (it takes the max inside a narrow physics window, a
     // raw |accel| threshold can't separate impacts from noise/rings at realistic SNR, which is why nothing ever showed).
     const fdef = faultFreq(base.f, fault);
     const windows: [number, number][] = [];
@@ -276,7 +276,7 @@ export default function Tool() {
   const sesCombs = useMemo<Comb[]>(() => {
     const u = base.orders ? '×' : ' Hz';      // order domain (Ottawa) labels in orders, not Hz
     const p = base.orders ? 2 : 1;
-    // no fault-frequency combs when geometry is unknown (FEMTO/IMS) — only the shaft-rate comb
+    // no fault-frequency combs when geometry is unknown (FEMTO/IMS), only the shaft-rate comb
     const c: Comb[] = base.f.bpfo > 0 ? [
       { base: base.f.bpfo, harmonics: 6, color: C.outer, label: `BPFO ${base.f.bpfo.toFixed(p)}${u}` },
       { base: base.f.bpfi, harmonics: 5, color: C.inner, label: `BPFI ${base.f.bpfi.toFixed(p)}${u}` },
@@ -297,11 +297,11 @@ export default function Tool() {
 
   const onPickBand = useCallback((b: [number, number]) => { setBand(b); setBandMethod('manual'); }, []);
 
-  // ---- run-to-failure (RUL + 3D waterfall) — REACT to the selected scenario ----
+  // ---- run-to-failure (RUL + 3D waterfall), REACT to the selected scenario ----
   const bearingHash = useMemo(() => bearingId.split('').reduce((a, ch) => a + ch.charCodeAt(0), 0), [bearingId]);
   const rtf = useMemo(() => runToFailure({ seed: seed + bearingHash, fault, severity }), [seed, bearingHash, fault, severity]);
   const rul = useMemo(() => projectRUL(rtf.points, rtf.threshold), [rtf]);
-  // the trajectory ACTUALLY shown in the RUL tab — synthetic (reacts to the case) or a REAL FEMTO bearing life.
+  // the trajectory ACTUALLY shown in the RUL tab, synthetic (reacts to the case) or a REAL FEMTO bearing life.
   // The SAME projectRUL (onset → exp fit → first-passage) runs on whichever is selected; on FEMTO we can show the
   // predicted RUL next to the dataset's REAL failure time.
   const rtfShown = useMemo(() => {
@@ -310,7 +310,7 @@ export default function Tool() {
   }, [trajMode, rulSource, femtoTrajs, rtf]);
   // Deep-RUL multi-step CNN inference: feed raw vibration windows at different life stages
   // → real curve of life fractions vs time (not fabricated)
-  // Deep-HI/RUL CNN-BiLSTM inference — sequence of raw vibration windows → HI curve + RUL
+  // Deep-HI/RUL CNN-BiLSTM inference, sequence of raw vibration windows → HI curve + RUL
   useEffect(() => {
     if (rulModel !== 'deep' || !trajMode || !activeFrames?.frames?.length) return;
     let cancelled = false;
@@ -385,7 +385,7 @@ export default function Tool() {
         if (r.hi[i] > meanBase + 4 * sdBase && r.hi[i+1] > meanBase + 4 * sdBase) { onsetIdx = i; break; }
       }
       const onset = onsetIdx >= 0 ? r.t[onsetIdx] : null;
-      // Only emit curve from onset onward — same behaviour as exp/PF/GP
+      // Only emit curve from onset onward, same behaviour as exp/PF/GP
       const curve: {t:number;lo:number;mid:number;hi:number}[] = [];
       const startI = onsetIdx >= 0 ? onsetIdx : 0;
       for (let i = startI; i < n; i++) {
@@ -456,7 +456,7 @@ export default function Tool() {
 
   const faultLabel = (k: string) => (t as Record<string, string>)[`f_${k}`] ?? k;
 
-  // Degradation-replay scrubber — scoped to the run-to-failure views it actually drives (Envelope·SES, 3D
+  // Degradation-replay scrubber, scoped to the run-to-failure views it actually drives (Envelope·SES, 3D
   // waterfall, Prognostics·RUL), NOT a global top bar. Shared state lives in this component, so the scrubber
   // position persists when switching among those three tabs.
   const replayBar = () => (
@@ -491,7 +491,7 @@ export default function Tool() {
     { id: 'cam', label: t.tCam, content: (
       <CampbellPanel bearing={bearingById(bearingId)} fault={fault} severity={severity} snr={snr} seed={seed} rpm={rpm} lang={lang} realOrderMap={realMode && activeSample?.orderMap ? activeSample.orderMap : undefined} realFaultOrders={base.orders ? { bpfo: base.f.bpfo, bpfi: base.f.bpfi, bsf: base.f.bsf } : undefined} realLabel={activeSample ? activeSample.label.split('·')[0].trim() : undefined} />) },
     { id: 'wat', label: t.tWat, content: (
-      <div className="rv-vizstack">{!trajMode && replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={base.noGeom ? 0 : ridge.hz} ridgeLabel={base.noGeom ? '' : ridge.label} lifeH={trajMode ? (isFinite(rtfShown.trueFail) ? rtfShown.trueFail : 100) : (isFinite(rtf.trueFail) ? rtf.trueFail : 100)} lifeRow={trajMode && activeFrames && activeFrames.frames.length > 1 ? Math.min(frameIdx, activeFrames.frames.length - 1) / (activeFrames.frames.length - 1) : (replayOn ? lifePos : null)} /></Suspense><p className="hint">{trajMode && activeFrames ? (lang === 'es' ? `Waterfall de degradación REAL — ${(activeTraj?.set ?? '').toUpperCase()} ${activeTraj?.id ?? ''}: cada fila es una instantánea MEDIDA de la vida (envolvente). El instante seleccionado está resaltado. Arrastra para rotar.` : `REAL degradation waterfall — ${(activeTraj?.set ?? '').toUpperCase()} ${activeTraj?.id ?? ''}: each row is a MEASURED life-snapshot (envelope). The selected instant is highlighted. Drag to rotate.`) : t.watNote}</p></div>) },
+      <div className="rv-vizstack">{!trajMode && replayBar()}<Suspense fallback={<p className="hint">3D…</p>}><Waterfall3D grid={waterfall} fmax={WAT_FMAX} ridgeHz={base.noGeom ? 0 : ridge.hz} ridgeLabel={base.noGeom ? '' : ridge.label} lifeH={trajMode ? (isFinite(rtfShown.trueFail) ? rtfShown.trueFail : 100) : (isFinite(rtf.trueFail) ? rtf.trueFail : 100)} lifeRow={trajMode && activeFrames && activeFrames.frames.length > 1 ? Math.min(frameIdx, activeFrames.frames.length - 1) / (activeFrames.frames.length - 1) : (replayOn ? lifePos : null)} /></Suspense><p className="hint">{trajMode && activeFrames ? (lang === 'es' ? `Waterfall de degradación REAL, ${(activeTraj?.set ?? '').toUpperCase()} ${activeTraj?.id ?? ''}: cada fila es una instantánea MEDIDA de la vida (envolvente). El instante seleccionado está resaltado. Arrastra para rotar.` : `REAL degradation waterfall, ${(activeTraj?.set ?? '').toUpperCase()} ${activeTraj?.id ?? ''}: each row is a MEASURED life-snapshot (envelope). The selected instant is highlighted. Drag to rotate.`) : t.watNote}</p></div>) },
     { id: 'rul', label: t.tRul, content: (
       <div className="rv-vizstack">
         {!trajMode && replayBar()}
@@ -507,9 +507,9 @@ export default function Tool() {
         <p className="hint">{!trajMode
           ? t.rulNote
           : (lang === 'es'
-            ? `${rtfShown.label} — datos de degradación REALES (${rulModel==='exponential'?'exponencial':rulModel==='pf'?'filtro de partículas':rulModel==='gp'?'GP':rulModel==='wang2020'?'Wang 2020':'Deep-RUL'}). Falla real: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
-            : `${rtfShown.label} — REAL degradation data (${rulModel==='exponential'?'exponential':rulModel==='pf'?'particle filter':rulModel==='gp'?'GP':rulModel==='wang2020'?'Wang 2020':'Deep-RUL'}). True failure: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
-        <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
+            ? `${rtfShown.label}, datos de degradación REALES (${rulModel==='exponential'?'exponencial':rulModel==='pf'?'filtro de partículas':rulModel==='gp'?'GP':rulModel==='wang2020'?'Wang 2020':'Deep-RUL'}). Falla real: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : ', '} h.`
+            : `${rtfShown.label}, REAL degradation data (${rulModel==='exponential'?'exponential':rulModel==='pf'?'particle filter':rulModel==='gp'?'GP':rulModel==='wang2020'?'Wang 2020':'Deep-RUL'}). True failure: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : ', '} h.`)}</p>
+        <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : ', '}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : ', '}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : ', '}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : ', '}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
       <PrognosticEvalPanel rtf={trajMode ? { points: rtfShown.points, threshold: rtfShown.threshold, trueFail: rtfShown.trueFail } : rtf} fault={fault} severity={severity} lang={lang} />) },
@@ -529,11 +529,11 @@ export default function Tool() {
   // it for real (waveform/envelope/spectrum/cyclostationary/kurtogram/SK-gram). A FEMTO run-to-failure is a PROGNOSIS
   // artifact: only the RUL projection runs on the measured HI(t) curve. Synthetic mode keeps every tool (the full
   // simulator). Tools that need a synthetic ground truth (Campbell run-up, feature-cloud, synthetic prognosis) are
-  // hidden in real modes rather than shown fed by fabricated data — honesty over breadth.
+  // hidden in real modes rather than shown fed by fabricated data, honesty over breadth.
   // Tools available per source KIND, now that real artifacts carry raw windows:
   // - segment (CWRU): the measured window → signal suite + feature space (real point) + recommendation.
   // - trajectory (FEMTO/XJTU/IMS): each life-snapshot is a real window → signal suite + the REAL degradation
-  //   waterfall + RUL/eval + ISO trend + feature trajectory. (Campbell needs an rpm sweep — excluded; constant rpm.)
+  //   waterfall + RUL/eval + ISO trend + feature trajectory. (Campbell needs an rpm sweep, excluded; constant rpm.)
   // Ottawa's varying speed uniquely enables a REAL Campbell/order map (it ships an order-vs-rpm raster); add it there.
   const hasOrderMap = realMode && !!activeSample?.orderMap;
   const SEGMENT_TABS = hasOrderMap ? ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'cam', 'feat'] : ['sig', 'env', 'spec', 'csc', 'kur', 'gram', 'feat'];
@@ -547,7 +547,7 @@ export default function Tool() {
   return (
     <div className="page-body rv-layout">
       <aside className="rv-side">
-        {/* SOURCE — the first-level decision of the workbench: a fabricated synthetic case (scenario knobs) vs a REAL
+        {/* SOURCE, the first-level decision of the workbench: a fabricated synthetic case (scenario knobs) vs a REAL
             measured CWRU segment (the analysis tools run on the measured signal; scenario knobs become read-only). */}
         <div className="rv-source" style={{ display: 'flex', gap: '0.3rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <button className={`chip ${source === 'synthetic' ? 'on' : ''}`} onClick={() => setSource('synthetic')}>{lang === 'es' ? 'Sintético' : 'Synthetic'}</button>
@@ -581,7 +581,7 @@ export default function Tool() {
                 <input className="range" type="range" min={0} max={activeFrames.frames.length - 1} step={1} value={Math.min(frameIdx, activeFrames.frames.length - 1)} onChange={(e) => setFrameIdx(+e.target.value)} />
               </label>); })()}
             <div className="muted small" style={{ margin: '0.1rem 0 0.5rem', lineHeight: 1.5 }}>
-              {lang === 'es' ? 'run-to-failure medido' : 'measured run-to-failure'} · {lang === 'es' ? 'RMS de aceleración' : 'acceleration RMS'} · {lang === 'es' ? 'verdad' : 'truth'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} h` : '—'}</b><br />
+              {lang === 'es' ? 'run-to-failure medido' : 'measured run-to-failure'} · {lang === 'es' ? 'RMS de aceleración' : 'acceleration RMS'} · {lang === 'es' ? 'verdad' : 'truth'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} h` : ', '}</b><br />
               <span style={{ opacity: 0.8 }}>{activeFrames && activeFrames.frames.length
                 ? (lang === 'es' ? 'las herramientas corren sobre la ventana medida de cada instante; el waterfall es la degradación REAL' : 'the tools run on the measured window at each instant; the waterfall is the REAL degradation')
                 : (lang === 'es' ? 'solo aplica el pronóstico (RUL) sobre la curva HI medida' : 'only the prognosis (RUL) applies on the measured HI curve')}
@@ -601,7 +601,7 @@ export default function Tool() {
           </>
         )}
 
-        {/* Analysis params drive HOW any signal is processed (band/envelope/harmonics/ISO) — they apply to EVERY mode
+        {/* Analysis params drive HOW any signal is processed (band/envelope/harmonics/ISO), they apply to EVERY mode
             now that real trajectory frames are real windows too, so they stay live throughout. */}
         <div className="rv-analysis" style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.4rem', paddingTop: '0.4rem' }}>
           <div className="muted small" style={{ fontWeight: 700, letterSpacing: '0.03em', marginBottom: '0.2rem' }}>{t.anlys}</div>

@@ -1,10 +1,10 @@
-# 00 — Run RotorVitals
+# 00, Run RotorVitals
 
-A clone replays with **no torch and no CWRU download** — the trained ONNX + metrics are committed under
+A clone replays with **no torch and no CWRU download**, the trained ONNX + metrics are committed under
 `data/derived/`.
 
 ```bash
-# 1) venvs + light deps + editable package (instant — numpy + ruff + pytest)
+# 1) venvs + light deps + editable package (instant, numpy + ruff + pytest)
 ./scripts/setup.sh            #  (PowerShell:  ./scripts/setup.ps1)
 
 # 2) rebuild the per-case replay traces + manifests from the committed artifacts (numpy-only)

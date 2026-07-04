@@ -1,5 +1,5 @@
 // Prebuild overlay: copy the committed CONTRACT-2 artifacts (../data/derived) into the SPA's public/ so the static
-// site serves them, and refresh the bundled benchmark JSON. Canonical copies live in ../data/derived — public/ is a
+// site serves them, and refresh the bundled benchmark JSON. Canonical copies live in ../data/derived, public/ is a
 // build-time overlay (git-ignored). The served paths match what frontend/src/lib/ort.ts + dsp/learned.ts fetch
 // (root: /wdcnn.onnx, /rv-ae.onnx, /rv-cwru-samples.json, /rv-learned-metrics.json); manifests + per-case traces go
 // under /data/ for the CONTRACT-2 index loader (api/artifacts.ts).
@@ -13,7 +13,7 @@ const DERIVED = join(ROOT, 'data', 'derived');
 const PUB = join(HERE, 'public');
 
 if (!existsSync(DERIVED)) {
-  console.warn('[copy-data] no data/derived — run scripts/precompute first');
+  console.warn('[copy-data] no data/derived, run scripts/precompute first');
   process.exit(0);
 }
 mkdirSync(PUB, { recursive: true });
@@ -32,7 +32,7 @@ for (const [src, dst] of rootArtifacts) {
   if (existsSync(from)) {
     copyFileSync(from, join(PUB, dst));
   } else {
-    console.warn(`[copy-data] missing ${src} — run scripts/precompute (or --retrain)`);
+    console.warn(`[copy-data] missing ${src}, run scripts/precompute (or --retrain)`);
   }
 }
 

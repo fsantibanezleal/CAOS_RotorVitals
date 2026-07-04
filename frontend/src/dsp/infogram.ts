@@ -32,7 +32,7 @@ export function sesPower(se: Float64Array): Float64Array {
 // The IESFOgram (Mauricio, Smith, Randall, Antoni & Gryllias 2020, MSSP 144:106891) scores each band not by a
 // GENERAL impulsiveness/repetitiveness (kurtogram/infogram) but by how strongly its squared-envelope spectrum (SES)
 // shows the harmonic comb of the TARGETED bearing-fault frequency (BPFO/BPFI/2·BSF). So it ignores impulsive content
-// NOT at the fault period — a non-fault spike makes the kurtogram jump but leaves the targeted IESFOgram unmoved.
+// NOT at the fault period, a non-fault spike makes the kurtogram jump but leaves the targeted IESFOgram unmoved.
 // HONEST substitutions (documented in Methodology): the paper optimises a targeted Improved-Envelope-Spectrum
 // feature (a fault-harmonic-to-background ratio of the cyclic spectral COHERENCE integrated over each band of a
 // filterbank tree); this build computes the analogous fault-comb prominence on the plain per-band SES (NOT the
@@ -79,7 +79,7 @@ function combProminence(p: Float64Array, dAlpha: number, f0: number, K = 5): num
   return used ? total / used : 0;
 }
 
-/** Blind variant: the strongest self-consistent SES comb over a bounded shaft-order sweep — candidates
+/** Blind variant: the strongest self-consistent SES comb over a bounded shaft-order sweep, candidates
  * fr·{1.5 … 12 step 0.05} (excludes the shaft 1× and the cage <1.5×; bearing faults are non-integer shaft orders
  * well above 1×). Cheap (~210 candidates). Returns {value, alpha}. */
 function blindProminence(p: Float64Array, dAlpha: number, fr: number, K = 5): { value: number; alpha: number } {
@@ -114,7 +114,7 @@ export function gramGrid(x: Float64Array, fs: number, maxLevel = 5, opts: GramOp
       else {
         const env = hilbertEnvelope(bandpass(x, fs, lo, f2));
         const se = new Float64Array(env.length); for (let i = 0; i < env.length; i++) se[i] = env[i] * env[i];
-        const p = sesPower(se);                          // computed ONCE — shared by iSES + IESFO
+        const p = sesPower(se);                          // computed ONCE, shared by iSES + IESFO
         const dAlpha = fs / nextPow2(se.length);
         const iE = negentropy(se), iSES = negentropy(p);
         const iesfo = opts.targetAlpha ? combProminence(p, dAlpha, opts.targetAlpha, K) : 0;

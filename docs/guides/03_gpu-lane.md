@@ -1,4 +1,4 @@
-# 03 — GPU lane (DORMANT)
+# 03, GPU lane (DORMANT)
 
 This solution does not require a GPU at the moment. RotorVitals' CWRU training is CPU-fast (25-ep WDCNN + 150-ep AE
 over a few thousand 2048-windows, ~1–2 min). `requirements-gpu.txt` is a dormant placeholder.

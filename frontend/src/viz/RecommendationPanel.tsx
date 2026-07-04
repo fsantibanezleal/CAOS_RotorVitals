@@ -6,7 +6,7 @@ import { type Diagnosis } from '../dsp/diagnose';
 import { type RulResult } from '../dsp/health';
 import { type Bearing } from '../dsp/bearing';
 
-// T5 — the DECISION & REPORT tab. Reacts to the App's selected case: it fuses the envelope diagnosis, the ISO 20816
+// T5, the DECISION & REPORT tab. Reacts to the App's selected case: it fuses the envelope diagnosis, the ISO 20816
 // broadband-velocity zone and the RUL projection into one prioritised, explainable maintenance recommendation, and
 // exports it (JSON / Markdown / printable PDF). The velocity magnitude is an illustrative calibration of the
 // synthetic case; the decision logic is real condition-based-maintenance practice.
@@ -31,7 +31,7 @@ function printReport(titleHtml: string, bodyHtml: string) {
     .badge{display:inline-block;padding:3px 10px;border-radius:6px;color:#fff;font-weight:700}
     table{border-collapse:collapse;width:100%;margin:12px 0} th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:13px}
     th{background:#f6f6f6} .foot{color:#888;font-size:11px;margin-top:20px}</style></head>
-    <body>${titleHtml}${bodyHtml}<p class="foot">Generated client-side by RotorVitals — illustrative synthetic case; ISO 20816 + envelope + RUL decision logic.</p></body></html>`);
+    <body>${titleHtml}${bodyHtml}<p class="foot">Generated client-side by RotorVitals, illustrative synthetic case; ISO 20816 + envelope + RUL decision logic.</p></body></html>`);
   w.document.close(); w.focus(); setTimeout(() => w.print(), 250);
 }
 
@@ -53,7 +53,7 @@ export function RecommendationPanel({ bearing, bearingLabel, fault, severity, rp
   const onJson = () => download('rotorvitals-report.json', JSON.stringify(reportObject(rec, ctx), null, 2), 'application/json');
   const onMd = () => download('rotorvitals-report.md', reportMarkdown(rec, ctx, es), 'text/markdown');
   const onPrint = () => {
-    const title = `<h1>${es ? 'Reporte de condición de rodamiento' : 'Bearing condition report'} — RotorVitals</h1>
+    const title = `<h1>${es ? 'Reporte de condición de rodamiento' : 'Bearing condition report'}, RotorVitals</h1>
       <p class="sub">${bearingLabel} · ${rpm} rpm · ${es ? 'falla plantada' : 'planted fault'} ${fault} (${severity.toFixed(2)})</p>
       <p><span class="badge" style="background:${PRIORITY_COLOR[rec.priority]}">${rec.priority.toUpperCase()}</span> &nbsp;<b>${rec.headline}</b><br><small>${rec.detail}</small></p>`;
     const rows = rec.factors.map((f) => `<tr><td>${f.label}</td><td>${f.value}${f.note ? `<br><small>${f.note}</small>` : ''}</td><td>${f.assessment}</td></tr>`).join('');
@@ -82,8 +82,8 @@ export function RecommendationPanel({ bearing, bearingLabel, fault, severity, rp
         </div>
 
         {rec.disagreement && <div className="callout" data-variant="honest"><p style={{ margin: 0 }}>{es
-          ? 'Honesto: la pantalla ISO de banda ancha (10–1000 Hz) parece tranquila, pero la envolvente confirma una falla de rodamiento real — su energía está en la resonancia de alta frecuencia, FUERA de la banda ISO. La decisión confía en la envolvente, no en la velocidad de banda ancha.'
-          : 'Honest: the broadband ISO screen (10–1000 Hz) looks calm, but the envelope confirms a real bearing fault — its energy is in the high-frequency resonance, OUTSIDE the ISO band. The decision trusts the envelope, not the broadband velocity.'}</p></div>}
+          ? 'Honesto: la pantalla ISO de banda ancha (10–1000 Hz) parece tranquila, pero la envolvente confirma una falla de rodamiento real, su energía está en la resonancia de alta frecuencia, FUERA de la banda ISO. La decisión confía en la envolvente, no en la velocidad de banda ancha.'
+          : 'Honest: the broadband ISO screen (10–1000 Hz) looks calm, but the envelope confirms a real bearing fault, its energy is in the high-frequency resonance, OUTSIDE the ISO band. The decision trusts the envelope, not the broadband velocity.'}</p></div>}
 
         {/* the evidence / rationale table */}
         <table className="cmp-table" style={{ marginTop: '0.6rem' }}>
@@ -101,13 +101,13 @@ export function RecommendationPanel({ bearing, bearingLabel, fault, severity, rp
 
         {/* exports */}
         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
-          <button className="chip" onClick={onPrint}>{es ? '🖨 Imprimir / PDF' : '🖨 Print / PDF'}</button>
+          <button className="chip" onClick={onPrint}>{es ? 'Imprimir / PDF' : 'Print / PDF'}</button>
           <button className="chip" onClick={onJson}>{es ? '⬇ JSON' : '⬇ JSON'}</button>
           <button className="chip" onClick={onMd}>{es ? '⬇ Markdown' : '⬇ Markdown'}</button>
         </div>
         <p className="muted small" style={{ marginTop: '0.4rem' }}>{es
-          ? 'Exporta el reporte estructurado (JSON), un reporte legible (Markdown), o imprímelo a PDF — el entregable que un técnico adjunta a la orden de trabajo.'
-          : 'Export the structured report (JSON), a human-readable report (Markdown), or print it to PDF — the deliverable a technician attaches to the work order.'}</p>
+          ? 'Exporta el reporte estructurado (JSON), un reporte legible (Markdown), o imprímelo a PDF, el entregable que un técnico adjunta a la orden de trabajo.'
+          : 'Export the structured report (JSON), a human-readable report (Markdown), or print it to PDF, the deliverable a technician attaches to the work order.'}</p>
       </div>
     </div>
   );

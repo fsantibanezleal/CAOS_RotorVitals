@@ -1,7 +1,7 @@
 import { fft, ifft, nextPow2 } from './fft';
 
 // Real cepstrum: IFFT( log|FFT(x)| ). Peaks at a quefrency τ reveal a family of uniformly-spaced
-// spectral components (harmonics/sidebands) — e.g. gear-mesh sideband families or bearing harmonic
+// spectral components (harmonics/sidebands), e.g. gear-mesh sideband families or bearing harmonic
 // trains collapse to a single rahmonic, complementary to the spectrum (Randall & Antoni 2011).
 export interface Cepstrum {
   quef: Float64Array; // quefrency (s)

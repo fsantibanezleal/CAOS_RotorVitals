@@ -1,4 +1,4 @@
-"""Particle-filter RUL prognostics — offline pipeline (Python, numpy).
+"""Particle-filter RUL prognostics, offline pipeline (Python, numpy).
 
 Proper Bayesian SIR with regularisation (Musso, Oudjane & Le Gland 2001), a WIDE
 uninformed prior (NOT seeded from OLS), and kernel-density jitter. Matches the TypeScript

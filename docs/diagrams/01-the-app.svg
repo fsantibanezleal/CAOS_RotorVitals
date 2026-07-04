@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" class="arch-svg" role="img" aria-label="RotorVitals — vibration signal to a bearing-fault diagnosis + RUL">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" class="arch-svg" role="img" aria-label="RotorVitals, vibration signal to a bearing-fault diagnosis + RUL">
   <style>
     .arch-svg text { font-family: var(--font-sans, Inter, "Segoe UI", system-ui, sans-serif); }
     .arch-svg .mono { font-family: var(--font-mono, ui-monospace, Consolas, monospace); }
@@ -23,7 +23,7 @@
     </marker>
   </defs>
 
-  <text class="ttl" x="22" y="30">RotorVitals — what bearing fault is this, and how long until it fails?</text>
+  <text class="ttl" x="22" y="30">RotorVitals, what bearing fault is this, and how long until it fails?</text>
   <text class="sub" x="22" y="47">a rotating-machinery health product: a vibration signal → envelope/cyclostationary diagnosis at the defect frequencies + a WDCNN class + a remaining-useful-life projection</text>
 
   <!-- 1. The question -->
@@ -73,7 +73,7 @@
   <text class="it" x="36" y="278">It is a real system, not a demo:</text>
   <text class="mu" x="36" y="302">• the diagnostics engine (frontend/src/dsp/) recomputes the kurtogram, envelope spectrum, cyclostationary CMS and the RUL live on every control;</text>
   <text class="mu" x="36" y="324">• it keys on the physical defect frequencies (BPFO/BPFI/2·BSF) and confirms a real fault by its cyclostationary α-ridge family (not a coincidental peak);</text>
-  <text class="mu" x="36" y="346">• a WDCNN classifies the raw signal and a deep autoencoder gives a health index — both ONNX, client-side, trained on REAL CWRU bearing data (held-out files);</text>
+  <text class="mu" x="36" y="346">• a WDCNN classifies the raw signal and a deep autoencoder gives a health index, both ONNX, client-side, trained on REAL CWRU bearing data (held-out files);</text>
   <text class="mu" x="36" y="368">• the remaining-useful-life is projected from the health-index trend to an ISO threshold, with a credibility band;</text>
   <text class="mu" x="36" y="390">• Contract 1 accepts your own vibration recording; six documented pages; the inputs are real, the planted-fault severities labelled.</text>
   <text class="cd mono" x="36" y="418">vibration  →  kurtogram band → Hilbert envelope → SES @ BPFO/BPFI/BSF + WDCNN  →  fault class · severity · RUL</text>

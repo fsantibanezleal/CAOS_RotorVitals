@@ -1,12 +1,12 @@
-# 01 — Overview
+# 01, Overview
 
-**What the app is** — the live workbench at a glance:
+**What the app is**, the live workbench at a glance:
 
-![RotorVitals — a condition-monitoring & prognostics workbench: offline engine → committed artifacts → live SPA](../diagrams/01-the-app.svg)
+![RotorVitals, a condition-monitoring & prognostics workbench: offline engine → committed artifacts → live SPA](../diagrams/01-the-app.svg)
 
-**The lanes** — what runs WEB (live TS engine + in-browser ONNX inference) vs OFFLINE/COMPUTE (precompute bake + torch training) vs REPLAY (committed artifacts):
+**The lanes**, what runs WEB (live TS engine + in-browser ONNX inference) vs OFFLINE/COMPUTE (precompute bake + torch training) vs REPLAY (committed artifacts):
 
-![The three lanes — web (live) / offline (precompute + train) / replay (committed artifacts)](../diagrams/02-lanes.svg)
+![The three lanes, web (live) / offline (precompute + train) / replay (committed artifacts)](../diagrams/02-lanes.svg)
 
 RotorVitals is split into a heavy **offline engine** (`data-pipeline/rotorlab/`) and a **frontend SPA**
 (`frontend/`), bound by two data contracts. The committed compact artifacts under `data/derived/` are the offline
@@ -27,16 +27,16 @@ frontend (copy-data.mjs overlays data/derived) ──► onnxruntime-web + TS DS
 
 ## Packages
 
-* **`data-pipeline/rotorlab/`** — the offline engine: `io/` (contracts, formats, CWRU fetch), `core/` (rng, trace,
+* **`data-pipeline/rotorlab/`**, the offline engine: `io/` (contracts, formats, CWRU fetch), `core/` (rng, trace,
   manifest, gate), `model/` (WDCNN, deep-AE, spectral features, classical chain), `stages/` (the named pipeline),
   `cases/` + `registry.py` (cases by category), `pipeline.py` (orchestrator + CLI), `live.py` (dormant Pyodide).
-* **`frontend/`** — the React/Vite SPA: `src/dsp/` (the TS DSP chain), `src/lib/ort.ts` (onnxruntime-web), `src/viz/`
+* **`frontend/`**, the React/Vite SPA: `src/dsp/` (the TS DSP chain), `src/lib/ort.ts` (onnxruntime-web), `src/viz/`
   (the visualizations), `src/pages/` (the 6 standard pages), `src/lib/contract.types.ts` (the Contract-2 mirror).
-* **`app/`** — a dormant FastAPI backend (RotorVitals is static-first; no request-time compute).
+* **`app/`**, a dormant FastAPI backend (RotorVitals is static-first; no request-time compute).
 
 ## The two lanes of the pipeline
 
 * **Default (numpy-only):** `python -m rotorlab.pipeline all` rebuilds every per-case replay trace + manifest from
-  the committed artifacts — no torch, no CWRU download. A clone replays immediately; this is what CI + Pages run.
+  the committed artifacts, no torch, no CWRU download. A clone replays immediately; this is what CI + Pages run.
 * **Heavy (`--retrain`):** regenerates `wdcnn.onnx`, `rv-ae.onnx`, `rv-cwru-samples.json`, `rv-learned-metrics.json`,
   and `cwru-benchmark.json` from `data/raw/cwru/` (torch + scipy). Local-only; reproducible from a fixed seed.

@@ -1,4 +1,4 @@
-"""T12 — the classical-ML baselines (SVM-RBF + Random Forest). Locks: (1) the 10-D feature contract the browser
+"""T12, the classical-ML baselines (SVM-RBF + Random Forest). Locks: (1) the 10-D feature contract the browser
 mirrors; (2) a deterministic train→evaluate round-trip on separable synthetic windows; (3) the skl2onnx export
 loads in onnxruntime and the ai.onnx.ml classifier agrees with sklearn on the same input (the op-domain the
 browser depends on). Heavy deps (sklearn/skl2onnx/onnxruntime) are import-guarded so the light suite skips cleanly.

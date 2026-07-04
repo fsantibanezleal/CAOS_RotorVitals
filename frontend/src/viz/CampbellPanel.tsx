@@ -35,12 +35,12 @@ export function CampbellPanel({ bearing, fault, severity, snr, seed, rpm, lang, 
     return (
       <div className="rv-vizstack">
         <div className="rv-plot">
-          <div className="rv-plot-t">{es ? `Mapa de órdenes — envolvente vs velocidad (Ottawa MEDIDO${realLabel ? `, ${realLabel}` : ''} · order-tracking)` : `Order map — envelope vs shaft speed (Ottawa MEASURED${realLabel ? `, ${realLabel}` : ''} · order tracking)`}</div>
+          <div className="rv-plot-t">{es ? `Mapa de órdenes, envolvente vs velocidad (Ottawa MEDIDO${realLabel ? `, ${realLabel}` : ''} · order-tracking)` : `Order map, envelope vs shaft speed (Ottawa MEASURED${realLabel ? `, ${realLabel}` : ''} · order tracking)`}</div>
           <Heatmap2D cols={cols} times={rpms} freqs={orders} fmax={ordMax} norm="lin" unit="" xunit="rpm" xlabel="rpm" ylabel="order (×)" yunit="×" segments={segs} height={300} hoverExtra={(x, y) => `${(y * (x / 60)).toFixed(0)} Hz`} />
         </div>
         <p className="hint">{es
-          ? 'Campbell REAL: durante la grabación de 10 s la velocidad del eje barre, así que el espectro de envolvente order-tracked muestra cómo evoluciona el contenido con la rpm instantánea. Las frecuencias de falla del rodamiento son órdenes CONSTANTES (líneas horizontales) — la firma que las separa de cualquier línea de frecuencia fija (diagonal). Es la herramienta que la velocidad VARIABLE de Ottawa habilita y un dataset de velocidad fija no. Datos medidos.'
-          : 'REAL Campbell: during the 10 s record the shaft speed sweeps, so the order-tracked envelope spectrum shows how the content evolves with instantaneous rpm. The bearing fault frequencies are CONSTANT orders (horizontal lines) — separating them from any fixed-frequency line (diagonal). This is the tool Ottawa\'s VARIABLE speed uniquely enables and a constant-speed dataset cannot. Measured data.'}</p>
+          ? 'Campbell REAL: durante la grabación de 10 s la velocidad del eje barre, así que el espectro de envolvente order-tracked muestra cómo evoluciona el contenido con la rpm instantánea. Las frecuencias de falla del rodamiento son órdenes CONSTANTES (líneas horizontales), la firma que las separa de cualquier línea de frecuencia fija (diagonal). Es la herramienta que la velocidad VARIABLE de Ottawa habilita y un dataset de velocidad fija no. Datos medidos.'
+          : 'REAL Campbell: during the 10 s record the shaft speed sweeps, so the order-tracked envelope spectrum shows how the content evolves with instantaneous rpm. The bearing fault frequencies are CONSTANT orders (horizontal lines), separating them from any fixed-frequency line (diagonal). This is the tool Ottawa\'s VARIABLE speed uniquely enables and a constant-speed dataset cannot. Measured data.'}</p>
       </div>
     );
   }
@@ -52,10 +52,10 @@ export function CampbellPanel({ bearing, fault, severity, snr, seed, rpm, lang, 
     ? cm.orderMults.map((o) => ({ x0: cm.rpmMin, y0: o.mult, x1: cm.rpmMax, y1: o.mult, color: o.color, label: o.label }))
     : cm.orderMults.map((o) => ({ x0: cm.rpmMin, y0: (o.mult * cm.rpmMin) / 60, x1: cm.rpmMax, y1: (o.mult * cm.rpmMax) / 60, color: o.color, label: o.label }));
 
-  const title = es ? 'Mapa de órdenes — frecuencia de defecto vs velocidad (envolvente, run-up sintético)' : 'Order map — defect frequency vs shaft speed (envelope, synthetic run-up)';
+  const title = es ? 'Mapa de órdenes, frecuencia de defecto vs velocidad (envolvente, run-up sintético)' : 'Order map, defect frequency vs shaft speed (envelope, synthetic run-up)';
   const note = es
-    ? 'Barrido de velocidad del espectro de envolvente. La frecuencia de defecto del rodamiento está fijada por la cinemática, así que crece linealmente con la velocidad del eje — una recta en (rpm, Hz). En modo orden cada columna se remuestrea sobre orden = f/(rpm/60), enderezando la línea de defecto a un orden constante (p. ej. BPFO ≈ 3.58×) que la separa de cualquier línea de frecuencia fija. Sano → sin línea de defecto. Datos sintéticos.'
-    : 'Speed sweep of the envelope spectrum. The bearing defect frequency is fixed by kinematics, so it climbs linearly with shaft speed — a ray in (rpm, Hz). In order mode each column is resampled onto order = f/(rpm/60), straightening the defect line to a constant order (e.g. BPFO ≈ 3.58×) that separates it from any fixed-frequency line. Healthy → no defect line. Synthetic data.';
+    ? 'Barrido de velocidad del espectro de envolvente. La frecuencia de defecto del rodamiento está fijada por la cinemática, así que crece linealmente con la velocidad del eje, una recta en (rpm, Hz). En modo orden cada columna se remuestrea sobre orden = f/(rpm/60), enderezando la línea de defecto a un orden constante (p. ej. BPFO ≈ 3.58×) que la separa de cualquier línea de frecuencia fija. Sano → sin línea de defecto. Datos sintéticos.'
+    : 'Speed sweep of the envelope spectrum. The bearing defect frequency is fixed by kinematics, so it climbs linearly with shaft speed, a ray in (rpm, Hz). In order mode each column is resampled onto order = f/(rpm/60), straightening the defect line to a constant order (e.g. BPFO ≈ 3.58×) that separates it from any fixed-frequency line. Healthy → no defect line. Synthetic data.';
 
   return (
     <div className="rv-vizstack">

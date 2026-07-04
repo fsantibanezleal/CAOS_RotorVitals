@@ -4,7 +4,7 @@ Each trajectory contributes a sequence of ~8 raw vibration windows (healthy → 
 The CNN extracts spatial features per window; the BiLSTM models the temporal degradation.
 Two heads are trained jointly: HI prediction (MSE) and RUL prediction (MSE on fraction).
 
-Exports: frontend/public/deep_hi.onnx — a single ONNX with both outputs.
+Exports: frontend/public/deep_hi.onnx, a single ONNX with both outputs.
 """
 
 from __future__ import annotations

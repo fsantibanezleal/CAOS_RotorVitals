@@ -1,4 +1,4 @@
-// MinMax-per-pixel decimation — preserves impulse extrema (unlike averaging/LTTB), so bearing
+// MinMax-per-pixel decimation, preserves impulse extrema (unlike averaging/LTTB), so bearing
 // impacts survive in the displayed waveform. Display-only; DSP always uses the full-res buffer.
 export function minMaxDecimate(xs: Float64Array, ys: Float64Array, xmax: number, targetCols: number): [number[], number[]] {
   let n = xs.length;

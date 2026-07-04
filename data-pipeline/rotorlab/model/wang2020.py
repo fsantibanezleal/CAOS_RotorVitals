@@ -1,4 +1,4 @@
-"""Wang et al. (2020) — RVM + exponential degradation + Fréchet distance for adaptive RUL.
+"""Wang et al. (2020), RVM + exponential degradation + Fréchet distance for adaptive RUL.
 
 Reference: Wang, B., Lei, Y., Li, N. & Li, N. (2020). A Hybrid Prognostics Approach for
 Estimating Remaining Useful Life of Rolling Element Bearings. IEEE Trans. Reliability 69(1),
@@ -122,7 +122,7 @@ def crossing_time(phi: float, beta: float, alpha_exp: float,
                   t_max: float = 500.0) -> Optional[float]:
     """Find first t > t_start where h(t) = threshold (binary search).
 
-    t_max is bounded to 500 hours — well beyond any bearing life in our datasets.
+    t_max is bounded to 500 hours, well beyond any bearing life in our datasets.
     """
     lo, hi = float(t_start), min(float(t_max), t_start + 500.0)
     h_hi = phi + beta * (hi - t0) + alpha_exp * _safe_exp((hi - t0) / t_scale)
@@ -155,7 +155,7 @@ def rvm_smooth(t: NDArray, hi: NDArray) -> NDArray:
     """Sparse/smooth representation of the HI curve via ARD regression.
 
     ARDRegression (Automatic Relevance Determination) is a Bayesian linear
-    regression that prunes irrelevant features — the same principle as RVM.
+    regression that prunes irrelevant features, the same principle as RVM.
     It produces a smoother curve by fitting only the relevant basis functions.
 
     Uses a polynomial basis (degree 6) so the ARD can select the right complexity.

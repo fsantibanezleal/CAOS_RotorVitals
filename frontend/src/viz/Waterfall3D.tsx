@@ -14,7 +14,7 @@ function viridis(t: number): [number, number, number] {
 const Y_SCALE = 0.9;
 
 /** Run-to-failure spectral waterfall: rows = life snapshots (time), cols = frequency, height =
- * amplitude. A genuinely 3D/joint view — you watch the fault ridge emerge and grow over life.
+ * amplitude. A genuinely 3D/joint view, you watch the fault ridge emerge and grow over life.
  * `grid[time][freq]`, normalized 0..1. Orbit to rotate; hover reads (freq, life, amplitude); the
  * active defect frequency is marked with a translucent ridge plane. */
 export function Waterfall3D({

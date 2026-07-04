@@ -1,4 +1,4 @@
-"""The case registry — cases grouped by CATEGORY. The App shows ONE selected case; Experiments/Benchmark show
+"""The case registry, cases grouped by CATEGORY. The App shows ONE selected case; Experiments/Benchmark show
 cross-case summaries by category (the held-out diagnosis matrix, the classical baseline, the SNR robustness)."""
 from __future__ import annotations
 

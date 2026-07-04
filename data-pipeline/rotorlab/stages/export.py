@@ -1,10 +1,10 @@
-"""Stage 6 — export (CONTRACT 2). Two paths:
+"""Stage 6, export (CONTRACT 2). Two paths:
 
 * build_replay (LIGHT, numpy/stdlib): the default pipeline path. Builds the compact per-case trace from the REAL
   committed learned-tier artifacts (samples/metrics/benchmark), runs the lane gate, and writes the manifest. No
-  torch/scipy — so the contract + replay regenerate deterministically anywhere, and CI stays fast.
+  torch/scipy, so the contract + replay regenerate deterministically anywhere, and CI stays fast.
 * export_models (HEAVY, torch): the --retrain path. Writes wdcnn.onnx + rv-ae.onnx (opset 17, dynamic batch), the
-  held-out sample segments, and rv-learned-metrics.json — the artifacts the LIGHT path then consumes.
+  held-out sample segments, and rv-learned-metrics.json, the artifacts the LIGHT path then consumes.
 """
 from __future__ import annotations
 
@@ -89,10 +89,10 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
     teF = cml_metrics["teF"]   # the classical feature matrix, aligned with teX (so committed samples carry their vector)
 
     # committed real held-out windows for live in-browser inference (raw 2048 + AE spectral feats + classical-ML
-    # feature vector + label + provenance) — so the WDCNN, deep-AE AND the SVM/RF all run live on the SAME segment.
+    # feature vector + label + provenance), so the WDCNN, deep-AE AND the SVM/RF all run live on the SAME segment.
     from ..io.fetch_cwru import FILES
     src_file = {cls: n for n, (cls, load, _rpm) in FILES.items() if load == 3}  # the held-out 3 HP file per class
-    # the WDCNN's 100-D penultimate LEARNED feature per held-out window (T14 — the feature-space embedding)
+    # the WDCNN's 100-D penultimate LEARNED feature per held-out window (T14, the feature-space embedding)
     with torch.no_grad():
         teEmb = net.embed(torch.tensor(teX).unsqueeze(1)).numpy()
     samples = []
@@ -122,7 +122,7 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
         "dataset": "CWRU 12 kHz drive-end (real)",
         "nTrain": int(len(train_out["trX"])) if train_out.get("trX") is not None else 0,
         "nTest": int(len(teX)),
-        "split": "hold-out entire 3 HP load (train 0/1/2 HP) — no test recording seen in training",
+        "split": "hold-out entire 3 HP load (train 0/1/2 HP), no test recording seen in training",
         "wdcnn": {"accuracy": eval_metrics["accuracy"], "perClass": eval_metrics["perClass"],
                   "confusion": eval_metrics["confusion"], "classes": classes, "snrCurve": eval_metrics["snrCurve"]},
         "deepAE": {"thresholdP99": eval_metrics["thresholdP99"], "faultVsHealthyAUC": eval_metrics["faultVsHealthyAUC"],
@@ -137,19 +137,19 @@ def export_models(*, train_out: dict, infer_out: dict, eval_metrics: dict, class
                     "indicators + envelope-spectrum BPFO/BPFI/2BSF comb prominences + resonance-band kurtosis), the "
                     "classical counterpoint to the end-to-end WDCNN. Same hold-out-3HP split → comparable.",
         },
-        # T4: cross-severity generalization — every model evaluated on unseen 0.014"/0.021" faults at the held-out
+        # T4: cross-severity generalization, every model evaluated on unseen 0.014"/0.021" faults at the held-out
         # 3 HP load (trained only on 0.007" faults at 0/1/2 HP). The honest "is it a toy?" answer.
         "crossSeverity": cross_severity,
-        # T13: cross-DATASET generalization — the CWRU-trained WDCNN vs unsupervised envelope/SES on MFPT (a
+        # T13: cross-DATASET generalization, the CWRU-trained WDCNN vs unsupervised envelope/SES on MFPT (a
         # different rig). The domain-shift test: learned features are rig-specific, physics is rig-agnostic.
         "crossDataset": cross_dataset,
-        # T15: leakage demonstration — random-window vs honest grouped (split-by-recording) split on a frozen pool.
+        # T15: leakage demonstration, random-window vs honest grouped (split-by-recording) split on a frozen pool.
         # How much the headline accuracy INFLATES when overlapping windows leak across train/test. Omitted (None) on
         # a light rebuild that doesn't carry it forward; the frontend guards on its presence.
         **({"leakage": leakage} if leakage is not None else {}),
         "honesty": "Trained on REAL CWRU recordings. CWRU reuses one physical bearing across loads, so a true "
                    "independent-bearing split is impossible; we hold out an entire load condition instead. CWRU is "
-                   "a clean lab rig (Smith & Randall 2015) — accuracy is optimistic vs field data.",
+                   "a clean lab rig (Smith & Randall 2015), accuracy is optimistic vs field data.",
     }
     (derived / "rv-learned-metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     (derived / "cwru-benchmark.json").write_text(json.dumps(classical_benchmark, indent=2), encoding="utf-8")

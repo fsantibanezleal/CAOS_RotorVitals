@@ -1,7 +1,7 @@
-// T5 — the condition-based-maintenance DECISION layer. The App diagnoses and trends; this turns that evidence into
+// T5, the condition-based-maintenance DECISION layer. The App diagnoses and trends; this turns that evidence into
 // a prioritised, EXPLAINABLE maintenance recommendation, the way a reliability engineer would: fuse the ISO 20816
 // broadband-velocity severity zone, the envelope-diagnosis fault severity, and the RUL projection, then act on the
-// most severe of them. Honesty is built in — when the coarse broadband ISO screen disagrees with the envelope
+// most severe of them. Honesty is built in, when the coarse broadband ISO screen disagrees with the envelope
 // (which it does for an early bearing fault, whose energy sits in the HF resonance OUTSIDE the 10–1000 Hz band),
 // the engine surfaces the disagreement and trusts the envelope rather than hiding it.
 import { ISO_CLASS_I, type IsoBounds } from './iso';
@@ -47,7 +47,7 @@ export function isoZoneOf(vrms: number, bounds: IsoBounds = ISO_CLASS_I): IsoZon
   return 'D';
 }
 
-// the envelope-diagnosis severity ladder — aligned with the App's severity gauge zones (3/6/9 of the 0..12 scale)
+// the envelope-diagnosis severity ladder, aligned with the App's severity gauge zones (3/6/9 of the 0..12 scale)
 function faultStateOf(sev: number, isFault: boolean): Recommendation['faultState'] {
   if (!isFault || sev < 3) return 'healthy';
   if (sev < 6) return 'incipient';
@@ -64,8 +64,8 @@ interface Txt { headline: Record<Priority, string>; cadence: Record<Priority, st
 const T: Record<'en' | 'es', Txt> = {
   en: {
     headline: {
-      ok: 'Continue normal operation', watch: 'Increase monitoring — no action yet',
-      plan: 'Plan corrective maintenance', alarm: 'Alarm — schedule shutdown', trip: 'Trip — stop the machine',
+      ok: 'Continue normal operation', watch: 'Increase monitoring, no action yet',
+      plan: 'Plan corrective maintenance', alarm: 'Alarm, schedule shutdown', trip: 'Trip, stop the machine',
     },
     cadence: {
       ok: 'routine inspection at the next scheduled interval', watch: 'tighten to a weekly envelope/SES check',
@@ -76,8 +76,8 @@ const T: Record<'en' | 'es', Txt> = {
   },
   es: {
     headline: {
-      ok: 'Continuar operación normal', watch: 'Aumentar monitoreo — sin acción aún',
-      plan: 'Planificar mantenimiento correctivo', alarm: 'Alarma — programar parada', trip: 'Disparo — detener la máquina',
+      ok: 'Continuar operación normal', watch: 'Aumentar monitoreo, sin acción aún',
+      plan: 'Planificar mantenimiento correctivo', alarm: 'Alarma, programar parada', trip: 'Disparo, detener la máquina',
     },
     cadence: {
       ok: 'inspección de rutina en el próximo intervalo programado', watch: 'apretar a un chequeo envolvente/SES semanal',
@@ -126,13 +126,13 @@ export function recommend(input: {
   factors.push({
     key: 'severity',
     label: es ? 'Índice de severidad (prominencia del peine)' : 'Severity index (comb prominence)',
-    value: `${sev.toFixed(1)}× — ${stateLabel(state, es)}`,
+    value: `${sev.toFixed(1)}×, ${stateLabel(state, es)}`,
     assessment: a(state === 'severe', state === 'developed' || state === 'incipient'),
   });
   factors.push({
     key: 'iso',
-    label: es ? 'ISO 20816 — velocidad RMS de banda ancha' : 'ISO 20816 — broadband velocity RMS',
-    value: `${velocityRms.toFixed(2)} mm/s — ${es ? 'Zona' : 'Zone'} ${zone}`,
+    label: es ? 'ISO 20816, velocidad RMS de banda ancha' : 'ISO 20816, broadband velocity RMS',
+    value: `${velocityRms.toFixed(2)} mm/s, ${es ? 'Zona' : 'Zone'} ${zone}`,
     assessment: a(zone === 'D', zone === 'C'),
     note: disagreement
       ? (es ? 'La velocidad de banda ancha 10–1000 Hz NO ve esta falla (energía en la resonancia HF). Se confía en la envolvente.'
@@ -149,7 +149,7 @@ export function recommend(input: {
     factors.push({
       key: 'hi',
       label: es ? 'Indicador de salud (deep-AE)' : 'Health indicator (deep-AE)',
-      value: `${hiRatio.toFixed(2)}× ${es ? 'umbral' : 'threshold'} — ${hiRatio > 1 ? (es ? 'anómalo' : 'anomalous') : (es ? 'normal' : 'normal')}`,
+      value: `${hiRatio.toFixed(2)}× ${es ? 'umbral' : 'threshold'}, ${hiRatio > 1 ? (es ? 'anómalo' : 'anomalous') : (es ? 'normal' : 'normal')}`,
       assessment: a(hiRatio > 1.5, hiRatio > 1),
     });
   }
@@ -160,8 +160,8 @@ export function recommend(input: {
 
   const detailParts = [tx.cadence[priority]];
   if (disagreement) detailParts.push(es
-    ? 'la pantalla ISO de banda ancha parece tranquila, pero la envolvente confirma una falla de rodamiento real — actúe sobre la envolvente'
-    : 'the broadband ISO screen looks calm, but the envelope confirms a real bearing fault — act on the envelope');
+    ? 'la pantalla ISO de banda ancha parece tranquila, pero la envolvente confirma una falla de rodamiento real, actúe sobre la envolvente'
+    : 'the broadband ISO screen looks calm, but the envelope confirms a real bearing fault, act on the envelope');
   if (rulH != null && (priority === 'plan' || priority === 'alarm'))
     detailParts.push(es ? `ventana de acción ≈ ${rulH.toFixed(0)} h` : `action window ≈ ${rulH.toFixed(0)} h`);
 
@@ -206,14 +206,14 @@ export function reportMarkdown(r: Recommendation, ctx: { bearing: string; rpm: n
     ? { title: 'Reporte de condición de rodamiento', asset: 'Activo', diag: 'Diagnóstico', dec: 'Decisión', rat: 'Justificación', factor: 'Factor', val: 'Valor', ass: 'Evaluación', next: 'Próxima inspección', conf: 'Confianza' }
     : { title: 'Bearing condition report', asset: 'Asset', diag: 'Diagnosis', dec: 'Decision', rat: 'Rationale', factor: 'Factor', val: 'Value', ass: 'Assessment', next: 'Next inspection', conf: 'Confidence' };
   const lines = [
-    `# ${L.title} — RotorVitals`, '',
+    `# ${L.title}, RotorVitals`, '',
     `**${L.asset}:** ${ctx.bearing} · ${ctx.rpm} rpm · ${es ? 'falla plantada' : 'planted fault'} ${ctx.fault} (${ctx.severity.toFixed(2)})`, '',
     `**${L.dec}:** [${r.priority.toUpperCase()}] ${r.headline}`,
     `**${L.next}:** ${r.nextInspection}`,
     `**${L.conf}:** ${(r.confidence * 100).toFixed(0)}%`, '',
     `## ${L.rat}`, '',
     `| ${L.factor} | ${L.val} | ${L.ass} |`, '|---|---|---|',
-    ...r.factors.map((f) => `| ${f.label} | ${f.value} | ${f.assessment}${f.note ? ` — ${f.note}` : ''} |`),
+    ...r.factors.map((f) => `| ${f.label} | ${f.value} | ${f.assessment}${f.note ? `, ${f.note}` : ''} |`),
     '', '_' + (es ? 'Magnitud de velocidad ilustrativa (caso sintético); lógica de decisión = ISO 20816 + envolvente + RUL (práctica CBM real).'
       : 'Illustrative velocity magnitude (synthetic case); decision logic = ISO 20816 + envelope + RUL (real CBM practice).') + '_',
   ];

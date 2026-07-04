@@ -1,9 +1,9 @@
-"""Fetch the MFPT Society bearing fault dataset (T13 — the cross-DATASET generalization test).
+"""Fetch the MFPT Society bearing fault dataset (T13, the cross-DATASET generalization test).
 
 Link-only redistribution: the data is downloaded from the MathWorks `RollingElementBearingFaultDiagnosis-Data`
 repository (which redistributes the MFPT Society set) and is NEVER committed (`data/raw/` is git-ignored). It is a
-DIFFERENT test rig from CWRU — a NICE bearing (8 balls, BPFO ≈ 3.245× / BPFI ≈ 4.755× shaft rate), sampled at
-48828 / 97656 Hz — so running the CWRU-trained WDCNN on it is a true held-out cross-dataset (domain-shift) test.
+DIFFERENT test rig from CWRU, a NICE bearing (8 balls, BPFO ≈ 3.245× / BPFI ≈ 4.755× shaft rate), sampled at
+48828 / 97656 Hz, so running the CWRU-trained WDCNN on it is a true held-out cross-dataset (domain-shift) test.
 
 Each `.mat` holds a `bearing` struct: `gs` (acceleration signal), `sr` (sample rate Hz), `rate` (shaft Hz), `load`
 (lbs). Class is encoded in the filename: baseline_* = normal, OuterRaceFault* = outer, InnerRaceFault* = inner
@@ -74,7 +74,7 @@ def main() -> None:
     ap.add_argument("--dst", default="data/raw/mfpt")
     args = ap.parse_args()
     root = download(args.dst)
-    print(f"MFPT ready in {root} ({len(MFPT_FILES)} files, link-only — not re-hosted)")
+    print(f"MFPT ready in {root} ({len(MFPT_FILES)} files, link-only, not re-hosted)")
 
 
 if __name__ == "__main__":

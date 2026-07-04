@@ -1,4 +1,4 @@
-/* RotorVitals — app-specific styles on top of @fasl-work/caos-app-shell/styles.css (shell tokens). */
+/* RotorVitals, app-specific styles on top of @fasl-work/caos-app-shell/styles.css (shell tokens). */
 
 .rv-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; align-items: start; }
 @media (max-width: 900px) { .rv-layout { grid-template-columns: 1fr; } }
@@ -63,7 +63,7 @@
 .cmp-table th, .cmp-table td { padding: 0.4rem 0.55rem; text-align: center; border-bottom: 1px solid var(--color-border); }
 .cmp-table thead th { color: var(--color-fg-faint); font-weight: 600; font-size: 0.78rem; }
 
-/* uPlot interactive charts — theme the cursor/selection chrome */
+/* uPlot interactive charts, theme the cursor/selection chrome */
 .uplot-host { width: 100%; }
 .uplot, .uplot *, .uplot *::before, .uplot *::after { box-sizing: border-box; }
 .u-cursor-x, .u-cursor-y { border-right: 1px dashed var(--color-fg-faint); border-bottom: 1px dashed var(--color-fg-faint); }

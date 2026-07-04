@@ -2,7 +2,7 @@ export interface Zone { upTo: number; color: string; label: string }
 
 /** Horizontal severity gauge with colored zones + a needle. Used for an overall vibration-severity
  * index (zone scheme à la ISO 20816 A/B/C/D; the exact velocity thresholds are documented in
- * Methodology — here it is an illustrative severity index, not a certified ISO velocity reading). */
+ * Methodology, here it is an illustrative severity index, not a certified ISO velocity reading). */
 export function Gauge({ value, max, zones, unit, title }: { value: number; max: number; zones: Zone[]; unit?: string; title?: string }) {
   const pct = (v: number) => `${Math.max(0, Math.min(100, (v / max) * 100))}%`;
   let prev = 0;

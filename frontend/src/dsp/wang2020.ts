@@ -1,4 +1,4 @@
-/** Wang et al. (2020) — Adaptive RUL via exponential+linear model + Fréchet distance.
+/** Wang et al. (2020), Adaptive RUL via exponential+linear model + Fréchet distance.
  *
  * Reference: Wang, B., Lei, Y., Li, N. & Li, N. (2020). A Hybrid Prognostics Approach for
  * Estimating Remaining Useful Life of Rolling Element Bearings. IEEE Trans. Reliability 69(1),

@@ -1,10 +1,10 @@
-# Method — WDCNN (Wide-kernel Deep CNN)
+# Method, WDCNN (Wide-kernel Deep CNN)
 
 **Provenance:** Zhang, Peng, Li, Chen & Zhang (2017), *A New Deep Learning Model for Fault Diagnosis with Good
 Anti-Noise and Domain Adaptation Ability on Raw Vibration Signals*, Sensors 17(2):425. DOI 10.3390/s17020425.
 
 **What:** a 1-D convolutional network whose **first kernel is wide** (64 samples, stride 16) so the first layer acts
-as a learned wide band-pass over the raw waveform — suppressing high-frequency noise before the deeper narrow-kernel
+as a learned wide band-pass over the raw waveform, suppressing high-frequency noise before the deeper narrow-kernel
 layers extract fault features. Input: a raw **2048-sample** z-scored window. Output: 4 class logits (normal / outer /
 inner / ball).
 

@@ -2,7 +2,7 @@
 
 RotorVitals depends on the following open-source components. Each retains its own license.
 
-## Offline lane (Python — `requirements*.txt`)
+## Offline lane (Python, `requirements*.txt`)
 
 | Package | License |
 |---|---|
@@ -14,7 +14,7 @@ RotorVitals depends on the following open-source components. Each retains its ow
 | ruff | MIT |
 | pytest | MIT |
 
-## Frontend (npm — `frontend/package.json`)
+## Frontend (npm, `frontend/package.json`)
 
 | Package | License |
 |---|---|

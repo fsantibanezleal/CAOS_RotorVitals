@@ -1,4 +1,4 @@
-"""CONTRACT 1 — ingestion (raw vibration -> pipeline). The *bring-your-own-vibration* gate.
+"""CONTRACT 1, ingestion (raw vibration -> pipeline). The *bring-your-own-vibration* gate.
 
 Declares the required schema (columns, units, ranges) of a vibration-record descriptor and an EXPLICIT outlier
 policy: a record is ACCEPTED iff it passes; bad records are REJECTED with a reason (never silently coerced);
@@ -77,7 +77,7 @@ def validate_records(raw_rows: list[dict[str, Any]]) -> ContractReport:
 
         rec_flags: list[str] = []
         if not (RPM_MIN <= rpm <= RPM_MAX):
-            rec_flags.append(f"rpm={rpm} outside [{RPM_MIN},{RPM_MAX}] — RUL/Campbell unreliable, still diagnosable")
+            rec_flags.append(f"rpm={rpm} outside [{RPM_MIN},{RPM_MAX}], RUL/Campbell unreliable, still diagnosable")
         if fs == 48000:
             rec_flags.append("fs=48000 -> will be decimated x4 (FIR, zero-phase) to 12000")
         size = row.get("fault_size_in")
@@ -88,7 +88,7 @@ def validate_records(raw_rows: list[dict[str, Any]]) -> ContractReport:
                 if fault != "normal" and fault_size_in not in STD_FAULT_SIZES_IN:
                     rec_flags.append(f"fault_size_in={fault_size_in:g} not a standard CWRU severity")
             except (TypeError, ValueError):
-                rec_flags.append(f"fault_size_in={size!r} non-numeric — dropped")
+                rec_flags.append(f"fault_size_in={size!r} non-numeric, dropped")
 
         if rec_flags:
             flagged.append({"case_id": cid, "flags": rec_flags})
@@ -120,5 +120,5 @@ def validate_signal(signal: list[float], fs: int) -> tuple[bool, str, list[str]]
     mean = sum(signal) / n
     var = sum((v - mean) ** 2 for v in signal) / n
     if var ** 0.5 < FLATLINE_STD:
-        flags.append("flatline/dropout (std < 1e-9) — safe-normalized by 1.0")
+        flags.append("flatline/dropout (std < 1e-9), safe-normalized by 1.0")
     return True, "", flags

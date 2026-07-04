@@ -1,4 +1,4 @@
-"""Stage 1 — preprocess (heavy lane): apply CONTRACT 1, load the real CWRU drive-end signals, decimate 48->12 kHz,
+"""Stage 1, preprocess (heavy lane): apply CONTRACT 1, load the real CWRU drive-end signals, decimate 48->12 kHz,
 segment into z-scored 2048/1024 windows. Leakage-safe split: hold out the entire 3 HP load for test. Requires
 numpy + scipy; imported only by the --retrain orchestrator, never by the light pipeline."""
 from __future__ import annotations
@@ -56,7 +56,7 @@ def run(raw_dir: str) -> dict:
     return {
         "trX": np.array(tr_X, np.float32), "trY": np.array(tr_y, np.int64),
         "teX": np.array(te_X, np.float32), "teY": np.array(te_y, np.int64),
-        # per-window shaft rpm — the kinematic defect frequencies (BPFO/BPFI/2·BSF) the classical-ML envelope
+        # per-window shaft rpm, the kinematic defect frequencies (BPFO/BPFI/2·BSF) the classical-ML envelope
         # features key off depend on it (the deep WDCNN/AE do not need it; they consume the raw window/spectrum).
         "trRpm": np.array(tr_rpm, np.int64), "teRpm": np.array(te_rpm, np.int64),
         "classes": classes, "report": report,
