@@ -1,10 +1,13 @@
 # Cases — taxonomy & coverage matrix
 
-`data-pipeline/rotorlab/cases/cwru_cases.py` defines 21 cases across 6 categories. The App is a synthetic interactive
-workbench; Benchmark hosts the **real** live tier (the WDCNN on committed CWRU segments + the cross-case summaries).
-The matrix is faithful to what is actually committed — the live learned tier covers the held-out 3 HP load (the
-segments in `rv-cwru-samples.json`); the classical tier covers the three demodulation methods; the synthetic +
-prognostics cases are clearly labelled.
+`data-pipeline/rotorlab/cases/cwru_cases.py` defines 21 cases across 6 categories. The App is a source-selected
+workbench — a first-level selector switches between the synthetic generator, real diagnosis segments (CWRU held-out
+3 HP, Ottawa order-tracked, MaFaulDa) and real run-to-failure trajectories (FEMTO / XJTU-SY / IMS); Benchmark hosts
+the live learned tier (the WDCNN on committed CWRU segments + the cross-case summaries). The matrix below is the
+**pipeline case registry** and is faithful to what is actually committed — the live learned tier covers the held-out
+3 HP load (the segments in `rv-cwru-samples.json`); the classical tier covers the three demodulation methods; the
+synthetic + prognostics registry cases are clearly labelled. The real segment and trajectory sources selectable in
+the App are additional to this registry; the Experiments page coverage table lists them per dataset.
 
 | Category | Case ids | kind | real / synthetic | Expected reading |
 |---|---|---|---|---|
@@ -17,14 +20,18 @@ prognostics cases are clearly labelled.
 
 ## Honesty / roadmap
 
-* **Two real datasets are wired: CWRU (trained benchmark) + MFPT (cross-dataset eval).** CWRU is the trained
-  benchmark — the training loads (0/1/2 HP) feed the model but only the held-out **3 HP** segments are committed as
-  replayable live cases; MFPT is the held-out cross-DATASET domain-shift test (next bullet). The synthetic +
-  run-to-failure cases are **labelled synthetic** — they are NOT presented as real benchmark numbers.
-* **MFPT is wired (T13)** as a real cross-DATASET eval (see below) — a second rig, live. **Roadmap (still not
-  wired):** XJTU-SY / FEMTO / IMS (real run-to-failure → replace the synthetic RUL trend), Ottawa-TVS
-  (variable-speed → only then claim variable-speed), a gear rig (→ only then claim gear), Paderborn (more bearing
-  diversity). Until wired, the docs + UI do not claim them.
+* **Seven real datasets are wired: CWRU (trained benchmark), MFPT (cross-dataset eval), Ottawa + MaFaulDa (real
+  diagnosis segments, cross-domain WDCNN), FEMTO + XJTU-SY + IMS (real run-to-failure trajectories — 23 of the 36
+  carry a real first-passage failure time).** CWRU is the trained benchmark — the training loads (0/1/2 HP) feed
+  the model but only the held-out **3 HP** segments are committed as replayable live cases; MFPT is the held-out
+  cross-DATASET domain-shift test (below). The synthetic + prognostics cases in the registry above are **labelled
+  synthetic** — they are NOT presented as real benchmark numbers; the App's Real: RUL mode runs on the measured
+  FEMTO/XJTU-SY/IMS life-frames.
+* **Ottawa is wired with computed-order-tracking** (fault frequencies as constant orders under varying speed, a
+  real Campbell/order map); the variable-speed claim is scoped to that. **Roadmap (still not wired):** Paderborn
+  (more bearing diversity, artificial-vs-real damage transfer; host unreachable at last attempt) and a gear rig
+  (→ only then claim gear). Until wired, the docs + UI do not claim them. The **offline RUL aggregate benchmark
+  is under re-evaluation** — the original protocol was degenerate and its numbers were withdrawn (issue #128).
 * **CWRU caveats:** a clean lab rig (optimistic accuracy → the SNR curve is the honest headline); one physical
   bearing per fault across loads (→ hold out a load, not a bearing); ball faults are the documented hard case
   (a weak, modulated 2·BSF line), not a bug.

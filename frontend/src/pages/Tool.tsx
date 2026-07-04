@@ -507,8 +507,8 @@ export default function Tool() {
         <p className="hint">{!trajMode
           ? t.rulNote
           : (lang === 'es'
-            ? `${rtfShown.label} — datos de degradación REALES (${rulModel==='exponential'?'exponencial':rulModel==='pf'?'filtro de partículas':'GP'}). Falla real: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
-            : `${rtfShown.label} — REAL degradation data (${rulModel==='exponential'?'exponential':rulModel==='pf'?'particle filter':'GP'}). True failure: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
+            ? `${rtfShown.label} — datos de degradación REALES (${rulModel==='exponential'?'exponencial':rulModel==='pf'?'filtro de partículas':rulModel==='gp'?'GP':rulModel==='wang2020'?'Wang 2020':'Deep-RUL'}). Falla real: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
+            : `${rtfShown.label} — REAL degradation data (${rulModel==='exponential'?'exponential':rulModel==='pf'?'particle filter':rulModel==='gp'?'GP':rulModel==='wang2020'?'Wang 2020':'Deep-RUL'}). True failure: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (
