@@ -8,14 +8,19 @@ on the **real CWRU** data) and a classical envelope/SES tier, and projects remai
 
 ## What it is / what it is NOT
 
-* **Is:** a real application — pick a held-out real CWRU segment and the trained WDCNN + deep-AE run live
-  (onnxruntime-web) to diagnose it; a full classical DSP chain (envelope/SES, kurtogram, cepstrum, Campbell,
-  cyclostationary, ISO severity) on real held-out or labelled-synthetic signals; an honest SNR-robustness curve
-  and a leakage-safe held-out benchmark.
+* **Is:** a real application — a first-level source selector drives the whole workbench: pick a held-out real
+  CWRU segment (or a real Ottawa/MaFaulDa segment, cross-domain) and the trained WDCNN + deep-AE run live
+  (onnxruntime-web) to diagnose it, or pick a real FEMTO/XJTU-SY/IMS run-to-failure trajectory and the prognosis
+  suite runs on measured life-frames; a full classical DSP chain (envelope/SES, kurtogram, cepstrum, Campbell,
+  cyclostationary, ISO severity) on real or labelled-synthetic signals; an honest SNR-robustness curve and a
+  leakage-safe held-out benchmark.
 * **Is NOT:** a certified protection system. The clean CWRU lab rig makes raw accuracy optimistic (the honest
-  deliverable is the SNR curve); the run-to-failure / RUL cases are **labelled synthetic** (XJTU-SY/MFPT/Paderborn
-  are roadmap); CWRU reuses one physical bearing across loads, so the leakage-safe split holds out an entire
-  **load**, not a bearing.
+  deliverable is the SNR curve); the synthetic generator's scenarios and its run-to-failure trend are **labelled
+  synthetic**, while the real tier spans seven measured sets — CWRU (trained benchmark), MFPT (cross-dataset eval),
+  Ottawa + MaFaulDa (real diagnosis segments), FEMTO + XJTU-SY + IMS (real run-to-failure trajectories, 23 with a
+  real first-passage failure); Paderborn and a gear rig remain roadmap; the offline RUL aggregate benchmark is
+  **under re-evaluation** (degenerate protocol withdrawn, issue #128); CWRU reuses one physical bearing across
+  loads, so the leakage-safe split holds out an entire **load**, not a bearing.
 
 ## Map
 

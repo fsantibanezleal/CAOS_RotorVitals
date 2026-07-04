@@ -499,7 +499,7 @@ export default function Tool() {
           {(['exponential','pf','gp','wang2020',...(trajMode?['deep'] as RulModel[]:[])] as RulModel[]).map(m => (
             <button key={m} className={`chip ${rulModel===m?'on':''}`} onClick={()=>setRulModel(m)}
               title={m==='deep'&&!trajMode?(lang==='es'?'Deep-RUL requiere datos reales (modo Real: RUL)':'Deep-RUL needs real data (Real: RUL mode)'):undefined}>
-              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':m==='wang2020'?'Wang 2020':m==='deep'?'Deep-RUL':''}
+              {m==='exponential'?(lang==='es'?'Exponencial':'Exponential'):m==='pf'?(lang==='es'?'Filtro de partículas':'Particle filter'):m==='gp'?(lang==='es'?'Proceso Gaussiano':'Gaussian process'):m==='wang2020'?'Wang 2020':m==='deep'?'Deep-RUL':''}
             </button>
           ))}
         </div>
@@ -507,8 +507,8 @@ export default function Tool() {
         <p className="hint">{!trajMode
           ? t.rulNote
           : (lang === 'es'
-            ? `${rtfShown.label} — datos de degradación REALES (${rulModel==='exponential'?'exponencial':rulModel==='pf'?'filtro de partículas':'GP'}). Falla real: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
-            : `${rtfShown.label} — REAL degradation data (${rulModel==='exponential'?'exponential':rulModel==='pf'?'particle filter':'GP'}). True failure: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
+            ? `${rtfShown.label} — datos de degradación REALES (${rulModel==='exponential'?'exponencial':rulModel==='pf'?'filtro de partículas':rulModel==='gp'?'GP':rulModel==='wang2020'?'Wang 2020':'Deep-RUL'}). Falla real: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`
+            : `${rtfShown.label} — REAL degradation data (${rulModel==='exponential'?'exponential':rulModel==='pf'?'particle filter':rulModel==='gp'?'GP':rulModel==='wang2020'?'Wang 2020':'Deep-RUL'}). True failure: ${isFinite(rtfShown.trueFail) ? rtfShown.trueFail.toFixed(2) : '—'} h.`)}</p>
         <div className="rv-rul-read"><span>{t.onset}: <b>{rulShown.onset != null ? `${rulShown.onset.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.rul}: <b>{rulShown.rul != null ? `${rulShown.rul.toFixed(0)} ${t.h}` : '—'}</b></span><span>{t.fail}: <b>{rulShown.failTime != null ? `${rulShown.failTime.toFixed(0)} ${t.h}` : '—'}</b></span>{trajMode && <span>{lang === 'es' ? 'real' : 'true'}: <b>{isFinite(rtfShown.trueFail) ? `${rtfShown.trueFail.toFixed(1)} ${t.h}` : '—'}</b></span>}</div>
       </div>) },
     { id: 'eval', label: t.tEval, content: (

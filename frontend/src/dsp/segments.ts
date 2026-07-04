@@ -69,7 +69,7 @@ async function ottawaDataset(): Promise<SegDataset | null> {
       raw: sm.raw as number[],
       rawWdcnn: sm.rawTime as number[],
       rpm: Math.round(((sm.rpmMin as number) + (sm.rpmMax as number)) / 2),
-      meta: `Ottawa ER-16K · órdenes · ${Math.round(sm.rpmMin as number)}–${Math.round(sm.rpmMax as number)} rpm`,
+      meta: `Ottawa ER-16K · orders · ${Math.round(sm.rpmMin as number)}–${Math.round(sm.rpmMax as number)} rpm`,
       orderMap: sm.orderMap as { rpmBins: number[]; orderBins: number[]; mag: number[][] } | undefined,
     })),
   };
