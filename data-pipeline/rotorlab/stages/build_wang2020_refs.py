@@ -1,6 +1,6 @@
 """Build the Wang et al. (2020) reference trajectory library from XJTU-SY + FEMTO data.
 
-Exports: frontend/public/rv-wang2020-refs.json — a compact JSON artifact containing
+Exports: frontend/public/rv-wang2020-refs.json, a compact JSON artifact containing
 normalised reference trajectories and their exponential-linear model parameters
 for live Fréchet-distance matching in the browser.
 """

@@ -1,6 +1,6 @@
-"""T4 — cross-severity generalization contract. Locks (1) the registry's 6 unseen-size cases; (2) the cross_severity
+"""T4, cross-severity generalization contract. Locks (1) the registry's 6 unseen-size cases; (2) the cross_severity
 stage helpers; (3) the SHIPPED artifacts (rv-learned-metrics.json `crossSeverity` block + the severity sample
-segments in rv-cwru-samples.json) — so the honest generalization story can't silently drift or vanish. Reads the
+segments in rv-cwru-samples.json), so the honest generalization story can't silently drift or vanish. Reads the
 committed derived JSON (no torch / no raw .mat needed), so it runs in the light CI lane."""
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import pytest
 from rotorlab import registry
 from rotorlab.io.fetch_cwru import FILES, SEVERITY_FILES
 
-# NOTE: rotorlab.stages.cross_severity pulls in scipy (via model.classical) — a HEAVY-lane dep absent in light CI.
+# NOTE: rotorlab.stages.cross_severity pulls in scipy (via model.classical), a HEAVY-lane dep absent in light CI.
 # So it is imported lazily inside the one test that needs it (guarded by importorskip); the rest only touch the
 # registry / fetch table / committed JSON and run everywhere.
 
@@ -69,7 +69,7 @@ def test_shipped_metrics_cross_severity_block():
 
 def test_shipped_severity_samples():
     s = json.loads((DERIVED / "rv-cwru-samples.json").read_text(encoding="utf-8"))
-    # severity samples carry sizeIn (the MFPT cross-dataset samples also carry caseId but no sizeIn — exclude them)
+    # severity samples carry sizeIn (the MFPT cross-dataset samples also carry caseId but no sizeIn, exclude them)
     sev = [x for x in s["samples"] if x.get("sizeIn") is not None]
     assert sev, "no cross-severity sample segments committed"
     for x in sev:

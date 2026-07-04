@@ -1,4 +1,4 @@
-"""Gaussian Process RUL prognostics — offline pipeline (Python).
+"""Gaussian Process RUL prognostics, offline pipeline (Python).
 
 Uses scikit-learn's mature GaussianProcessRegressor with a composite RBF+Matern kernel
 and L-BFGS-B hyper-parameter optimisation (not a manual grid search). This is the same

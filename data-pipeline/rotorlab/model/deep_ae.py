@@ -1,5 +1,5 @@
 """Deep autoencoder health indicator (González-Muñiz et al. 2022, Reliab. Eng. Syst. Saf. 224:108482). Trained on
-HEALTHY windows only; its reconstruction error over a 64-D spectral feature is the novelty / health indicator — a
+HEALTHY windows only; its reconstruction error over a 64-D spectral feature is the novelty / health indicator, a
 faulty window reconstructs poorly -> high HI. Requires torch (the heavy precompute lane); the deployed live lane
 runs the EXPORTED ONNX in onnxruntime-web."""
 from __future__ import annotations

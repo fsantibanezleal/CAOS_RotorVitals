@@ -1,4 +1,4 @@
-"""The classical, UNSUPERVISED envelope/SES diagnosis chain (Randall & Antoni 2011) — the leakage-immune baseline.
+"""The classical, UNSUPERVISED envelope/SES diagnosis chain (Randall & Antoni 2011), the leakage-immune baseline.
 Moved verbatim from the original tools/cwru-benchmark/run.py: bandpass -> Hilbert envelope -> squared-envelope
 spectrum -> per-harmonic comb prominence with amplitude-modulation sidebands, plus the kurtogram band pick and the
 raw-spectrum control. Requires numpy + scipy (the heavy precompute lane); never imported by the light pipeline.

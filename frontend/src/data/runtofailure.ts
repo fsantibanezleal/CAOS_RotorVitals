@@ -4,7 +4,7 @@ import { type FaultKind } from '../dsp/bearing';
 
 // Synthetic run-to-failure health-indicator trend (the shape real bearing run-to-failure HIs show:
 // a steady healthy baseline, a degradation onset, then exponential growth to failure, with
-// measurement noise). Used to demonstrate the RUL projection honestly — labeled synthetic.
+// measurement noise). Used to demonstrate the RUL projection honestly, labeled synthetic.
 //
 // The trend REACTS to the planted scenario: higher severity → earlier onset and faster growth →
 // shorter remaining useful life; a healthy bearing shows no onset (no projection). The bearing/fault
@@ -29,7 +29,7 @@ export function runToFailure(opts?: { seed?: number; fault?: FaultKind; severity
   if (fault === 'healthy' || severity <= 1e-3) {
     const nH = 60; const points: HIPoint[] = [];
     for (let h = 0; h <= nH; h++) points.push({ t: h, hi: Math.max(0.01, baseline + 0.05 * baseline * gaussian(rng)) });
-    return { id: 'rtf-healthy', label: 'Healthy — no degradation onset', points, threshold, trueFail: Infinity };
+    return { id: 'rtf-healthy', label: 'Healthy, no degradation onset', points, threshold, trueFail: Infinity };
   }
 
   // severity drives onset and post-onset life: more severe → earlier onset, faster to failure
@@ -80,7 +80,7 @@ export function loadFemtoRtf(): Promise<FemtoTraj[]> { return loadOneRtf('rv-fem
 // ---- REAL raw life-snapshots (the run-to-failure FRAMES) ----------------------------------------------------------
 // Each selectable trajectory carries ~8 raw vibration windows sampled along its life (healthy → failure). These let
 // the FULL signal suite + the REAL degradation waterfall + the feature-space trajectory run on measured data in the
-// RUL mode — not only the HI curve. Artifacts: public/rv-{femto,xjtu,ims}-frames.json (link-only). Keyed by `set:id`
+// RUL mode, not only the HI curve. Artifacts: public/rv-{femto,xjtu,ims}-frames.json (link-only). Keyed by `set:id`
 // to match the trajectory selector. XJTU carries real fault-frequency orders; FEMTO/IMS have no published geometry.
 export interface LifeFrame { t: number; frac: number; rms: number; raw: number[] }
 export interface FrameSet { fs: number; win: number; frames: LifeFrame[]; faultOrders?: { bpfo: number; bpfi: number; bsf: number; ftf: number } }
@@ -111,7 +111,7 @@ export function femtoToRunToFailure(t: FemtoTraj): RunToFailure {
   const set = (t.set ?? 'femto').toUpperCase();
   return {
     id: `${t.set ?? 'femto'}-${t.id}`,
-    label: `${set} real — ${t.id} (${t.condition}, ${t.rpm} rpm / ${t.loadN} N)`,
+    label: `${set} real, ${t.id} (${t.condition}, ${t.rpm} rpm / ${t.loadN} N)`,
     points: t.points,
     threshold: t.threshold,
     trueFail: t.trueFail ?? Infinity,

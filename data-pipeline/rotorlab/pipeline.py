@@ -36,7 +36,7 @@ def _load_artifacts() -> tuple[dict, dict, dict]:
     if missing:
         raise SystemExit(
             f"missing committed artifacts in {DERIVED}: {missing}. "
-            f"These are the heavy lane's outputs — run `python -m rotorlab.pipeline all --retrain` "
+            f"These are the heavy lane's outputs, run `python -m rotorlab.pipeline all --retrain` "
             f"(after scripts/fetch-data) to regenerate them, or restore the committed copies."
         )
     return (read_json(DERIVED / "rv-cwru-samples.json"),
@@ -45,7 +45,7 @@ def _load_artifacts() -> tuple[dict, dict, dict]:
 
 
 def _contract_flags() -> list[dict]:
-    """Apply CONTRACT 1 to the CWRU file descriptors — proves the ingestion gate and carries any flags forward."""
+    """Apply CONTRACT 1 to the CWRU file descriptors, proves the ingestion gate and carries any flags forward."""
     rows = [{"case_id": f"cwru-{n}", "fs": 12000, "channel": "DE", "rpm": rpm, "load_hp": load,
              "fault_type": cls, "fault_size_in": (None if cls == "normal" else 0.007)}
             for n, (cls, load, rpm) in FILES.items()]
@@ -100,12 +100,12 @@ def retrain(seed: int = 42) -> None:
     # cross-DATASET generalization (T13): the CWRU-trained WDCNN vs unsupervised envelope/SES on MFPT (a diff rig).
     from .io import fetch_mfpt
     from .stages import cross_dataset
-    print("[retrain] cross-dataset generalization (MFPT — a different rig) ...", flush=True)
+    print("[retrain] cross-dataset generalization (MFPT, a different rig) ...", flush=True)
     mfpt_root = fetch_mfpt.download(RAW_MFPT)
     xdata = cross_dataset.run(model, str(mfpt_root), pre["classes"])
     print(f"  MFPT: WDCNN overall {xdata['wdcnn']['overall']} (deep) vs env-SES {xdata['classical']['overall']} "
           f"(physics) | WDCNN recall {xdata['wdcnn']['recall']}", flush=True)
-    # leakage demonstration (T15): random-window vs honest grouped split on a frozen 16-recording pool — the
+    # leakage demonstration (T15): random-window vs honest grouped split on a frozen 16-recording pool, the
     # documented CWRU window-overlap leakage trap (Hendriks et al. 2022). Real fitted models only; ships integrity controls.
     from .stages import leakage
     print("[retrain] leakage demonstration (random-window vs grouped split-by-recording) ...", flush=True)

@@ -1,4 +1,4 @@
-"""Stage 5 — evaluate (the TEST stage, heavy lane): held-out accuracy + 4x4 confusion + per-class recall + the
+"""Stage 5, evaluate (the TEST stage, heavy lane): held-out accuracy + 4x4 confusion + per-class recall + the
 honest SNR-robustness curve (the real deliverable, since clean CWRU is optimistic) for the WDCNN; the deep-AE
 healthy p99 threshold + fault-vs-healthy AUC + held-out healthy false-flag rate. Plus the leakage-immune classical
 benchmark (model.classical) over all 16 files. Leakage-safe by the held-out-load split + the unsupervised classical

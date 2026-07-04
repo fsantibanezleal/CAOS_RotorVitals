@@ -1,4 +1,4 @@
-// Envelope (amplitude-demodulation) analysis — the core of bearing diagnostics:
+// Envelope (amplitude-demodulation) analysis, the core of bearing diagnostics:
 // band-pass around the structural resonance, take the Hilbert envelope, then its spectrum.
 import { fft, ifft, nextPow2 } from './fft';
 
@@ -83,7 +83,7 @@ export function magSpectrum(x: Float64Array, fs: number): Spectrum {
 }
 
 /** Full envelope-spectrum pipeline: band-pass → Hilbert envelope → spectrum. With `squared`, the SQUARED envelope
- * is transformed (the squared-envelope spectrum, SES) — squaring sharpens the cyclostationary defect comb and is
+ * is transformed (the squared-envelope spectrum, SES), squaring sharpens the cyclostationary defect comb and is
  * the form recommended by Randall & Antoni; the plain magnitude envelope is the softer alternative. */
 export function envelopeSpectrum(x: Float64Array, fs: number, band: [number, number], squared = false): Spectrum {
   const bp = bandpass(x, fs, band[0], band[1]);

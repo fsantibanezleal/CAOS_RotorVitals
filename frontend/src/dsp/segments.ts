@@ -1,6 +1,6 @@
 // Unified REAL diagnosis-segment sources for the App's segment mode. Three measured datasets with different native
 // schemas are adapted to one shape so the same signal-analysis tools + the WDCNN run on any of them:
-//   - CWRU   : 12 kHz drive-end, classes normal/inner/outer/ball — the WDCNN's NATIVE domain (in-domain inference).
+//   - CWRU   : 12 kHz drive-end, classes normal/inner/outer/ball, the WDCNN's NATIVE domain (in-domain inference).
 //   - Ottawa : time-VARYING speed, computed-ORDER-TRACKED (orders domain); classes healthy/inner/outer. The WDCNN
 //              runs CROSS-DOMAIN on a 12 kHz time window (rawWdcnn).
 //   - MaFaulDa: 50 kHz constant-speed; classes outer/ball/cage. WDCNN runs CROSS-DOMAIN on a 12.5 kHz window; the
@@ -12,7 +12,7 @@ import { loadSamples } from './learned';
 export interface SegSample {
   cls: string;          // ground-truth class (dataset vocabulary)
   label: string;        // dropdown display
-  raw: number[];        // the signal the analysis tools run on (native domain — time samples or order samples)
+  raw: number[];        // the signal the analysis tools run on (native domain, time samples or order samples)
   rawWdcnn?: number[];  // a 12–12.5 kHz time window for the WDCNN (in/cross-domain); falls back to raw for CWRU
   rpm?: number;
   meta?: string;        // a short metadata line for the sidebar
@@ -95,7 +95,7 @@ async function mafauldaDataset(): Promise<SegDataset | null> {
 }
 
 let _segs: Promise<SegDataset[]> | null = null;
-// All available real segment datasets, in selector order (CWRU first — the WDCNN's native domain).
+// All available real segment datasets, in selector order (CWRU first, the WDCNN's native domain).
 export function loadSegmentDatasets(): Promise<SegDataset[]> {
   return (_segs ??= Promise.all([cwruDataset(), ottawaDataset(), mafauldaDataset()]).then((ds) => ds.filter((x): x is SegDataset => !!x)));
 }

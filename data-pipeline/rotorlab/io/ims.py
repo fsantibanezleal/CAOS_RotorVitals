@@ -1,6 +1,6 @@
 """IMS (NSF I/UCR Center for Intelligent Maintenance Systems) bearing run-to-failure dataset, via NASA PCoE.
 
-REAL prognostics data — three run-to-failure tests on a shaft with four Rexnord ZA-2115 bearings at 2000 rpm under a
+REAL prognostics data, three run-to-failure tests on a shaft with four Rexnord ZA-2115 bearings at 2000 rpm under a
 6000 lb radial load, 1 s snapshots @ 20 kHz taken every ~10 min until a bearing failed:
   - Test 1 (1st_test): 8 channels (4 bearings x 2 axes). Bearing 3 inner-race + Bearing 4 roller-element failure.
   - Test 2 (2nd_test): 4 channels. Bearing 1 outer-race failure.
@@ -28,11 +28,11 @@ TESTS = [
     ("2nd_test", "", [(0, "B1", "outer")]),
     ("4th_test", "txt", [(2, "B3", "outer")]),  # NASA packages the 3rd test under 4th_test/txt
 ]
-STRIDE = 2  # process every 2nd snapshot (~20 min) — the HI curve is smooth; halves the I/O
+STRIDE = 2  # process every 2nd snapshot (~20 min), the HI curve is smooth; halves the I/O
 
 # --- Raw life-snapshot frames (for the App's "Real: RUL" signal suite + 3D waterfall) ---
 RAW_WIN = 2048        # contiguous samples kept per snapshot (window of the main vibration channel)
-RAW_FS = FS_HZ        # 20 kHz — the raw window keeps the native sample rate (NOT order-tracked)
+RAW_FS = FS_HZ        # 20 kHz, the raw window keeps the native sample rate (NOT order-tracked)
 LIFE_FRACS = [0.0, 0.12, 0.25, 0.4, 0.55, 0.7, 0.85, 1.0]  # target life fractions for the snapshots
 # Only the SELECTABLE failing trajectories (trueFail != null) carry raw frames. Maps the emitted
 # trajectory id -> (test dir, file-glob subdir, 0-indexed main/horizontal vibration column).
@@ -98,7 +98,7 @@ def _smooth(y: np.ndarray, w: int = 9) -> np.ndarray:
 def frontend_artifact(trajs: list[dict], n_points: int = 160) -> dict:
     """IMS RMS magnitudes are dataset-specific (much smaller than FEMTO/XJTU's 2 g), so the alarm is adaptive per
     trajectory: threshold = max(4x healthy baseline, baseline + 6 sigma of the healthy window). trueFail = first
-    passage of the smoothed HI through it — a REAL end-of-life marker, not a fixed constant."""
+    passage of the smoothed HI through it, a REAL end-of-life marker, not a fixed constant."""
     sel: list[dict] = []
     for t in trajs:
         hi = np.asarray(t["hi"], dtype=float)
@@ -136,7 +136,7 @@ def frames_artifact(ims_root: str | Path) -> dict:
     Each snapshot stores a contiguous RAW_WIN-sample window of the main vibration channel (g), with the
     real elapsed time/frac from the filename timestamps. The frac=1.0 (failure) snapshot is snapped to the
     peak-RMS file in the last ~5 % of life, because on some IMS bearings (notably 2nd-B1) the literal last
-    file is a post-failure flat/clipped reading — the peak-RMS file carries the genuine failure signature."""
+    file is a post-failure flat/clipped reading, the peak-RMS file carries the genuine failure signature."""
     root = Path(ims_root)
     frames: dict[str, list[dict]] = {}
     for tid, (test_dir, sub, col) in FRAME_SOURCES.items():
@@ -152,7 +152,7 @@ def frames_artifact(ims_root: str | Path) -> dict:
         hours = np.array([(_parse_ts(n) - t0).total_seconds() / 3600.0 for n in names])
         life = float(hours[-1]) if hours.size else 0.0
 
-        # Snap the failure point (frac=1.0) to the peak-RMS file in the last 5 % of life — avoids the
+        # Snap the failure point (frac=1.0) to the peak-RMS file in the last 5 % of life, avoids the
         # post-failure flat tail. Scan that tail once.
         tail_lo = np.searchsorted(hours, 0.95 * life)
         tail_idx = range(tail_lo, len(paths))

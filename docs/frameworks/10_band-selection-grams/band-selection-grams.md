@@ -1,4 +1,4 @@
-# Method — Demodulation-band selection: kurtogram, infogram, autogram & IESFOgram
+# Method, Demodulation-band selection: kurtogram, infogram, autogram & IESFOgram
 
 **Provenance:** Antoni & Randall (2006), *The spectral kurtosis*, MSSP 20:308–331 (DOI
 10.1016/j.ymssp.2004.09.002); Antoni (2007), *Fast computation of the kurtogram*, MSSP 21:108–124 (DOI
@@ -14,20 +14,20 @@ Randall, Antoni & Gryllias (2020), *IESFOgram*, MSSP 144:106891 (DOI 10.1016/j.y
 
 Envelope analysis rests on one fragile decision: **which band to demodulate**. The fault energy concentrates around
 an unknown structural resonance; demodulate the wrong band and the envelope spectrum is flat and ambiguous. Choosing
-the band by eye does not scale — it is the single largest failure mode of the method. All four "grams" automate the
+the band by eye does not scale, it is the single largest failure mode of the method. All four "grams" automate the
 choice by scoring every band of a **dyadic paving** of `[0, fs/2]` (levels `k = 1…5`, `2^k` equal-width bands per
 level) and picking the maximum.
 
 A shared guard skips any band whose lower edge falls below `0.02·fs` (and DC): that low end is dominated by
-deterministic shaft/gear content — impulsive-looking but not a bearing fault — and would bias the selector.
+deterministic shaft/gear content, impulsive-looking but not a bearing fault, and would bias the selector.
 
 ## The four scores
 
 | Gram | Scores each band by | Responds to | Blind to |
 |---|---|---|---|
 | **Kurtogram** | excess kurtosis of the Hilbert envelope | impulsiveness | periodicity (a lone spike fools it) |
-| **Infogram** | negentropy of the squared envelope (SE) and of its spectrum (SES) | *repetitive* transients | — (robust to a single spike) |
-| **Autogram** | kurtosis of the autocorrelation of the squared envelope | periodic impulsiveness | — |
+| **Infogram** | negentropy of the squared envelope (SE) and of its spectrum (SES) | *repetitive* transients |, (robust to a single spike) |
+| **Autogram** | kurtosis of the autocorrelation of the squared envelope | periodic impulsiveness | n/a |
 | **IESFOgram** | prominence of the **diagnosed fault's** harmonic comb in the band's SES | the targeted fault period | impulses *not* at the fault period |
 
 ```
@@ -51,30 +51,30 @@ as the excess kurtosis of `|STFT|` across frames (256-sample Hann, 50 % overlap)
 
 Same dyadic grid, but each band is scored by **negentropy** of the squared envelope and of the SES instead of
 kurtosis. Negentropy responds to *repetitive* transients rather than to any single impulse, so it is robust exactly
-where the kurtogram is fooled — a lone non-Gaussian spike or electrical pickup. `negentropy()` returns 0 for a flat
+where the kurtogram is fooled, a lone non-Gaussian spike or electrical pickup. `negentropy()` returns 0 for a flat
 sequence and grows for a peaky one; `sesPower()` is the single-sided `|DFT{SE − mean}|²` with the DC bin excluded.
 
-## IESFOgram — the targeted selector
+## IESFOgram, the targeted selector
 
 Instead of scoring a band by *general* impulsiveness (kurtogram) or *general* repetitiveness (infogram), the
 IESFOgram scores it by how strongly its squared-envelope spectrum shows the harmonic **comb of the diagnosed fault
 frequency** (BPFO, BPFI, or 2·BSF). We tell it which periodicity to look for and pick the band whose envelope best
 reveals *that* fault. Consequence: an impulse **not** at the fault period enters neither the comb peak nor its local
-median baseline, so the targeted selector is insensitive to it — when a spike makes the kurtogram jump, the targeted
+median baseline, so the targeted selector is insensitive to it, when a spike makes the kurtogram jump, the targeted
 IESFOgram does not move. A **blind** variant drops the prior by sweeping shaft orders (`≥ 1.5×fr`, excluding shaft
 and cage) and choosing the strongest comb; it is weaker because it can latch onto gear-mesh lines.
 
 ## What it is NOT
 
 * **Kurtosis ≠ periodicity.** The kurtogram measures impulsiveness only; it cannot tell a periodic fault train from a
-  single transient. That is the motivation for the infogram/autogram/IESFOgram successors — and for the downstream
+  single transient. That is the motivation for the infogram/autogram/IESFOgram successors, and for the downstream
   **two-gate diagnosis** (absolute gate 4.5, relative gate 1.7; see
   [the diagnosis decision rule](../15_diagnosis-decision/diagnosis-decision.md)), which rejects an
   impulsive-but-aperiodic band (no comb → fails both gates → reported healthy).
 * **Not the paper's exact IESFOgram.** Mauricio et al. integrate the cyclic spectral **coherence** over a
   constant-relative-bandwidth filterbank; this build scores fault-comb prominence on the plain per-band SES over the
   pragmatic dyadic `gramGrid`, with no IRLS regression. It is a spike-robust *surrogate* of the paper's targeted
-  feature — attributed honestly, not claimed to be the full method.
+  feature, attributed honestly, not claimed to be the full method.
 
 ## Data contract & outliers
 
@@ -82,7 +82,7 @@ and cage) and choosing the strongest comb; it is weaker because it can latch ont
 * **Levels `k = 1…5`, bands `b = 0…2^k − 1`, lowest `0.02·fs` excluded.**
 * **Outlier behaviour:** the *whole reason* the grams differ. Drop an electrical spike into a clean signal: the
   kurtogram's selected band jumps to the spike; the infogram and the targeted IESFOgram do not. The App's spike demo
-  makes this visible — it is the honest way to show when each selector is trustworthy.
+  makes this visible, it is the honest way to show when each selector is trustworthy.
 
 ## Using it on other data
 
@@ -92,7 +92,7 @@ infogram. The dyadic grid and the `0.02·fs` guard transfer unchanged; only `fs`
 
 ## Honest reading
 
-Band selection dominates envelope analysis, and no single gram wins everywhere — which is why this build ships four
+Band selection dominates envelope analysis, and no single gram wins everywhere, which is why this build ships four
 and lets the `gram` tab compare them on the same record. The selected band and its score are honest outputs of the
 real algorithms on a physically-grounded synthetic signal; the severity and RUL trends shown alongside remain
 illustrative.

@@ -1,11 +1,11 @@
 """The measured live-vs-precompute GATE (ADR-0054), adapted for RotorVitals' client-side lane.
 
-RotorVitals runs its live diagnosis ENTIRELY in the browser — onnxruntime-web executes the trained WDCNN + deep-AE
-ONNX models, and a TypeScript DSP chain computes the classical features — so the "live wheels" of the SIR template
+RotorVitals runs its live diagnosis ENTIRELY in the browser, onnxruntime-web executes the trained WDCNN + deep-AE
+ONNX models, and a TypeScript DSP chain computes the classical features, so the "live wheels" of the SIR template
 become "client-side runtimes". A case runs LIVE iff it is client-side AND its runtimes are a subset of the
 deployed set AND a single forward pass + its replay trace are small/fast enough; otherwise it is PRECOMPUTE and the
 SPA replays the committed artifact. The verdict + measured budgets go into the manifest; CI fails on mislabeling.
-A single 2048-window WDCNN + a 64-D AE forward pass is milliseconds, so every RotorVitals case passes the gate —
+A single 2048-window WDCNN + a 64-D AE forward pass is milliseconds, so every RotorVitals case passes the gate , 
 this is a MEASUREMENT that documents that fact, never a hand-wave.
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ def classify_lane(*, client_side: bool, runtimes: set[str], run_ms: float, trace
     if trace_bytes > TRACE_BYTES_GATE:
         live = False
         reasons.append(f"trace_bytes {trace_bytes} > {TRACE_BYTES_GATE}")
-    # The raw measured run_ms drives the DECISION but is deliberately NOT stored — the committed manifest must be a
+    # The raw measured run_ms drives the DECISION but is deliberately NOT stored, the committed manifest must be a
     # pure function of (params, seed); wall-clock would dirty git on re-run. We store the verdict + budgets instead;
     # the live runtime is measured separately, in the browser.
     return {

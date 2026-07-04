@@ -16,7 +16,7 @@ filtered ground truth). The corrected protocol:
       - Prognostic Horizon (PH): earliest λ from which every later prediction stays inside the α-cone,
         reported as the lead time (trueFail − t_PH) in hours, averaged over trajectories that reach it.
 
-Produces: data/derived/rv-rul-benchmark.json — per (trajectory × model × checkpoint) predictions +
+Produces: data/derived/rv-rul-benchmark.json, per (trajectory × model × checkpoint) predictions +
 per-model aggregate metrics. The deep-RUL CNN is skipped unless its ONNX exists (heavy lane).
 """
 
@@ -205,7 +205,7 @@ if __name__ == "__main__":
         al = mm["alpha_lambda_accuracy"]
         cra = mm["cra"]
         ph = mm["prognostic_horizon_h"]
-        print(f"  {m:12s} α-λ acc {al if al is not None else '—'}  "
-              f"CRA {cra if cra is not None else '—'}  "
-              f"PH {ph if ph is not None else '—'} h  (n={mm['n_predictions']})")
+        print(f"  {m:12s} α-λ acc {al if al is not None else ', '}  "
+              f"CRA {cra if cra is not None else ', '}  "
+              f"PH {ph if ph is not None else ', '} h  (n={mm['n_predictions']})")
     print(f"  written to {DERIVED / 'rv-rul-benchmark.json'}")

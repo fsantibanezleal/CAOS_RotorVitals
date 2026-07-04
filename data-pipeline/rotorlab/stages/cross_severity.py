@@ -1,10 +1,10 @@
-"""Stage — cross-severity generalization (heavy lane, T4). The honest answer to "is the App a toy?".
+"""Stage, cross-severity generalization (heavy lane, T4). The honest answer to "is the App a toy?".
 
 The WDCNN, the deep-AE, the SVM-RBF and the Random Forest are ALL trained only on **0.007" faults at 0/1/2 HP**.
-Here every model diagnoses REAL CWRU inner/ball/outer faults at three diameters — **0.007" / 0.014" / 0.021"** — at
+Here every model diagnoses REAL CWRU inner/ball/outer faults at three diameters, **0.007" / 0.014" / 0.021"**, at
 the **held-out 3 HP load**. The 0.014" and 0.021" sizes are NEVER seen in training, so this is a true held-out
 severity+load generalization test: does a model trained on small faults still recognise larger faults of the same
-type? Larger spalls give stronger impacts (usually easier), but the deep-vs-classical gap can shift — and we report
+type? Larger spalls give stronger impacts (usually easier), but the deep-vs-classical gap can shift, and we report
 where the misses go. Requires torch + scipy (the heavy precompute lane only).
 """
 from __future__ import annotations

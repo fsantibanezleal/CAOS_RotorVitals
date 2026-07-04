@@ -47,29 +47,29 @@ export default function Benchmark() {
       content: (
         <div className="prose">
           {lm && <section>
-            <h2>{es ? 'Comparación de métodos — profundo vs ML clásico vs no-supervisado (held-out real)' : 'Method comparison — deep vs classical-ML vs unsupervised (real held-out)'}</h2>
+            <h2>{es ? 'Comparación de métodos, profundo vs ML clásico vs no-supervisado (held-out real)' : 'Method comparison, deep vs classical-ML vs unsupervised (real held-out)'}</h2>
             <p className="muted small">{es
               ? `Los cuatro evaluados sobre el MISMO split sin fuga: entrenado en ${lm.nTrain} ventanas reales (cargas 0/1/2 HP), evaluado en ${lm.nTest} ventanas held-out (carga 3 HP entera). El WDCNN aprende de la señal cruda; el SVM-RBF y el Random Forest clasifican un vector de 10 features físicas (indicadores de forma + prominencias de los peines BPFO/BPFI/2·BSF + curtosis de la banda de resonancia); el envolvente/SES es no-supervisado.`
               : `All four on the SAME leakage-safe split: trained on ${lm.nTrain} real windows (0/1/2 HP loads), evaluated on ${lm.nTest} held-out windows (the entire 3 HP load). The WDCNN learns from the raw signal; the SVM-RBF and Random Forest classify a 10-D physics-feature vector (shape indicators + BPFO/BPFI/2·BSF comb prominences + resonance-band kurtosis); the envelope/SES is unsupervised.`}</p>
             <table className="cmp-table">
               <thead><tr><th style={{ textAlign: 'left' }}>{es ? 'Modelo' : 'Model'}</th><th>{es ? 'Exactitud (held-out)' : 'Accuracy (held-out)'}</th><th>{es ? 'tipo' : 'type'}</th><th>{es ? 'recall sano' : 'healthy recall'}</th></tr></thead>
               <tbody>
-                <tr className="matched"><td style={{ textAlign: 'left' }}>WDCNN (1-D CNN, {es ? 'señal cruda' : 'raw signal'})</td><td className="mono"><b>{(lm.wdcnn.accuracy * 100).toFixed(1)}%</b></td><td className="muted">{es ? 'profundo' : 'deep learned'}</td><td className="mono">{lm.wdcnn.perClass.normal != null ? `${(lm.wdcnn.perClass.normal * 100).toFixed(0)}%` : '—'}</td></tr>
+                <tr className="matched"><td style={{ textAlign: 'left' }}>WDCNN (1-D CNN, {es ? 'señal cruda' : 'raw signal'})</td><td className="mono"><b>{(lm.wdcnn.accuracy * 100).toFixed(1)}%</b></td><td className="muted">{es ? 'profundo' : 'deep learned'}</td><td className="mono">{lm.wdcnn.perClass.normal != null ? `${(lm.wdcnn.perClass.normal * 100).toFixed(0)}%` : ', '}</td></tr>
                 {lm.classicalML && <>
-                  <tr><td style={{ textAlign: 'left' }}>Random Forest ({es ? '10 features físicas' : '10 physics features'})</td><td className="mono"><b>{(lm.classicalML.rf.accuracy * 100).toFixed(1)}%</b></td><td className="muted">{es ? 'ML clásico' : 'classical ML'}</td><td className="mono">{lm.classicalML.rf.perClass.normal != null ? `${(lm.classicalML.rf.perClass.normal * 100).toFixed(0)}%` : '—'}</td></tr>
-                  <tr><td style={{ textAlign: 'left' }}>SVM-RBF ({es ? '10 features físicas' : '10 physics features'})</td><td className="mono"><b>{(lm.classicalML.svm.accuracy * 100).toFixed(1)}%</b></td><td className="muted">{es ? 'ML clásico' : 'classical ML'}</td><td className="mono">{lm.classicalML.svm.perClass.normal != null ? `${(lm.classicalML.svm.perClass.normal * 100).toFixed(0)}%` : '—'}</td></tr>
+                  <tr><td style={{ textAlign: 'left' }}>Random Forest ({es ? '10 features físicas' : '10 physics features'})</td><td className="mono"><b>{(lm.classicalML.rf.accuracy * 100).toFixed(1)}%</b></td><td className="muted">{es ? 'ML clásico' : 'classical ML'}</td><td className="mono">{lm.classicalML.rf.perClass.normal != null ? `${(lm.classicalML.rf.perClass.normal * 100).toFixed(0)}%` : ', '}</td></tr>
+                  <tr><td style={{ textAlign: 'left' }}>SVM-RBF ({es ? '10 features físicas' : '10 physics features'})</td><td className="mono"><b>{(lm.classicalML.svm.accuracy * 100).toFixed(1)}%</b></td><td className="muted">{es ? 'ML clásico' : 'classical ML'}</td><td className="mono">{lm.classicalML.svm.perClass.normal != null ? `${(lm.classicalML.svm.perClass.normal * 100).toFixed(0)}%` : ', '}</td></tr>
                 </>}
                 <tr><td style={{ textAlign: 'left' }}>{es ? 'envolvente/SES (banda de resonancia)' : 'envelope/SES (resonance band)'}</td><td className="mono"><b>{(METHODS[NAMES[0]].accuracy * 100).toFixed(1)}%</b></td><td className="muted">{es ? 'no-supervisado' : 'unsupervised'}</td><td className="mono">{`${(METHODS[NAMES[0]].rowRecall[(bench.classes as string[]).indexOf('normal')] * 100).toFixed(0)}%`}</td></tr>
               </tbody>
             </table>
             {lm.classicalML && <p className="muted small">{es
-              ? 'La lectura honesta está en la columna "recall sano": el ML clásico clava las fallas (externa/interna ~100%, bola ~90%) pero falsa-alarma en la mitad de las ventanas sanas — las features hechas a mano (las prominencias de los peines) disparan en señales sanas. El CNN profundo aprende esa frontera sano/falla que las features fijas no capturan, y por eso gana. No es una victoria fabricada: el split es el mismo y el número se reporta como cae.'
-              : 'The honest reading is the "healthy recall" column: the classical ML nails the faults (outer/inner ~100%, ball ~90%) but false-alarms on half the healthy windows — the hand-crafted features (the comb prominences) fire on healthy signals. The deep CNN learns the healthy/fault boundary the fixed features cannot, and that is why it wins. Not a fabricated win: the split is identical and the number is reported as it lands.'}</p>}
+              ? 'La lectura honesta está en la columna "recall sano": el ML clásico clava las fallas (externa/interna ~100%, bola ~90%) pero falsa-alarma en la mitad de las ventanas sanas, las features hechas a mano (las prominencias de los peines) disparan en señales sanas. El CNN profundo aprende esa frontera sano/falla que las features fijas no capturan, y por eso gana. No es una victoria fabricada: el split es el mismo y el número se reporta como cae.'
+              : 'The honest reading is the "healthy recall" column: the classical ML nails the faults (outer/inner ~100%, ball ~90%) but false-alarms on half the healthy windows, the hand-crafted features (the comb prominences) fire on healthy signals. The deep CNN learns the healthy/fault boundary the fixed features cannot, and that is why it wins. Not a fabricated win: the split is identical and the number is reported as it lands.'}</p>}
 
             <h3>{es ? 'Robustez vs ruido (el dato honesto)' : 'Noise robustness (the honest part)'}</h3>
             <p className="muted small">{es
-              ? 'CWRU es un banco de laboratorio limpio → exactitud perfecta en limpio (sospechosa por sí sola). Añadiendo ruido gaussiano controlado, el WDCNN se degrada de forma realista — eso es lo creíble:'
-              : 'CWRU is a clean lab rig → perfect clean accuracy (suspect on its own). Adding controlled Gaussian noise, the WDCNN degrades realistically — that is the credible reading:'}</p>
+              ? 'CWRU es un banco de laboratorio limpio → exactitud perfecta en limpio (sospechosa por sí sola). Añadiendo ruido gaussiano controlado, el WDCNN se degrada de forma realista, eso es lo creíble:'
+              : 'CWRU is a clean lab rig → perfect clean accuracy (suspect on its own). Adding controlled Gaussian noise, the WDCNN degrades realistically, that is the credible reading:'}</p>
             <SnrCurve curve={lm.wdcnn.snrCurve} es={es} />
 
             <p className="muted small" style={{ marginTop: '0.6rem' }}>{es
@@ -170,7 +170,7 @@ export default function Benchmark() {
       content: (
         <div className="prose">
           <section>
-            <h2>{es ? 'Comparación de modelos de RUL — protocolo de checkpoints (Saxena 2010)' : 'RUL model comparison — checkpoint protocol (Saxena 2010)'}</h2>
+            <h2>{es ? 'Comparación de modelos de RUL, protocolo de checkpoints (Saxena 2010)' : 'RUL model comparison, checkpoint protocol (Saxena 2010)'}</h2>
             <p className="muted small">{(() => {
               const s = rulBench.summary as { trajectories_evaluable: number; alpha: number; life_fractions: number[] };
               const lf = s.life_fractions.map((x) => `${Math.round(x * 100)}%`).join('/');
@@ -194,23 +194,23 @@ export default function Benchmark() {
                   ['gp', es ? 'Proceso Gaussiano' : 'Gaussian Process', 'scikit-learn GPR (RBF+Matérn+WhiteKernel)'],
                 ] as const).map(([id, label, impl]) => {
                   const m = (rulBench.summary.models as Record<string, { alpha_lambda_accuracy: number | null; cra: number | null; n_predictions: number }>)[id];
-                  const pct = (v: number | null) => v == null ? '—' : `${(v * 100).toFixed(1)}%`;
+                  const pct = (v: number | null) => v == null ? ', ' : `${(v * 100).toFixed(1)}%`;
                   return (
                     <tr key={id}>
                       <td style={{textAlign:'left'}}>{label}</td>
                       <td className="mono">{pct(m?.alpha_lambda_accuracy)}</td>
-                      <td className="mono">{m?.cra == null ? '—' : m.cra.toFixed(3)}</td>
+                      <td className="mono">{m?.cra == null ? ', ' : m.cra.toFixed(3)}</td>
                       <td className="mono muted">{m?.n_predictions ?? 0}</td>
                       <td className="muted">{impl}</td>
                     </tr>
                   );
                 })}
-                <tr><td style={{textAlign:'left'}}>CNN-BiLSTM (Deep-HI/RUL)</td><td className="mono muted">{es ? 'pendiente' : 'pending'}</td><td className="mono muted">—</td><td className="mono muted">—</td><td className="muted">{es ? 'PyTorch → ONNX (3.4 MB), 18 trayectorias' : 'PyTorch → ONNX (3.4 MB), 18 trajectories'}</td></tr>
+                <tr><td style={{textAlign:'left'}}>CNN-BiLSTM (Deep-HI/RUL)</td><td className="mono muted">{es ? 'pendiente' : 'pending'}</td><td className="mono muted">, </td><td className="mono muted">, </td><td className="muted">{es ? 'PyTorch → ONNX (3.4 MB), 18 trayectorias' : 'PyTorch → ONNX (3.4 MB), 18 trajectories'}</td></tr>
               </tbody>
             </table>
             <p className="muted" style={{fontSize:'0.85rem',marginTop:8}}>{es
-              ? 'Lectura honesta: bajo el protocolo estándar, la predicción PUNTUAL de RUL en estos rodamientos es difícil — las exactitudes α-λ son bajas para los tres modelos clásicos de primer cruce (a 50% de vida el onset de degradación aún no es discernible; a 90% la ventana de extrapolación es corta). Ningún modelo "gana" por un margen significativo; el resultado negativo es real y se reporta como tal. El valor operativo del pronóstico aquí está en la distribución posterior del filtro de partículas y en la proyección EN VIVO sobre la curva HI medida (pestaña RUL del App) con la curva α-λ por trayectoria (pestaña Eval RUL), no en un puntaje puntual agregado. La CNN-BiLSTM está entrenada (18 trayectorias) y produce una curva HI real, pero su evaluación por checkpoints sigue pendiente. Wang 2020 (matching de librería) aún fuera de esta comparación offline.'
-              : 'Honest reading: under the field-standard protocol, POINT RUL prediction on these bearings is hard — the α-λ accuracies are low for all three classical first-passage models (at 50% of life the degradation onset is not yet discernible; at 90% the extrapolation window is short). No model "wins" by a meaningful margin; the negative result is real and reported as such. The operational value of prognostics here is in the particle filter’s posterior distribution and the LIVE projection on the measured HI curve (App RUL tab) with the per-trajectory α-λ curve (RUL Eval tab), not an aggregate point score. The CNN-BiLSTM is trained (18 trajectories) and produces a real HI curve, but its checkpoint evaluation is still pending. Wang 2020 (library matching) is not yet part of this offline comparison.'}</p>
+              ? 'Lectura honesta: bajo el protocolo estándar, la predicción PUNTUAL de RUL en estos rodamientos es difícil, las exactitudes α-λ son bajas para los tres modelos clásicos de primer cruce (a 50% de vida el onset de degradación aún no es discernible; a 90% la ventana de extrapolación es corta). Ningún modelo "gana" por un margen significativo; el resultado negativo es real y se reporta como tal. El valor operativo del pronóstico aquí está en la distribución posterior del filtro de partículas y en la proyección EN VIVO sobre la curva HI medida (pestaña RUL del App) con la curva α-λ por trayectoria (pestaña Eval RUL), no en un puntaje puntual agregado. La CNN-BiLSTM está entrenada (18 trayectorias) y produce una curva HI real, pero su evaluación por checkpoints sigue pendiente. Wang 2020 (matching de librería) aún fuera de esta comparación offline.'
+              : 'Honest reading: under the field-standard protocol, POINT RUL prediction on these bearings is hard, the α-λ accuracies are low for all three classical first-passage models (at 50% of life the degradation onset is not yet discernible; at 90% the extrapolation window is short). No model "wins" by a meaningful margin; the negative result is real and reported as such. The operational value of prognostics here is in the particle filter’s posterior distribution and the LIVE projection on the measured HI curve (App RUL tab) with the per-trajectory α-λ curve (RUL Eval tab), not an aggregate point score. The CNN-BiLSTM is trained (18 trajectories) and produces a real HI curve, but its checkpoint evaluation is still pending. Wang 2020 (library matching) is not yet part of this offline comparison.'}</p>
           </section>
         </div>
       ),
@@ -222,8 +222,8 @@ export default function Benchmark() {
       <div className="page-head">
         <h1>{es ? 'Benchmark (datos reales CWRU)' : 'Benchmark (real CWRU data)'}</h1>
         <p className="lede">{es
-          ? 'Modelos aprendidos (WDCNN, deep-AE) y el diagnóstico clásico de envolvente/SES, evaluados sobre el conjunto real de rodamientos de Case Western Reserve University — métricas calculadas, datos crudos nunca re-hospedados. Esta página cuantifica el conjunto entrenado (CWRU) y la transferencia cross-dataset (MFPT); el App, además, opera EN VIVO sobre otras cinco fuentes reales — segmentos de diagnóstico Ottawa (order-tracking) y MaFaulDa, y trayectorias run-to-failure FEMTO/XJTU/IMS (con el WDCNN cross-domain etiquetado).'
-          : 'Learned models (WDCNN, deep-AE) and the classical envelope/SES diagnoser, evaluated on the real Case Western Reserve University bearing set — metrics computed, raw data never re-hosted. This page quantifies the trained set (CWRU) and the cross-dataset transfer (MFPT); the App additionally operates LIVE on five more real sources — Ottawa (order-tracked) and MaFaulDa diagnosis segments, and FEMTO/XJTU/IMS run-to-failure trajectories (with the cross-domain WDCNN labelled).'}</p>
+          ? 'Modelos aprendidos (WDCNN, deep-AE) y el diagnóstico clásico de envolvente/SES, evaluados sobre el conjunto real de rodamientos de Case Western Reserve University, métricas calculadas, datos crudos nunca re-hospedados. Esta página cuantifica el conjunto entrenado (CWRU) y la transferencia cross-dataset (MFPT); el App, además, opera EN VIVO sobre otras cinco fuentes reales, segmentos de diagnóstico Ottawa (order-tracking) y MaFaulDa, y trayectorias run-to-failure FEMTO/XJTU/IMS (con el WDCNN cross-domain etiquetado).'
+          : 'Learned models (WDCNN, deep-AE) and the classical envelope/SES diagnoser, evaluated on the real Case Western Reserve University bearing set, metrics computed, raw data never re-hosted. This page quantifies the trained set (CWRU) and the cross-dataset transfer (MFPT); the App additionally operates LIVE on five more real sources, Ottawa (order-tracked) and MaFaulDa diagnosis segments, and FEMTO/XJTU/IMS run-to-failure trajectories (with the cross-domain WDCNN labelled).'}</p>
       </div>
       <Tabs tabs={tabs} ariaLabel={es ? 'benchmark' : 'benchmark'} />
     </div>
@@ -233,7 +233,7 @@ export default function Benchmark() {
 // react fragment helper that keeps grid children flat
 function FragmentRow({ children }: { children: React.ReactNode }) { return <>{children}</>; }
 
-// T4 — cross-severity generalization: every model is trained ONLY on 0.007" faults, then asked to diagnose UNSEEN
+// T4, cross-severity generalization: every model is trained ONLY on 0.007" faults, then asked to diagnose UNSEEN
 // 0.014"/0.021" fault sizes at the held-out 3 HP load. The honest "is the App a toy?" answer.
 type CrossSeverity = NonNullable<Metrics['crossSeverity']>;
 function accColor(a: number) { return a >= 0.9 ? '#1a7f37' : a >= 0.6 ? '#9e6a03' : '#b62324'; }
@@ -255,10 +255,10 @@ function CrossSeverityBlock({ xs, es }: { xs: CrossSeverity; es: boolean }) {
   });
   return (
     <section>
-      <h2>{es ? 'Generalización entre severidades — ¿reconoce tamaños de falla NO vistos? (held-out real)' : 'Cross-severity generalization — does it recognize UNSEEN fault sizes? (real held-out)'}</h2>
+      <h2>{es ? 'Generalización entre severidades, ¿reconoce tamaños de falla NO vistos? (held-out real)' : 'Cross-severity generalization, does it recognize UNSEEN fault sizes? (real held-out)'}</h2>
       <p className="muted small">{es
-        ? 'Todos los modelos se entrenan SOLO con fallas de 0.007 in (cargas 0/1/2 HP). Aquí diagnostican fallas reales de pista interna / bola / externa a 0.007 / 0.014 / 0.021 in, en la carga 3 HP held-out. Los tamaños 0.014 in y 0.021 in NUNCA se ven en entrenamiento — es una prueba real de generalización por severidad. Exactitud = recall de la falla (cada archivo es un solo tipo de falla).'
-        : 'Every model is trained ONLY on 0.007 in faults (0/1/2 HP loads). Here they diagnose real inner / ball / outer faults at 0.007 / 0.014 / 0.021 in, at the held-out 3 HP load. The 0.014 in and 0.021 in sizes are NEVER seen in training — a true severity-generalization test. Accuracy = fault recall (each file is one fault type).'}</p>
+        ? 'Todos los modelos se entrenan SOLO con fallas de 0.007 in (cargas 0/1/2 HP). Aquí diagnostican fallas reales de pista interna / bola / externa a 0.007 / 0.014 / 0.021 in, en la carga 3 HP held-out. Los tamaños 0.014 in y 0.021 in NUNCA se ven en entrenamiento, es una prueba real de generalización por severidad. Exactitud = recall de la falla (cada archivo es un solo tipo de falla).'
+        : 'Every model is trained ONLY on 0.007 in faults (0/1/2 HP loads). Here they diagnose real inner / ball / outer faults at 0.007 / 0.014 / 0.021 in, at the held-out 3 HP load. The 0.014 in and 0.021 in sizes are NEVER seen in training, a true severity-generalization test. Accuracy = fault recall (each file is one fault type).'}</p>
       <table className="cmp-table">
         <thead><tr>
           <th style={{ textAlign: 'left' }}>{es ? 'Modelo' : 'Model'}</th>
@@ -272,16 +272,16 @@ function CrossSeverityBlock({ xs, es }: { xs: CrossSeverity; es: boolean }) {
               <td style={{ textAlign: 'left' }}>{mr.label}</td>
               {SIZE_TAGS.map((s) => {
                 const a = xs.byMethodBySize[mr.key]?.[s];
-                return <td key={s} className="mono">{a == null ? '—' : <b style={{ color: accColor(a) }}>{(a * 100).toFixed(1)}%</b>}</td>;
+                return <td key={s} className="mono">{a == null ? ', ' : <b style={{ color: accColor(a) }}>{(a * 100).toFixed(1)}%</b>}</td>;
               })}
             </tr>
           ))}
         </tbody>
       </table>
       <p className="muted small">{es
-        ? 'El hallazgo honesto: el WDCNN clava los spalls más grandes de 0.021 in (98.9%) pero se desploma en el tamaño intermedio 0.014 in (27.8%) — y el envolvente/SES, que no entrena nunca, también falla en las MISMAS grabaciones de 0.014 in. Esa coincidencia entre métodos apunta a que las firmas de 0.014 in de CWRU son más débiles/atípicas (un matiz documentado, Smith & Randall 2015), no a un artefacto del modelo. La severidad held-out es genuinamente difícil — se muestra, no se esconde.'
-        : 'The honest finding: the WDCNN nails the largest 0.021 in spalls (98.9%) but collapses on the intermediate 0.014 in size (27.8%) — and the envelope/SES, which never trains, also fails on the SAME 0.014 in recordings. That cross-method agreement points to the 0.014 in CWRU signatures being weaker/atypical (a documented nuance, Smith & Randall 2015), not a model artefact. Held-out severity is genuinely hard — shown, not hidden.'}{' '}<Cite id="smith2015" paren /></p>
-      <h3>{es ? 'Detalle por falla — a dónde van los errores del WDCNN' : 'Per-fault detail — where the WDCNN misses go'}</h3>
+        ? 'El hallazgo honesto: el WDCNN clava los spalls más grandes de 0.021 in (98.9%) pero se desploma en el tamaño intermedio 0.014 in (27.8%), y el envolvente/SES, que no entrena nunca, también falla en las MISMAS grabaciones de 0.014 in. Esa coincidencia entre métodos apunta a que las firmas de 0.014 in de CWRU son más débiles/atípicas (un matiz documentado, Smith & Randall 2015), no a un artefacto del modelo. La severidad held-out es genuinamente difícil, se muestra, no se esconde.'
+        : 'The honest finding: the WDCNN nails the largest 0.021 in spalls (98.9%) but collapses on the intermediate 0.014 in size (27.8%), and the envelope/SES, which never trains, also fails on the SAME 0.014 in recordings. That cross-method agreement points to the 0.014 in CWRU signatures being weaker/atypical (a documented nuance, Smith & Randall 2015), not a model artefact. Held-out severity is genuinely hard, shown, not hidden.'}{' '}<Cite id="smith2015" paren /></p>
+      <h3>{es ? 'Detalle por falla, a dónde van los errores del WDCNN' : 'Per-fault detail, where the WDCNN misses go'}</h3>
       <table className="cmp-table">
         <thead><tr>
           <th style={{ textAlign: 'left' }}>{es ? 'Falla' : 'Fault'}</th><th>{es ? 'tamaño' : 'size'}</th>
@@ -294,7 +294,7 @@ function CrossSeverityBlock({ xs, es }: { xs: CrossSeverity; es: boolean }) {
               <td className="mono">{r.sizeIn.toFixed(3)}″ {r.isNew && <span className="muted">({es ? 'no visto' : 'unseen'})</span>}</td>
               <td className="mono muted">#{r.file}</td>
               <td className="mono"><b style={{ color: accColor(r.wdcnn) }}>{(r.wdcnn * 100).toFixed(1)}%</b></td>
-              <td className="mono">{r.wdcnn >= 0.9 || !r.landsAs ? '—' : clsLbl(r.landsAs)}</td>
+              <td className="mono">{r.wdcnn >= 0.9 || !r.landsAs ? ', ' : clsLbl(r.landsAs)}</td>
             </tr>
           ))}
         </tbody>
@@ -304,7 +304,7 @@ function CrossSeverityBlock({ xs, es }: { xs: CrossSeverity; es: boolean }) {
   );
 }
 
-// T13 — cross-DATASET generalization: the CWRU-trained WDCNN vs the unsupervised envelope/SES on MFPT (a DIFFERENT
+// T13, cross-DATASET generalization: the CWRU-trained WDCNN vs the unsupervised envelope/SES on MFPT (a DIFFERENT
 // rig). The domain-shift test that completes the arc: deep wins in-distribution, physics wins cross-distribution.
 type CrossDataset = NonNullable<Metrics['crossDataset']>;
 function CrossDatasetBlock({ xs, es }: { xs: CrossDataset; es: boolean }) {
@@ -319,10 +319,10 @@ function CrossDatasetBlock({ xs, es }: { xs: CrossDataset; es: boolean }) {
   const outerLanded = Object.entries(outerDist).sort((a, b) => b[1] - a[1]).filter(([, n]) => n > 0);
   return (
     <section>
-      <h2>{es ? 'Generalización entre DATASETS — ¿funciona en otro banco? (MFPT, real)' : 'Cross-DATASET generalization — does it work on another rig? (MFPT, real)'}</h2>
+      <h2>{es ? 'Generalización entre DATASETS, ¿funciona en otro banco? (MFPT, real)' : 'Cross-DATASET generalization, does it work on another rig? (MFPT, real)'}</h2>
       <p className="muted small">{es
-        ? `El WDCNN fue entrenado en CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) y NUNCA vio MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz) — otro banco, otra geometría, otra tasa de muestreo. Es la prueba clásica de domain-shift. Multiplicadores de defecto distintos: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT) — el envolvente/SES usa los de MFPT (física correcta); el WDCNN solo conoce los patrones de CWRU.`
-        : `The WDCNN was trained on CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) and NEVER saw MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz) — a different rig, geometry and sample rate. The classic domain-shift test. Different defect multipliers: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT) — the envelope/SES uses MFPT's (correct physics); the WDCNN only knows CWRU's learned patterns.`}</p>
+        ? `El WDCNN fue entrenado en CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) y NUNCA vio MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz), otro banco, otra geometría, otra tasa de muestreo. Es la prueba clásica de domain-shift. Multiplicadores de defecto distintos: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT), el envolvente/SES usa los de MFPT (física correcta); el WDCNN solo conoce los patrones de CWRU.`
+        : `The WDCNN was trained on CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) and NEVER saw MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz), a different rig, geometry and sample rate. The classic domain-shift test. Different defect multipliers: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT), the envelope/SES uses MFPT's (correct physics); the WDCNN only knows CWRU's learned patterns.`}</p>
       <table className="cmp-table">
         <thead><tr>
           <th style={{ textAlign: 'left' }}>{es ? 'Método' : 'Method'}</th>
@@ -338,7 +338,7 @@ function CrossDatasetBlock({ xs, es }: { xs: CrossDataset; es: boolean }) {
                 <td className="mono"><b style={{ color: accColor(blk.overall) }}>{(blk.overall * 100).toFixed(1)}%</b></td>
                 {xs.classes.map((c) => {
                   const r = blk.recall[c];
-                  return <td key={c} className="mono">{r == null ? '—' : <b style={{ color: accColor(r) }}>{(r * 100).toFixed(0)}%</b>}</td>;
+                  return <td key={c} className="mono">{r == null ? ', ' : <b style={{ color: accColor(r) }}>{(r * 100).toFixed(0)}%</b>}</td>;
                 })}
               </tr>
             );
@@ -346,18 +346,18 @@ function CrossDatasetBlock({ xs, es }: { xs: CrossDataset; es: boolean }) {
         </tbody>
       </table>
       <div className="callout" data-variant="honest"><p>{es
-        ? `El resultado completa el arco profundo-vs-clásico: el WDCNN profundo GANA dentro de su distribución (CWRU) pero se DESPLOMA en otro banco (${(xs.wdcnn.overall * 100).toFixed(0)}% global, recall de pista externa ${((xs.wdcnn.recall.outer ?? 0) * 100).toFixed(0)}%) — sus features aprendidas son específicas del banco. El envolvente/SES no-supervisado, que no entrena, TRANSFIERE perfecto (${(xs.classical.overall * 100).toFixed(0)}%) porque la física (peine en la frecuencia de defecto correcta) es universal. La lección honesta: profundo gana in-distribution, la física gana cross-distribution.`
-        : `The result completes the deep-vs-classical arc: the deep WDCNN WINS in-distribution (CWRU) but COLLAPSES on another rig (${(xs.wdcnn.overall * 100).toFixed(0)}% overall, outer-race recall ${((xs.wdcnn.recall.outer ?? 0) * 100).toFixed(0)}%) — its learned features are rig-specific. The unsupervised envelope/SES, which never trains, TRANSFERS perfectly (${(xs.classical.overall * 100).toFixed(0)}%) because the physics (a comb at the correct defect frequency) is universal. The honest lesson: deep wins in-distribution, physics wins cross-distribution.`}</p></div>
+        ? `El resultado completa el arco profundo-vs-clásico: el WDCNN profundo GANA dentro de su distribución (CWRU) pero se DESPLOMA en otro banco (${(xs.wdcnn.overall * 100).toFixed(0)}% global, recall de pista externa ${((xs.wdcnn.recall.outer ?? 0) * 100).toFixed(0)}%), sus features aprendidas son específicas del banco. El envolvente/SES no-supervisado, que no entrena, TRANSFIERE perfecto (${(xs.classical.overall * 100).toFixed(0)}%) porque la física (peine en la frecuencia de defecto correcta) es universal. La lección honesta: profundo gana in-distribution, la física gana cross-distribution.`
+        : `The result completes the deep-vs-classical arc: the deep WDCNN WINS in-distribution (CWRU) but COLLAPSES on another rig (${(xs.wdcnn.overall * 100).toFixed(0)}% overall, outer-race recall ${((xs.wdcnn.recall.outer ?? 0) * 100).toFixed(0)}%), its learned features are rig-specific. The unsupervised envelope/SES, which never trains, TRANSFERS perfectly (${(xs.classical.overall * 100).toFixed(0)}%) because the physics (a comb at the correct defect frequency) is universal. The honest lesson: deep wins in-distribution, physics wins cross-distribution.`}</p></div>
       {outerLanded.length > 0 && <p className="muted small">{es ? 'A dónde manda el WDCNN las fallas de pista externa de MFPT: ' : 'Where the WDCNN sends MFPT outer-race faults: '}
-        {outerLanded.map(([c, n], i) => <span key={c}>{i > 0 ? ' · ' : ''}{clsLbl(c)} {n}</span>)} — {es ? 'nunca las reconoce como "externa" (recall 0%), las confunde con clases de CWRU.' : 'never recognised as "outer" (0% recall), confused with CWRU classes.'}</p>}
+        {outerLanded.map(([c, n], i) => <span key={c}>{i > 0 ? ' · ' : ''}{clsLbl(c)} {n}</span>)}, {es ? 'nunca las reconoce como "externa" (recall 0%), las confunde con clases de CWRU.' : 'never recognised as "outer" (0% recall), confused with CWRU classes.'}</p>}
       <p className="muted small">{xs.note}</p>
     </section>
   );
 }
 
-// T15 — window-overlap leakage, quantified TWO ways on ONE frozen pool (the CWRU window-overlap trap, Hendriks 2022).
+// T15, window-overlap leakage, quantified TWO ways on ONE frozen pool (the CWRU window-overlap trap, Hendriks 2022).
 // (1) the ISOLATED overlap leak via a purge/embargo control (same random test set + load; overlapping train
-// neighbours removed) — the clean number; (2) the naive-vs-production gap — an UPPER BOUND that ALSO charges the
+// neighbours removed), the clean number; (2) the naive-vs-production gap, an UPPER BOUND that ALSO charges the
 // grouped arm a 3 HP load-generalization penalty, so it is NOT pure leakage. Honest decomposition: most of the
 // naive gap is the load penalty, the pure overlap leak is small on this clean dataset.
 type Leakage = NonNullable<Metrics['leakage']>;
@@ -376,10 +376,10 @@ function LeakageBlock({ lk, es }: { lk: Leakage; es: boolean }) {
   const sw = (pts: number) => (pts / maxGap) * (W - padL - padR);
   return (
     <section>
-      <h2>{es ? 'Fuga por solape de ventanas — aislada vs el techo del split ingenuo (real)' : 'Window-overlap leakage — isolated vs the naive-split upper bound (real)'}</h2>
+      <h2>{es ? 'Fuga por solape de ventanas, aislada vs el techo del split ingenuo (real)' : 'Window-overlap leakage, isolated vs the naive-split upper bound (real)'}</h2>
       <p className="muted small">{es
-        ? `Un conjunto congelado de ${lk.nWindows} ventanas (16 grabaciones CWRU, ${lk.overlapPct}% de solape porque HOP ${lk.hop} < WIN ${lk.win}). Se mide la fuga de DOS formas, separadas a propósito para no exagerar. (1) Fuga AISLADA — control de purga/embargo: sobre el MISMO test aleatorio (mezcla de 4 cargas → carga y clase fijas), se compara el train con-solape contra un train al que se le quitan las ventanas vecinas (orden ±1) de cualquier ventana de test; quitar datos solo puede PERJUDICAR, así que la ganancia restante es solo del solape (media de ${lk.nSeeds} semillas). (2) Ingenuo vs producción — un TECHO: el split aleatorio vs el split agrupado de producción (held-out 3 HP), que ADEMÁS paga una penalización por generalizar a una carga no vista — no es fuga pura.`
-        : `One frozen pool of ${lk.nWindows} windows (16 CWRU recordings, ${lk.overlapPct}% overlap because HOP ${lk.hop} < WIN ${lk.win}). Leakage is measured TWO ways, deliberately kept apart so the demo does not overclaim. (1) ISOLATED leak — a purge/embargo control: on the SAME random test set (a 4-load mix → load and class held constant), a with-overlap train is compared against a train with every order±1 neighbour of a test window removed; removing data can only HURT, so the residual gain isolates the overlap (mean over ${lk.nSeeds} seeds). (2) Naive-vs-production — an UPPER BOUND: the random split vs the production grouped split (held-out 3 HP), which ALSO pays a penalty for generalizing to an unseen load — so it is NOT pure leakage.`}</p>
+        ? `Un conjunto congelado de ${lk.nWindows} ventanas (16 grabaciones CWRU, ${lk.overlapPct}% de solape porque HOP ${lk.hop} < WIN ${lk.win}). Se mide la fuga de DOS formas, separadas a propósito para no exagerar. (1) Fuga AISLADA, control de purga/embargo: sobre el MISMO test aleatorio (mezcla de 4 cargas → carga y clase fijas), se compara el train con-solape contra un train al que se le quitan las ventanas vecinas (orden ±1) de cualquier ventana de test; quitar datos solo puede PERJUDICAR, así que la ganancia restante es solo del solape (media de ${lk.nSeeds} semillas). (2) Ingenuo vs producción, un TECHO: el split aleatorio vs el split agrupado de producción (held-out 3 HP), que ADEMÁS paga una penalización por generalizar a una carga no vista, no es fuga pura.`
+        : `One frozen pool of ${lk.nWindows} windows (16 CWRU recordings, ${lk.overlapPct}% overlap because HOP ${lk.hop} < WIN ${lk.win}). Leakage is measured TWO ways, deliberately kept apart so the demo does not overclaim. (1) ISOLATED leak, a purge/embargo control: on the SAME random test set (a 4-load mix → load and class held constant), a with-overlap train is compared against a train with every order±1 neighbour of a test window removed; removing data can only HURT, so the residual gain isolates the overlap (mean over ${lk.nSeeds} seeds). (2) Naive-vs-production, an UPPER BOUND: the random split vs the production grouped split (held-out 3 HP), which ALSO pays a penalty for generalizing to an unseen load, so it is NOT pure leakage.`}</p>
 
       <div className="rv-plot" style={{ maxWidth: W + 20 }}>
         <svg viewBox={`0 0 ${W} ${top + rows.length * rh + 16}`} width="100%" style={{ font: '11px var(--font-sans, sans-serif)' }} role="img" aria-label={es ? 'descomposición de la brecha' : 'gap decomposition by model'}>
@@ -439,8 +439,8 @@ function LeakageBlock({ lk, es }: { lk: Leakage; es: boolean }) {
       </p>
 
       <div className="callout" data-variant="honest"><p>{es
-        ? `La descomposición honesta: de la brecha ingenuo-vs-producción (+${lk.naiveVsProduction.rf.gapPts.toFixed(1)} pts en RF), solo +${Math.max(0, lk.overlapIsolated.rf.isolatedPts).toFixed(1)} pts son fuga PURA por solape de ventanas (test y carga fijos); el resto es la penalización por generalizar a la carga 3 HP no vista que el split de producción sí paga. En este conjunto limpio de 0.007″ la fuga por solape es modesta —no el colapso dramático publicado, que viene de la fuga más profunda de IDENTIDAD DE RODAMIENTO. El WDCNN satura (1.0) → no informa aquí. ${lk.caveat}`
-        : `The honest decomposition: of the naive-vs-production gap (+${lk.naiveVsProduction.rf.gapPts.toFixed(1)} pts on RF), only +${Math.max(0, lk.overlapIsolated.rf.isolatedPts).toFixed(1)} pts is PURE window-overlap leakage (test set + load held constant); the rest is the penalty for generalizing to the unseen 3 HP load that the production split honestly pays. On this clean 0.007″ pool the overlap leak is modest — not the dramatic published collapse, which is driven by the deeper BEARING-IDENTITY leak. The WDCNN saturates (1.0) → uninformative here. ${lk.caveat}`}</p></div>
+        ? `La descomposición honesta: de la brecha ingenuo-vs-producción (+${lk.naiveVsProduction.rf.gapPts.toFixed(1)} pts en RF), solo +${Math.max(0, lk.overlapIsolated.rf.isolatedPts).toFixed(1)} pts son fuga PURA por solape de ventanas (test y carga fijos); el resto es la penalización por generalizar a la carga 3 HP no vista que el split de producción sí paga. En este conjunto limpio de 0.007″ la fuga por solape es modesta , no el colapso dramático publicado, que viene de la fuga más profunda de IDENTIDAD DE RODAMIENTO. El WDCNN satura (1.0) → no informa aquí. ${lk.caveat}`
+        : `The honest decomposition: of the naive-vs-production gap (+${lk.naiveVsProduction.rf.gapPts.toFixed(1)} pts on RF), only +${Math.max(0, lk.overlapIsolated.rf.isolatedPts).toFixed(1)} pts is PURE window-overlap leakage (test set + load held constant); the rest is the penalty for generalizing to the unseen 3 HP load that the production split honestly pays. On this clean 0.007″ pool the overlap leak is modest, not the dramatic published collapse, which is driven by the deeper BEARING-IDENTITY leak. The WDCNN saturates (1.0) → uninformative here. ${lk.caveat}`}</p></div>
 
       <p className="muted small">{lk.refs.map((r, i) => (
         <span key={i}>{i > 0 ? ' · ' : ''}{r.doi ? <a href={`https://doi.org/${r.doi}`} target="_blank" rel="noreferrer">{r.label}</a> : r.label}</span>
@@ -449,7 +449,7 @@ function LeakageBlock({ lk, es }: { lk: Leakage; es: boolean }) {
   );
 }
 
-// WDCNN accuracy vs SNR — a small line chart (clean → noisy), the credible degradation curve.
+// WDCNN accuracy vs SNR, a small line chart (clean → noisy), the credible degradation curve.
 function SnrCurve({ curve, es }: { curve: { snrDb: number | null; accuracy: number }[]; es: boolean }) {
   const pts = curve.map((c) => ({ x: c.snrDb == null ? 14 : c.snrDb, acc: c.accuracy })).sort((a, b) => a.x - b.x);
   const W = 460, H = 180, padL = 40, padB = 30, padT = 12, padR = 12;

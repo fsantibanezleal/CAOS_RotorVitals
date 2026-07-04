@@ -1,5 +1,5 @@
-"""Stage 4 — infer (heavy lane): run the trained WDCNN argmax + the deep-AE reconstruction MSE over the held-out
-test windows — the OFFLINE mirror of the in-browser live path. Requires torch (lazy)."""
+"""Stage 4, infer (heavy lane): run the trained WDCNN argmax + the deep-AE reconstruction MSE over the held-out
+test windows, the OFFLINE mirror of the in-browser live path. Requires torch (lazy)."""
 from __future__ import annotations
 
 import numpy as np

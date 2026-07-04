@@ -1,7 +1,7 @@
 // Synthetic bearing-vibration generator. Physically-grounded model (McFadden & Smith 1984;
 // Randall & Antoni 2011): a quasi-periodic impulse train at the fault frequency, each impulse
 // exciting a damped structural resonance, with slip jitter and amplitude modulation, over shaft
-// harmonics + Gaussian noise. Fully deterministic from `seed` — the validation set, reproducible.
+// harmonics + Gaussian noise. Fully deterministic from `seed`, the validation set, reproducible.
 import { mulberry32, gaussian } from '../lib/prng';
 import { type Bearing, defectFreqs, faultFreq, type FaultKind } from './bearing';
 

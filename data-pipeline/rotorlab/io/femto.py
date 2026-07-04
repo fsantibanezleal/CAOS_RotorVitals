@@ -1,11 +1,11 @@
 """FEMTO / PRONOSTIA (IEEE PHM 2012) run-to-failure bearing dataset.
 
-REAL prognostics data for RotorVitals — until now the RUL page was driven by a synthetic forward model. FEMTO is
+REAL prognostics data for RotorVitals, until now the RUL page was driven by a synthetic forward model. FEMTO is
 17 accelerated run-to-failure trajectories (6 learning + 11 test, three operating conditions). Each trajectory is a
 sequence of acc_NNNNN.csv snapshots recorded every 10 s; each snapshot is 2560 samples @ 25.6 kHz of horizontal +
 vertical acceleration (columns: hour, minute, second, microsecond, accel_horizontal, accel_vertical).
 
-This module reads the downloaded archive (link-only redistribution — the zip is NOT committed) and reduces every
+This module reads the downloaded archive (link-only redistribution, the zip is NOT committed) and reduces every
 trajectory to its health-indicator curve HI(t) = RMS of horizontal acceleration per snapshot, the standard FEMTO HI.
 That curve is the genuine flat-then-rising degradation the RUL stage projects, so the prognostics shown in the App
 are computed from real bearing life, not a synthetic trend.

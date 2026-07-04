@@ -13,7 +13,7 @@ def _exp_degradation(t: np.ndarray, a: float, b: float, noise: float = 0.02, see
     return a * np.exp(b * t) + rng.normal(0, noise, len(t))
 
 def _classical_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> float | None:
-    """Reference implementation — same as evaluate_rul.py::_exponential_rul."""
+    """Reference implementation, same as evaluate_rul.py::_exponential_rul."""
     n = len(t)
     if n < 8:
         return None

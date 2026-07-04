@@ -1,10 +1,10 @@
-"""Stage — cross-DATASET generalization (heavy lane, T13). The ultimate "is it real?" test: run the CWRU-trained
-WDCNN + the unsupervised envelope/SES on **MFPT** — a DIFFERENT rig (NICE bearing, 48828/97656 Hz). The WDCNN never
+"""Stage, cross-DATASET generalization (heavy lane, T13). The ultimate "is it real?" test: run the CWRU-trained
+WDCNN + the unsupervised envelope/SES on **MFPT**, a DIFFERENT rig (NICE bearing, 48828/97656 Hz). The WDCNN never
 saw a single MFPT sample, so this is a true domain-shift test.
 
 The honest expectation (reported however it lands): the deep WDCNN's features are *rig-specific* (resonance bands,
-sampling, geometry all differ), so it should transfer POORLY; the envelope/SES is *rig-agnostic* physics — bandpass
-→ Hilbert envelope → comb at the CORRECT MFPT defect frequencies — so it should transfer well. If so, it completes
+sampling, geometry all differ), so it should transfer POORLY; the envelope/SES is *rig-agnostic* physics, bandpass
+→ Hilbert envelope → comb at the CORRECT MFPT defect frequencies, so it should transfer well. If so, it completes
 the arc: deep wins in-distribution (T12), physics wins cross-distribution (T13). Requires torch + scipy.
 """
 from __future__ import annotations
@@ -39,7 +39,7 @@ def _load_mfpt(root: Path, rel: str):
 
 
 def _mfpt_classical_predict(x, fs, rate, bpfo, bpfi, max_win: int = 6) -> list[str]:
-    """Unsupervised envelope/SES with MFPT's OWN kinematics + the auto (kurtogram) band — rig-agnostic physics,
+    """Unsupervised envelope/SES with MFPT's OWN kinematics + the auto (kurtogram) band, rig-agnostic physics,
     nothing CWRU-specific. Scores outer (BPFO) vs inner (BPFI + 1× shaft sidebands); same ABS/REL gates."""
     w = int(1.0 * fs)
     band = C.kurtogram_band(x, fs)                                # auto band (MFPT resonance differs from CWRU)
@@ -114,7 +114,7 @@ def run(model: dict, raw_dir: str, cwru_classes: list[str]) -> dict:
         return {k: int(ct.get(k, 0)) for k in cwru_classes}
 
     return {
-        "dataset": "MFPT (NICE bearing — a different test rig)",
+        "dataset": "MFPT (NICE bearing, a different test rig)",
         "trainedOn": "CWRU (SKF 6205-2RS, 12 kHz drive-end)",
         "classes": MFPT_CLASSES,
         "kinematics": {
@@ -127,7 +127,7 @@ def run(model: dict, raw_dir: str, cwru_classes: list[str]) -> dict:
         "classical": {"recall": _recall(cl_pred), "overall": _overall(cl_pred), "method": "envelope/SES (auto band)"},
         "perFile": per_file,
         "note": "MFPT is a DIFFERENT rig (NICE bearing, 48828/97656 Hz resampled to ~12 kHz). The CWRU-trained WDCNN "
-                "never saw it — a true domain-shift test. The deep model's learned features are rig-specific; the "
+                "never saw it, a true domain-shift test. The deep model's learned features are rig-specific; the "
                 "unsupervised envelope/SES (bandpass→envelope→comb at the CORRECT MFPT defect frequencies, auto "
                 "band) is rig-agnostic physics. Reported however it lands.",
         "samples": samples,

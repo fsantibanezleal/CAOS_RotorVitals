@@ -1,4 +1,4 @@
-# Method — Classical-ML supervised baselines (SVM-RBF + Random Forest)
+# Method, Classical-ML supervised baselines (SVM-RBF + Random Forest)
 
 **Provenance:** Widodo & Yang (2007), *Support vector machine in machine condition monitoring and fault diagnosis*,
 MSSP 21(6):2560–2574 (DOI 10.1016/j.ymssp.2006.12.007); the time-domain condition indicators are the classical
@@ -6,23 +6,23 @@ ISO-13373 machine-condition set; the envelope-comb features are Randall & Antoni
 10.1016/j.ymssp.2010.07.017); evaluated on the Smith & Randall (2015) CWRU benchmark split (DOI
 10.1016/j.ymssp.2015.04.021).
 
-**What:** the *supervised* classical counterpoint to the deep WDCNN — the thing bearing diagnosis did for decades:
+**What:** the *supervised* classical counterpoint to the deep WDCNN, the thing bearing diagnosis did for decades:
 a small vector of **physics-informed hand-crafted features** fed to a generic classifier. Two are shipped (an
 **RBF-kernel SVM** and a **Random Forest**), trained on the IDENTICAL leakage-safe split (hold out the entire 3 HP
 load) so their held-out accuracy is directly comparable to the WDCNN's and to the unsupervised envelope-SES
 benchmark. Exported to ONNX (skl2onnx) and run **live in the browser** on the same committed real CWRU held-out
-segments — the deep-vs-classical comparison is real, not rhetorical.
+segments, the deep-vs-classical comparison is real, not rhetorical.
 
 ## The feature vector (`model/classical_ml.py`, 10-D, the single source of truth)
 
 The browser builds the SAME vector before the ONNX call (`FEATURE_NAMES` is mirrored in the frontend). All features
-are **scale-invariant**: the windows are z-scored, so amplitude features are constant — only SHAPE informs.
+are **scale-invariant**: the windows are z-scored, so amplitude features are constant, only SHAPE informs.
 
-1. **Time-domain condition indicators (6):** kurtosis, skewness, crest, impulse, shape, clearance — the
+1. **Time-domain condition indicators (6):** kurtosis, skewness, crest, impulse, shape, clearance, the
    impulsiveness / peakedness signature of a localized defect.
 2. **Frequency-domain physics features (4):** the squared-envelope-spectrum harmonic-comb prominence `P(f₀)` at the
-   outer (BPFO), inner (BPFI + sidebands) and rolling-element (2·BSF) defect frequencies — the SAME statistic the
-   white-box diagnoser thresholds — plus the resonance-band spectral kurtosis.
+   outer (BPFO), inner (BPFI + sidebands) and rolling-element (2·BSF) defect frequencies, the SAME statistic the
+   white-box diagnoser thresholds, plus the resonance-band spectral kurtosis.
 
 ```
 v = [κ, γ, crest, impulse, shape, clearance, P(BPFO), P(BPFI), P(2·BSF), κ_res] ∈ ℝ¹⁰
@@ -54,9 +54,9 @@ v = [κ, γ, crest, impulse, shape, clearance, P(BPFO), P(BPFI), P(2·BSF), κ_r
 | envelope/SES (resonance band) | 73.7% | 100% | unsupervised |
 
 The story is in the **healthy-recall** column: the classical ML nails the faults (outer/inner ~100%, ball ~90%) but
-false-alarms on half the healthy windows — the hand-crafted comb prominences also fire on healthy signals carrying
+false-alarms on half the healthy windows, the hand-crafted comb prominences also fire on healthy signals carrying
 transients. The deep CNN learns the healthy/fault boundary the fixed features cannot. The split is identical, all
-three run live on the same segments, and the number is reported as it lands — no fabricated win. This is the
+three run live on the same segments, and the number is reported as it lands, no fabricated win. This is the
 supervised baseline the learned tier is measured against (the unsupervised envelope/SES is the training-free one).
 
 ## Reproduce
@@ -67,4 +67,4 @@ python -m rotorlab.pipeline --retrain   # regenerates rv-svm.onnx / rv-rf.onnx +
 pytest tests/test_classical_ml.py        # train→evaluate→export→onnxruntime round-trip (ONNX ↔ sklearn agree)
 ```
 
-Requires `scikit-learn` + `skl2onnx` (the heavy precompute lane only — `requirements-precompute.txt`).
+Requires `scikit-learn` + `skl2onnx` (the heavy precompute lane only, `requirements-precompute.txt`).

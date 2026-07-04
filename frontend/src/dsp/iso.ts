@@ -50,7 +50,7 @@ export function lifeFeatures(spec: {
   // The synthetic acceleration units are arbitrary, and broadband velocity is dominated by the shaft
   // line, so calibrate the as-new (severity 0) reading to mid Zone A (≈0.45 mm/s). This is an
   // illustrative mapping onto the ISO scale (labeled in the UI); the trend SHAPE and zone behaviour
-  // is the point — and it honestly shows how little a bearing fault moves the broadband velocity.
+  // is the point, and it honestly shows how little a bearing fault moves the broadband velocity.
   const refSig = synth({ fs, dur: 0.5, rpm: spec.rpm, bearing: spec.bearing, fault: 'healthy', severity: 0, resonance: 3400, zeta: 0.04, snrDb: spec.snrDb, seed: 399 });
   const cal = 0.45 / Math.max(1e-9, velocityRmsMmps(refSig.x, fs));
   const out: LifeFeat[] = [];

@@ -1,4 +1,4 @@
-"""Deep-HI & Deep-RUL — CNN-BiLSTM hybrid for bearing degradation modelling.
+"""Deep-HI & Deep-RUL, CNN-BiLSTM hybrid for bearing degradation modelling.
 
 Architecture (SOTA 2023-2024): a shared 1D CNN backbone extracts spatial features from
 each raw vibration window; a BiLSTM models the temporal degradation sequence; two output
@@ -7,7 +7,7 @@ heads produce either a sequence of HI values (Deep-HI) or a scalar RUL (Deep-RUL
 The BiLSTM sees the full sequence context (bidirectional). This is the correct choice for
 offline/batch analysis where the complete trajectory is available. For online prognosis
 where only past windows exist, the App gates the output on the detected degradation onset
-and labels the estimate as "offline quality" — the bidirectional context provides an
+and labels the estimate as "offline quality", the bidirectional context provides an
 upper-bound smoothness that a purely causal model would not achieve in production.
 
 References:
@@ -24,7 +24,7 @@ import torch.nn as nn
 
 
 class CnnFeatureExtractor(nn.Module):
-    """Lightweight 1D CNN — shared across time steps. Same family as WDCNN but fewer
+    """Lightweight 1D CNN, shared across time steps. Same family as WDCNN but fewer
     channels (16→32→64→64→64) to keep the ONNX small for browser inference."""
 
     def __init__(self) -> None:
@@ -52,10 +52,10 @@ class CnnFeatureExtractor(nn.Module):
 class DeepHIRUL(nn.Module):
     """CNN-BiLSTM for bearing degradation sequence modelling (offline / batch analysis).
 
-    Input:  (batch, seq_len, 1, 2048) — a trajectory of raw vibration windows
-    Output: two heads —
-        hi:   (batch, seq_len)         — predicted HI value at each time step
-        rul:  (batch,)                 — predicted RUL (scalar, normalised)
+    Input:  (batch, seq_len, 1, 2048), a trajectory of raw vibration windows
+    Output: two heads , 
+        hi:   (batch, seq_len)        , predicted HI value at each time step
+        rul:  (batch,)                , predicted RUL (scalar, normalised)
 
     The BiLSTM sees the full forward+backward sequence context. This is the correct
     choice for offline analysis where the complete trajectory is available. For online
@@ -90,7 +90,7 @@ class DeepHIRUL(nn.Module):
         lstm_out, _ = self.lstm(feats)        # (B, S, 2*hidden)
         # heads
         hi = self.hi_head(lstm_out).squeeze(-1)   # (B, S)
-        rul = self.rul_head(lstm_out[:, -1, :]).squeeze(-1)  # (B,) — last time step
+        rul = self.rul_head(lstm_out[:, -1, :]).squeeze(-1)  # (B,), last time step
         return {"hi": hi, "rul": rul}
 
 

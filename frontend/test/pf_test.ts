@@ -75,7 +75,7 @@ test('PF: recovers true (ln a, b) on clean data', () => {
 
 // ── COMPARISON: PF vs classical on noisy data ───────────────────────────────
 test('PF: differs from classical on noisy data (adds value)', () => {
-  // High noise — PF should give a DIFFERENT (better) estimate than OLS
+  // High noise, PF should give a DIFFERENT (better) estimate than OLS
   const pts = synth(0.3, 0.12, 22, 25, 0.06);
   const classical = projectRUL(pts, 8);
   const pf = particleFilterRUL(pts, 8);

@@ -1,5 +1,5 @@
-"""T13 — cross-DATASET (MFPT) generalization contract. Locks (1) the curated MFPT file set; (2) the SHIPPED
-`crossDataset` block in rv-learned-metrics.json + the MFPT sample segments — so the honest domain-shift story
+"""T13, cross-DATASET (MFPT) generalization contract. Locks (1) the curated MFPT file set; (2) the SHIPPED
+`crossDataset` block in rv-learned-metrics.json + the MFPT sample segments, so the honest domain-shift story
 (deep WDCNN fails cross-rig, physics envelope/SES transfers) can't silently drift or vanish. Reads the committed
 derived JSON (no torch / no raw .mat), so it runs in the light CI lane. The one helper test that touches scipy is
 guarded with importorskip."""

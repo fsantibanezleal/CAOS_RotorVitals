@@ -1,4 +1,4 @@
-# STRUCTURE — RotorVitals on the CAOS product-repo archetype (ADR-0057)
+# STRUCTURE, RotorVitals on the CAOS product-repo archetype (ADR-0057)
 
 ```
 CAOS_RotorVitals/
@@ -15,7 +15,7 @@ CAOS_RotorVitals/
 │     ├─ stages/  preprocess · feature_extraction · train · infer · evaluate · export
 │     └─ cases/   cwru_cases.py (15 cases, 5 categories)
 ├─ data/
-│  ├─ raw/cwru/ (git-ignored — link-only CWRU .mat) · examples/records.csv (passes CONTRACT 1)
+│  ├─ raw/cwru/ (git-ignored, link-only CWRU .mat) · examples/records.csv (passes CONTRACT 1)
 │  ├─ derived/  models/*.onnx · rv-cwru-samples.json · rv-learned-metrics.json · cwru-benchmark.json
 │  │            <case>/trace.json · manifests/<case>.json + index.json   (CONTRACT 2, committed)
 │  └─ README.md (the data contract)
@@ -25,7 +25,7 @@ CAOS_RotorVitals/
 │  ├─ test/dsp.test.ts (node --test)
 │  └─ src/  pages/ (App/Introduction/Methodology/Implementation/Experiments/Benchmark) · dsp/ · viz/ ·
 │           lib/ort.ts (onnxruntime-web) · lib/contract.types.ts (CONTRACT-2 mirror) · api/artifacts.ts · data/
-├─ app/                             # OPTIONAL FastAPI backend — DORMANT (static-first)
+├─ app/                             # OPTIONAL FastAPI backend, DORMANT (static-first)
 ├─ scripts/  setup · precompute · fetch-data · dev · smoke {.sh,.ps1} · check_artifacts.py
 ├─ deploy/   pages.md (default) · fasl-slug.service · domain.nginx (VPS, dormant)
 ├─ docs/     README · architecture/ · frameworks/ · cases/ · guides/   (the wiki, ADR-0056)
@@ -33,5 +33,5 @@ CAOS_RotorVitals/
 └─ .github/workflows/  ci.yml (ruff+pytest+pipeline+check_artifacts+guards) · deploy-pages.yml
 ```
 
-**The base is frozen** — edits land only in the CORE (the models/algorithms in `model/` + `stages/`, the
+**The base is frozen**, edits land only in the CORE (the models/algorithms in `model/` + `stages/`, the
 visualizations in `frontend/src/`, and the cases/content), never in the structure, contracts, env, or deploy.

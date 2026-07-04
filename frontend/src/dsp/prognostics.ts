@@ -3,7 +3,7 @@
 // Int. J. Prognostics and Health Management, 2010). The α-λ plot asks: does the predicted RUL fall
 // within an ±α cone of the true RUL as end-of-life approaches? The calibration diagram asks: does a
 // nominal p% credible interval actually contain the true RUL p% of the time across many run-to-failure
-// trajectories? A band that sits below the diagonal is over-confident (too tight) — the honest test.
+// trajectories? A band that sits below the diagonal is over-confident (too tight), the honest test.
 import { type HIPoint } from './health';
 import { runToFailure } from '../data/runtofailure';
 import { type FaultKind } from './bearing';
@@ -54,7 +54,7 @@ const LEVELS = [0.5, 0.8, 0.9, 0.95];
 export interface Calibration { nominal: number[]; empirical: number[]; n: number }
 
 /** Across an ensemble of synthetic run-to-failure trajectories (varied seeds), the fraction whose true
- * RUL falls inside the nominal p% credible interval of the log-linear forecast — the reliability curve. */
+ * RUL falls inside the nominal p% credible interval of the log-linear forecast, the reliability curve. */
 export function calibration(spec: { fault: FaultKind; severity: number }, K = 60): Calibration {
   const hit: Record<number, number> = Object.fromEntries(LEVELS.map((l) => [l, 0]));
   let valid = 0;
