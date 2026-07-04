@@ -705,19 +705,19 @@ export default function Methodology() {
         <rect x="100" y="278" width="6" height="36" rx="3" fill="var(--color-fg-subtle)" />
         <text x="120" y="294" fontSize="13" fontWeight="700" fill="var(--color-fg)">{es ? '1. Exponencial (MCO en log)' : '1. Exponential (log-space OLS)'}</text>
         <text x="120" y="312" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? 'Forma cerrada · tiempo de cruce invertible · residual multiplicativo ±2σ · línea base del benchmark' : 'Closed-form · invertible crossing time · multiplicative ±2σ residual · benchmark baseline'}</text>
-        <text x="730" y="302" textAnchor="end" fontSize="10" fill="var(--color-accent)">MAE 2.70</text>
+        <text x="730" y="302" textAnchor="end" fontSize="10" fill="var(--color-fg-faint)">{es ? 'MAE: en re-evaluación' : 'MAE: under re-evaluation'}</text>
         {/* Rung 2: PF */}
         <rect x="90" y="202" width="660" height="52" rx="8" fill="var(--color-surface)" stroke="var(--color-accent)" strokeWidth="1.5" />
         <rect x="100" y="210" width="6" height="36" rx="3" fill="var(--color-accent)" />
         <text x="120" y="226" fontSize="13" fontWeight="700" fill="var(--color-fg)">{es ? '2. Filtro de Partículas (SIR bayesiano)' : '2. Particle Filter (Bayesian SIR)'}</text>
         <text x="120" y="244" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? '500 partículas · remuestreo sistemático · regularización kernel · posterior completa no paramétrica · P10/P50/P90' : '500 particles · systematic resampling · kernel regularisation · full non-parametric posterior · P10/P50/P90'}</text>
-        <text x="730" y="234" textAnchor="end" fontSize="10" fill="var(--color-accent)">MAE 7.80</text>
+        <text x="730" y="234" textAnchor="end" fontSize="10" fill="var(--color-fg-faint)">{es ? 'MAE: en re-evaluación' : 'MAE: under re-evaluation'}</text>
         {/* Rung 3: GP */}
         <rect x="90" y="134" width="660" height="52" rx="8" fill="var(--color-surface)" stroke="var(--color-warn)" strokeWidth="1.5" />
         <rect x="100" y="142" width="6" height="36" rx="3" fill="var(--color-warn)" />
         <text x="120" y="158" fontSize="13" fontWeight="700" fill="var(--color-fg)">{es ? '3. Proceso Gaussiano (kernel RBF + media OLS)' : '3. Gaussian Process (RBF kernel + OLS mean)'}</text>
         <text x="120" y="176" fontSize="10.5" fill="var(--color-fg-subtle)">{es ? 'Cholesky · búsqueda en grilla (ℓ, σₙ≥0.12) · bandas ±1.645σ con cobertura · forward cap exponencial' : 'Cholesky · grid search (ℓ, σₙ≥0.12) · ±1.645σ bands with coverage · exponential forward cap'}</text>
-        <text x="730" y="166" textAnchor="end" fontSize="10" fill="var(--color-warn)">MAE 1.00</text>
+        <text x="730" y="166" textAnchor="end" fontSize="10" fill="var(--color-fg-faint)">{es ? 'MAE: en re-evaluación' : 'MAE: under re-evaluation'}</text>
         {/* Rung 4: Deep-RUL */}
         <rect x="90" y="48" width="660" height="70" rx="8" fill="var(--color-surface)" stroke="var(--color-good)" strokeWidth="2" />
         <rect x="100" y="56" width="6" height="54" rx="3" fill="var(--color-good)" />
