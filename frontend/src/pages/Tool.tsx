@@ -499,7 +499,7 @@ export default function Tool() {
           {(['exponential','pf','gp','wang2020',...(trajMode?['deep'] as RulModel[]:[])] as RulModel[]).map(m => (
             <button key={m} className={`chip ${rulModel===m?'on':''}`} onClick={()=>setRulModel(m)}
               title={m==='deep'&&!trajMode?(lang==='es'?'Deep-RUL requiere datos reales (modo Real: RUL)':'Deep-RUL needs real data (Real: RUL mode)'):undefined}>
-              {m==='exponential'?'Exponencial':m==='pf'?'Filtro de partículas':m==='gp'?'Proceso Gaussiano':m==='wang2020'?'Wang 2020':m==='deep'?'Deep-RUL':''}
+              {m==='exponential'?(lang==='es'?'Exponencial':'Exponential'):m==='pf'?(lang==='es'?'Filtro de partículas':'Particle filter'):m==='gp'?(lang==='es'?'Proceso Gaussiano':'Gaussian process'):m==='wang2020'?'Wang 2020':m==='deep'?'Deep-RUL':''}
             </button>
           ))}
         </div>
