@@ -3,6 +3,26 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.46.000] · 2026-07-04
+
+### Fixed — RUL benchmark protocol repair (#128, the deep-review critical finding)
+- The offline RUL aggregate is rebuilt under the field-standard prognostic protocol
+  (Saxena et al. 2010, IJPHM, DOI 10.36001/ijphm.2010.v1i1.1336). The previous stage was
+  degenerate: it compared the last-instant predicted RUL against the ABSOLUTE failure time,
+  so a constant-zero predictor scored 1.0 (the GP hit that in 21/23 trajectories and the page
+  claimed a false "63% error reduction"), and it zip-misaligned the filtered ground truth.
+- `data-pipeline/rotorlab/stages/evaluate_rul.py` now predicts at life-fraction checkpoints
+  (50/70/90%), feeding each model ONLY the data up to the checkpoint and comparing against the
+  true remaining life r*(λ) = (1−λ)·trueFail. Metrics: α-λ accuracy (±20% cone), per-λ and
+  cumulative Relative Accuracy (CRA), and prognostic horizon. 23 evaluable trajectories (those
+  with a real first-passage failure), never the 36.
+- The Benchmark Prognosis table now RENDERS from the artifact (`rv-rul-benchmark.json`, synced
+  into the bundle by copy-data) instead of hardcoded TSX literals. Honest reading shipped: under
+  the correct protocol, point RUL prediction on these bearings is hard — α-λ accuracies are low
+  for all three classical first-passage models (exponential 4.8%, PF/GP ~0%); the negative result
+  is reported as such, and the operational value is stated to be the PF posterior + the live α-λ
+  projection, not an aggregate point score.
+
 ## [0.45.011] · 2026-07-03
 
 ### Fixed
