@@ -1,4 +1,4 @@
-// Spectral kurtosis & a (pragmatic) fast kurtogram — the demodulation-band selector that solves
+// Spectral kurtosis & a (pragmatic) fast kurtogram, the demodulation-band selector that solves
 // envelope analysis's hardest problem: where to band-pass. (Antoni & Randall 2006; Antoni 2007.)
 import { bandpass, hilbertEnvelope } from './envelope';
 
@@ -69,7 +69,7 @@ export function kurtogram(x: Float64Array, fs: number, maxLevel = 5): Kurtogram 
 }
 
 /** Spectral kurtosis SK(f) via STFT: excess kurtosis of |STFT| across time frames, per frequency bin.
- * A complementary view to the kurtogram — shows which frequencies carry the impulsive content. */
+ * A complementary view to the kurtogram, shows which frequencies carry the impulsive content. */
 export function spectralKurtosis(x: Float64Array, fs: number, nperseg = 256): { freq: Float64Array; sk: Float64Array } {
   // lightweight magnitude STFT via the same FFT
   // (kept small/live: nperseg power of two, 50% overlap)

@@ -1,4 +1,4 @@
-// Particle-filter RUL prognostics — proper Bayesian state estimation over the exponential
+// Particle-filter RUL prognostics, proper Bayesian state estimation over the exponential
 // degradation model HI(t) = a·exp(b·t). Unlike the classical OLS fit, the PF maintains a full
 // posterior distribution over (ln a, b, σ_obs) that is updated sequentially as each new HI
 // observation arrives. This buys:
@@ -7,7 +7,7 @@
 //   - a genuine posterior RUL distribution from the particle ensemble.
 //
 // Algorithm: regularised auxiliary SIR with kernel-density jitter (Musso, Oudjane & Le Gland 2001)
-// and a wide uninformed prior (NOT seeded from OLS — the filter must earn its estimate from data).
+// and a wide uninformed prior (NOT seeded from OLS, the filter must earn its estimate from data).
 //
 // References:
 //   Arulampalam, Maskell, Gordon & Clapp (2002), IEEE TSP 50(2):174–188
@@ -91,7 +91,7 @@ function loglik(obs: number, lnA: number, b: number, sigma: number, t: number): 
   return -0.5 * (err / sigma) ** 2 - Math.log(sigma);
 }
 
-// ── onset detection (statistical, same as classical — robust to noise) ─────
+// ── onset detection (statistical, same as classical, robust to noise) ─────
 function detectOnset(points: HIPoint[]): number | null {
   const n = points.length;
   if (n < 10) return null;
@@ -136,7 +136,7 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
   const firstLnHi = logHis.slice(0, firstK).reduce((a, v) => a + v, 0) / firstK;
 
   // 4. initialise particles from a WIDE uninformed prior (NOT from OLS)
-  //    lnA ~ N(baseline_lnHI, 2.0²)  — wide enough to cover the uncertainty
+  //    lnA ~ N(baseline_lnHI, 2.0²) , wide enough to cover the uncertainty
   //    b   ~ Gamma-like (LogNormal): median ~ 0.05/h, 95% CI [0.001, 0.5]
   //    σ   ~ LogNormal: median 0.15, wide
   const particles: Particle[] = [];
@@ -148,7 +148,7 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
   }
   kernelRegularise(particles);
 
-  // 5. sequential importance resampling — process ALL post-onset observations
+  // 5. sequential importance resampling, process ALL post-onset observations
   for (const obs of post) {
     const t = obs.t;
     // compute log-weights (in log space for stability, then exponentiate)
@@ -166,7 +166,7 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
       wSum += particles[i].w;
     }
     if (wSum < 1e-60) {
-      // total collapse — reinitialise from prior
+      // total collapse, reinitialise from prior
       for (let i = 0; i < N; i++) {
         particles[i].lnA = firstLnHi + randn() * 2.0;
         particles[i].b = Math.max(1e-12, Math.exp(Math.log(0.05) + randn() * 1.0));

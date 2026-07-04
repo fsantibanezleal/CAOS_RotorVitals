@@ -1,6 +1,6 @@
-"""Stage 3 — train (OFFLINE, heavy lane): fit the WDCNN (Adam 1e-3, wd 1e-4, 25 ep, cross-entropy) on the
+"""Stage 3, train (OFFLINE, heavy lane): fit the WDCNN (Adam 1e-3, wd 1e-4, 25 ep, cross-entropy) on the
 leakage-safe train split, and the deep-AE (Adam 1e-3, 150 ep, MSE) on the ALL-LOAD healthy baseline (one-class
-novelty). Deterministic (torch + numpy seeded). Requires torch — imported lazily so the light pipeline never
+novelty). Deterministic (torch + numpy seeded). Requires torch, imported lazily so the light pipeline never
 touches it. Skippable: with the committed ONNX present and inputs unchanged, the default pipeline reuses them."""
 from __future__ import annotations
 

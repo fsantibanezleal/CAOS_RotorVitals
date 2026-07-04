@@ -33,7 +33,7 @@ export async function diagnoseRaw(raw: number[] | Float32Array, classes: string[
 export interface ClsOut { pred: DiagOut; svm: DiagOut; rf: DiagOut; }
 
 /** The classical-ML supervised baselines (SVM-RBF + Random Forest) live on the same real segment's 10-D feature
- * vector — the classical counterpoint to the deep WDCNN, for a like-for-like deep-vs-classical comparison. */
+ * vector, the classical counterpoint to the deep WDCNN, for a like-for-like deep-vs-classical comparison. */
 export async function classifyClassical(clsFeat: number[] | Float32Array, classes: string[]): Promise<{ svm: DiagOut; rf: DiagOut }> {
   const f = Float32Array.from(clsFeat);
   const toOut = (r: { label: number; probs: number[] }): DiagOut => ({ classes, probs: r.probs, predIdx: r.label, predClass: classes[r.label] });

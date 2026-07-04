@@ -52,8 +52,8 @@ export function PrognosticEvalPanel({ rtf, fault, severity, lang }: {
     if (hov && hov.i < al.ts.length) { g.strokeStyle = fg; g.lineWidth = 1; g.beginPath(); g.arc(sx(al.ts[hov.i]), sy(al.predRUL[hov.i]), 5, 0, 7); g.stroke(); }
     // legend
     g.font = '10px ui-sans-serif, sans-serif';
-    g.fillStyle = dim; g.fillText(es ? '— — RUL verdadero' : '— — true RUL', padL + 4, padT + 10);
-    g.fillStyle = acc; g.fillText(es ? '— RUL predicho (±α=20% cono)' : '— predicted RUL (±α=20% cone)', padL + 90, padT + 10);
+    g.fillStyle = dim; g.fillText(es ? ', , RUL verdadero' : ', , true RUL', padL + 4, padT + 10);
+    g.fillStyle = acc; g.fillText(es ? ',  RUL predicho (±α=20% cono)' : ',  predicted RUL (±α=20% cone)', padL + 90, padT + 10);
   }, [al, hov, es]);
 
   // calibration chart
@@ -97,7 +97,7 @@ export function PrognosticEvalPanel({ rtf, fault, severity, lang }: {
 
   return (
     <div className="rv-vizstack">
-      <div className="rv-plot"><div className="rv-plot-t">{es ? 'Exactitud α-λ — RUL predicho vs verdadero (cono ±20%)' : 'α-λ accuracy — predicted vs true RUL (±20% cone)'}</div>
+      <div className="rv-plot"><div className="rv-plot-t">{es ? 'Exactitud α-λ, RUL predicho vs verdadero (cono ±20%)' : 'α-λ accuracy, predicted vs true RUL (±20% cone)'}</div>
         <canvas ref={alRef} style={{ width: '100%', height: 240, display: 'block' }} onMouseMove={onMove} onMouseLeave={() => setHov(null)} />
         {hov && al && hov.i < al.ts.length && <div className="heatmap-readout" style={{ left: Math.min(hov.x + 8, 300), top: Math.max(2, hov.y - 4) }}>t={al.ts[hov.i].toFixed(0)} h · pred {al.predRUL[hov.i].toFixed(0)} h · true {al.trueRUL[hov.i].toFixed(0)} h · {al.inCone[hov.i] ? (es ? 'dentro' : 'in') : (es ? 'fuera' : 'out')}</div>}
       </div>

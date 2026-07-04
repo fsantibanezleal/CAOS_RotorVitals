@@ -1,4 +1,4 @@
-# scripts/ — cross-platform task runners (.sh + .ps1 parity)
+# scripts/, cross-platform task runners (.sh + .ps1 parity)
 
 Felipe runs PowerShell on Windows; every script ships a `.ps1` and a `.sh` twin with identical behaviour.
 

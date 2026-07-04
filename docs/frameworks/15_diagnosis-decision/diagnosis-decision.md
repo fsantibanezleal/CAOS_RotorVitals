@@ -1,6 +1,6 @@
-# Method — The diagnosis decision rule: harmonic prominence + two gates
+# Method, The diagnosis decision rule: harmonic prominence + two gates
 
-**Provenance:** Randall & Antoni (2011), *Rolling element bearing diagnostics — a tutorial*, MSSP 25:485–520 (DOI
+**Provenance:** Randall & Antoni (2011), *Rolling element bearing diagnostics, a tutorial*, MSSP 25:485–520 (DOI
 10.1016/j.ymssp.2010.07.017); Smith & Randall (2015), the CWRU benchmark study, MSSP 64:100–131 (DOI
 10.1016/j.ymssp.2015.04.021).
 
@@ -26,7 +26,7 @@ P(f₀) = (1/K) Σ_{k=1..K}  max_{|f−k f₀| ≤ tol} S(f)  /  median_{|f−k 
 K = 5,   tol = max(2·Δf, 0.015·f₀),   W = max(12·Δf, 0.12·f₀)      [diagnose.ts:20-28]
 ```
 
-`P ≈ 1–3` for pure noise (all three combs lift about equally — the competing faults act as mutual **negative
+`P ≈ 1–3` for pure noise (all three combs lift about equally, the competing faults act as mutual **negative
 controls**); a genuine fault lifts its own comb far above that. The windows scale with `f₀`, so the test tolerates the
 1–2 % slip drift that smears bearing lines.
 
@@ -45,8 +45,8 @@ verdict = healthy   if   P_top < 4.5   OR   P_top / P_2nd < 1.7
         = argmax fault   otherwise                                     [diagnose.ts:20-21,64-65]
 ```
 
-If either gate fails — the line is not high enough above its own floor, or not separated enough from the best
-competing fault — the verdict is **healthy**, not a forced choice among faults. This is what turns "always pick
+If either gate fails, the line is not high enough above its own floor, or not separated enough from the best
+competing fault, the verdict is **healthy**, not a forced choice among faults. This is what turns "always pick
 something" into a test that can correctly say nothing is wrong.
 
 ### 3. Confidence

@@ -1,13 +1,13 @@
-"""Stage — leakage demonstration (heavy lane, T15): how much held-out accuracy is inflated by WINDOW-OVERLAP leakage,
+"""Stage, leakage demonstration (heavy lane, T15): how much held-out accuracy is inflated by WINDOW-OVERLAP leakage,
 quantified two ways on ONE frozen 16-recording CWRU pool (the documented CWRU leakage trap, Hendriks, Dumond & Knox
-2022, MSSP 169:108732). Every number is a REAL fitted-model output — nothing is hand-typed.
+2022, MSSP 169:108732). Every number is a REAL fitted-model output, nothing is hand-typed.
 
 Two measurements, deliberately separated so the demo does NOT overclaim:
-  1. ISOLATED overlap leak (the clean number) — a purge/embargo decomposition. On the SAME random test set (a 4-load
+  1. ISOLATED overlap leak (the clean number), a purge/embargo decomposition. On the SAME random test set (a 4-load
      mix, so load and class are held constant vs its own training pool), compare a with-overlap train against a
      PURGED train that drops every order±1 same-recording neighbour of any test window. Removing windows can only
      HURT the purged arm, so any residual with-overlap gain is attributable to the overlap leak alone. Multi-seed.
-  2. Naive-vs-production (an UPPER BOUND) — the naive random split vs the production grouped split-by-recording. This
+  2. Naive-vs-production (an UPPER BOUND), the naive random split vs the production grouped split-by-recording. This
      gap is NOT pure leakage: the grouped (honest) arm also holds out the entire 3 HP load, so it pays a
      load-generalization penalty the leaky arm does not. We report it honestly as overlap-leak + load-penalty.
 
@@ -27,7 +27,7 @@ from ..model.features import window_signal
 # The grouped (honest) test = the four 3 HP recordings (one per class). Fixed/deterministic so all 4 classes are
 # present and there is no recording-cherry-pick surface. Equals the PRODUCTION hold-out-3HP split → a free
 # consistency cross-check. NOTE: because it is a held-out LOAD, the naive-vs-production gap is an upper bound that
-# also includes a load-generalization penalty — which is exactly why the ISOLATED purge measurement below exists.
+# also includes a load-generalization penalty, which is exactly why the ISOLATED purge measurement below exists.
 HONEST_TEST_REC = (100, 108, 121, 133)   # normal / inner / ball / outer @ 3 HP
 SEED_SPLIT = 15                          # base split seed (disclosed); distinct from the model seed (0). No seed-shopping.
 N_SEEDS = 10                             # random-split repeats → a mean ± std interval, so the gap beats split noise.
@@ -59,7 +59,7 @@ def _build_pool(raw: Path, classes: list[str]) -> dict:
         X += ws
         y += [ci] * len(ws)
         rec += [n] * len(ws)
-        order += list(range(len(ws)))                     # 0,1,2,… within this recording — adjacent ⇒ 50% overlap
+        order += list(range(len(ws)))                     # 0,1,2,… within this recording, adjacent ⇒ 50% overlap
         rpm += [r] * len(ws)
     return {"X": np.array(X, np.float32), "y": np.array(y, np.int64), "rec": np.array(rec, np.int64),
             "order": np.array(order, np.int64), "rpm": np.array(rpm, np.int64)}
@@ -100,7 +100,7 @@ def _fit_eval_wdcnn(trX, trY, teX, teY, classes) -> np.ndarray:
 
 
 def _neighbours(rec, order, te_idx) -> set:
-    """The (recording, order) keys of every window that order-overlaps a test window — i.e. the test windows
+    """The (recording, order) keys of every window that order-overlaps a test window, i.e. the test windows
     themselves plus their order±1 same-recording neighbours (win/hop = 2 ⇒ only immediate neighbours overlap)."""
     keys = set()
     for i in te_idx:
@@ -118,7 +118,7 @@ def _overlap_shared(rec, order, tr_idx, te_idx) -> int:
 
 def _purge_train(rec, order, tr_idx, te_idx) -> np.ndarray:
     """The EMBARGOED train set: tr_idx minus any window that order-overlaps a test window (same recording, order±1).
-    Same test set, same loads — removing the overlapping neighbours can only REMOVE information, so any residual
+    Same test set, same loads, removing the overlapping neighbours can only REMOVE information, so any residual
     with-overlap gain isolates the window-overlap leak."""
     bad = _neighbours(rec, order, te_idx)
     keep = [i for i in tr_idx if (int(rec[i]), int(order[i])) not in bad]
@@ -152,7 +152,7 @@ def run(raw_dir: str, classes: list[str], prod_holdout_acc: float, fs: int = 120
 
     # ---- random (leaky) splits, multi-seed: the with-overlap arm AND its purged/embargoed counterpart ----
     # Both arms of the ISOLATED measurement share the SAME random test set per seed (a 4-load mix), so load, class and
-    # test set are held constant — only the order±1 overlapping neighbours are removed from the purged train.
+    # test set are held constant, only the order±1 overlapping neighbours are removed from the purged train.
     acc = {"leaky": {"svm": [], "rf": []}, "purged": {"svm": [], "rf": []}}
     rep = {}                                              # the seed-SEED_SPLIT split, kept for confusions/perClass
     for s in seeds:
@@ -178,7 +178,7 @@ def run(raw_dir: str, classes: list[str], prod_holdout_acc: float, fs: int = 120
 
     # ---- integrity controls ----
     # (1) shuffled-label PLUMBING check: permute y at the WINDOW level (overlapping windows get INDEPENDENT random
-    #     labels) before both splits; both arms must collapse to ~chance 0.25. This rules out an index/label bug — it
+    #     labels) before both splits; both arms must collapse to ~chance 0.25. This rules out an index/label bug, it
     #     does NOT by itself attribute the gap to overlap (the purge decomposition does that).
     y_shuf = np.random.RandomState(SEED_SPLIT).permutation(y)
     sh = {
@@ -210,13 +210,13 @@ def run(raw_dir: str, classes: list[str], prod_holdout_acc: float, fs: int = 120
     return {
         "purpose": "Quantify WINDOW-OVERLAP leakage two ways on ONE frozen 16-recording CWRU pool: (1) the ISOLATED "
                    "overlap leak via a purge/embargo control (same random test set + loads; overlapping train "
-                   "neighbours removed) — the clean number; (2) the naive random split vs the production grouped "
-                   "split — an UPPER BOUND that also includes a 3 HP load-generalization penalty, reported as such.",
+                   "neighbours removed), the clean number; (2) the naive random split vs the production grouped "
+                   "split, an UPPER BOUND that also includes a 3 HP load-generalization penalty, reported as such.",
         "pool": "all 16 CWRU recordings (4 classes x 0/1/2/3 HP, 0.007in faults + Normal), 12 kHz DE, "
                 f"WIN {WIN} / HOP {HOP} (50% overlap)",
         "nWindows": int(n), "win": WIN, "hop": HOP, "overlapPct": round(100 * (1 - HOP / WIN)),
         "classes": classes, "seedSplit": SEED_SPLIT, "seedModel": 0, "nSeeds": N_SEEDS, "testFractionPct": 25.9,
-        # PRIMARY clean result — isolated window-overlap leak (load + class + test set all held constant)
+        # PRIMARY clean result, isolated window-overlap leak (load + class + test set all held constant)
         "overlapIsolated": {
             "method": f"purge/embargo: same random test set ({int(len(leaky_te))} windows, a 4-load mix), with-overlap "
                       f"train vs a train with every order±1 same-recording neighbour of a test window removed; "
@@ -226,7 +226,7 @@ def run(raw_dir: str, classes: list[str], prod_holdout_acc: float, fs: int = 120
             "wdcnn": {"withOverlapAcc": wd_leaky["accuracy"], "purgedAcc": wd_purged["accuracy"], "isolatedPts": wd_iso,
                       "saturates": bool(wd_leaky["accuracy"] >= 0.995 and wd_purged["accuracy"] >= 0.995)},
         },
-        # SECONDARY — naive random split vs production grouped split: an UPPER BOUND (overlap leak + 3 HP load penalty)
+        # SECONDARY, naive random split vs production grouped split: an UPPER BOUND (overlap leak + 3 HP load penalty)
         "naiveVsProduction": {
             "note": "Upper bound, NOT pure leakage: the grouped (honest) arm also holds out the entire 3 HP load, so "
                     "it pays a load-generalization penalty the leaky arm does not. The isolated overlap leak above is "
@@ -253,7 +253,7 @@ def run(raw_dir: str, classes: list[str], prod_holdout_acc: float, fs: int = 120
             "overlapWindowsSharedTrainTest": {"leaky": ov["leaky"], "honest": ov["honest"]},
             "classBalance": {"leakyTestClassFrac": leaky_frac, "honestTestClassFrac": honest_frac,
                              "maxAbsDiff": max_abs, "balancedOk": bool(max_abs < 0.1),
-                             "note": "checks class balance only — load distribution still differs between arms (hence the upper-bound framing)"},
+                             "note": "checks class balance only, load distribution still differs between arms (hence the upper-bound framing)"},
             "honestVsProduction": {"productionHoldout3HP": round(float(prod_holdout_acc), 4),
                                    "honestT15Wdcnn": wd_honest["accuracy"], "deltaPts": delta_prod,
                                    "consistent": bool(abs(delta_prod) < 5.0)},
@@ -262,12 +262,12 @@ def run(raw_dir: str, classes: list[str], prod_holdout_acc: float, fs: int = 120
                 "split scatter near-identical windows from one recording across train and test, so a classifier "
                 "memorizes recording-specific noise. The ISOLATED purge control (load + test set held constant) "
                 "measures the pure overlap leak; the naive-vs-production gap is larger because it ALSO charges the "
-                "grouped arm a 3 HP load-generalization penalty — the two are reported separately on purpose.",
+                "grouped arm a 3 HP load-generalization penalty, the two are reported separately on purpose.",
         "caveat": "Inflated numbers are do-not-cite; RotorVitals' headline diagnosis ALWAYS uses the production "
                   "grouped split. The deep-AE (one-class) and envelope/SES (unsupervised) never train on a supervised "
-                  "window split and are leakage-immune by construction — they are NOT in this demo, so it must not be "
+                  "window split and are leakage-immune by construction, they are NOT in this demo, so it must not be "
                   "read as 'all methods inflate'. On this clean, largely-separable 0.007in pool the demonstrable "
-                  "overlap inflation is modest (a few classical points) — NOT the dramatic published collapses, which "
+                  "overlap inflation is modest (a few classical points), NOT the dramatic published collapses, which "
                   "are driven by the deeper BEARING-IDENTITY leak: even the production grouped split here is "
                   "leave-recording-out, NOT leave-bearing-out (CWRU reuses one physical bearing per condition across "
                   "loads, Hendriks et al. 2022), so even the honest number is optimistic vs field data.",

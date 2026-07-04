@@ -1,4 +1,4 @@
-# 02 — Determinism & the replay trace
+# 02, Determinism & the replay trace
 
 ## Determinism
 
@@ -6,7 +6,7 @@ Every run is a pure function of `(case, seed)`. There is one RNG factory (`core/
 global/implicit RNG. Training is seeded (`torch.manual_seed(0); np.random.seed(0)`), the SNR noise uses
 `RandomState(7)`, the held-out sample selection uses `RandomState(1)`, and the synthetic prognostics trends use
 `make_rng(seed)`. Consequence: re-running the default pipeline produces **byte-identical** traces + manifests (the
-CI determinism guard) — there is no wall-clock anywhere in a committed artifact.
+CI determinism guard), there is no wall-clock anywhere in a committed artifact.
 
 ## The compact trace (`rotorvitals.trace/v1`)
 

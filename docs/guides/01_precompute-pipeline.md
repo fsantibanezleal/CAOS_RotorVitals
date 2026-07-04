@@ -1,4 +1,4 @@
-# 01 — Regenerate the models (`--retrain`)
+# 01, Regenerate the models (`--retrain`)
 
 The heavy lane reproduces `wdcnn.onnx`, `rv-ae.onnx`, `rv-cwru-samples.json`, `rv-learned-metrics.json`, and
 `cwru-benchmark.json` from the **real CWRU** data. Local-only (CI never retrains). Deterministic from the fixed seed.

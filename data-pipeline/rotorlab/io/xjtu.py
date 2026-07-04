@@ -1,6 +1,6 @@
 """XJTU-SY run-to-failure bearing dataset (Wang, Lei et al., Xi'an Jiaotong University + Changxing Sumyoung Tech).
 
-REAL prognostics data — 15 accelerated run-to-failure bearings across 3 operating conditions (35 Hz/12 kN,
+REAL prognostics data, 15 accelerated run-to-failure bearings across 3 operating conditions (35 Hz/12 kN,
 37.5 Hz/11 kN, 40 Hz/10 kN), 5 bearings each. Each bearing folder holds per-minute CSVs (1.csv, 2.csv, ...; the
 last file is failure). Each CSV: 32768 samples = 1.28 s at 25.6 kHz, two columns (Horizontal/Vertical vibration).
 
@@ -71,7 +71,7 @@ def trajectories(zip_path: str | Path) -> list[dict]:
 
     out: list[dict] = []
     for (cond, bearing), files in sorted(groups.items()):
-        files.sort()  # by minute index — this order IS the run-to-failure life order
+        files.sort()  # by minute index, this order IS the run-to-failure life order
         rms_all = np.array([_rms_horizontal(zf.read(p)) for _, p in files], dtype=float)
         fin = np.isfinite(rms_all)
         rms = rms_all[fin]

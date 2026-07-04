@@ -1,11 +1,11 @@
-// Gaussian Process regression for RUL prognostics — a non-parametric Bayesian model that
+// Gaussian Process regression for RUL prognostics, a non-parametric Bayesian model that
 // yields a calibrated predictive distribution over HI(t), from which the RUL distribution is
 // the first-passage time to the failure threshold. RBF (squared-exponential) kernel with
 // automatic length-scale + variance via simple marginal-likelihood optimisation (GP-EP or
 // gradient-ascent on the hyper-parameters).
 //
 // This is the middle rung of the prognostic ladder between the classical exponential and the
-// deep-RUL CNN. It buys better-calibrated uncertainty at the cost of O(n³) — but on the
+// deep-RUL CNN. It buys better-calibrated uncertainty at the cost of O(n³), but on the
 // post-onset segment (typically 5–15 points) the cubic cost is negligible in the browser.
 //
 // References:
@@ -115,7 +115,7 @@ function gpPredict(
  *
  * The GP is placed on log(HI) ~ GP(0, k_RBF(t, t')) to match the exponential-degradation shape
  * while letting the data speak through the kernel. Hyper-parameters are chosen by a coarse grid
- * search maximising the log marginal likelihood — fast enough in-browser for ≤ 30 points.
+ * search maximising the log marginal likelihood, fast enough in-browser for ≤ 30 points.
  */
 export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
   const empty: GpRulResult = { onset: null, failTimeMedian: null, rulMedian: null, rulP10: null, rulP90: null, curve: [], params: { lengthScale: 1, sigmaF: 1, sigmaN: 0.1 } };
@@ -166,18 +166,18 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
     }
   }
 
-  // predict forward — horizon bounded by the exponential model's failure estimate
+  // predict forward, horizon bounded by the exponential model's failure estimate
   const tLast = X[X.length - 1];
   const expFailTime = bMean > 0 ? (Math.log(threshold) - lnAMean) / bMean : tLast + span;
   const tEnd = Math.min(tLast + span * 2.0, Math.max(tLast + 1, expFailTime * 1.3));
   const Nq = 60;
   const Xq: number[] = [];
   for (let i = 0; i <= Nq; i++) Xq.push(tLast + (i / Nq) * (tEnd - tLast));
-  // GP prediction on residuals — add the exponential mean function back for the final projection
+  // GP prediction on residuals, add the exponential mean function back for the final projection
   const { mean: meanRes, sd } = gpPredict(Xq, X, y, best.ell, best.sf, best.sn);
   const meanFull = meanRes.map((mr, i) => mr + lnAMean + bMean * Xq[i]);
 
-  // first-passage — the time where GP mean crosses the threshold
+  // first-passage, the time where GP mean crosses the threshold
   const curve: GpRulResult['curve'] = [];
   let crossTime: number | null = null;
   const logThr = Math.log(threshold);

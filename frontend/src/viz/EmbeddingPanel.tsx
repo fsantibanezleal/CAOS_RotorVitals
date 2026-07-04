@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { loadSamples, type Samples, type CwruSample } from '../dsp/learned';
 import { pca2d } from '../dsp/pca';
 
-// T14 — the learned-feature embedding. The WDCNN's 100-D penultimate feature (the representation the deep model
+// T14, the learned-feature embedding. The WDCNN's 100-D penultimate feature (the representation the deep model
 // learned, committed per real segment) projected to 2-D by PCA. It makes the whole learned story legible in one
 // picture: the in-distribution classes cluster; the unseen 0.014″ segments drift toward the wrong cluster (why the
-// WDCNN misclassifies them — T4) while the 0.021″ segments stay in the correct cluster (the WDCNN gets them right);
-// and the MFPT segments (a different rig) sit apart (domain shift — T13). Consistent with the cross-severity table.
+// WDCNN misclassifies them, T4) while the 0.021″ segments stay in the correct cluster (the WDCNN gets them right);
+// and the MFPT segments (a different rig) sit apart (domain shift, T13). Consistent with the cross-severity table.
 const CLASS_COLOR: Record<string, string> = { normal: '#3fb950', outer: '#f59f00', inner: '#f06595', ball: '#7c5cff' };
 
 type Pt = { x: number; y: number; s: CwruSample };
@@ -53,8 +53,8 @@ export function EmbeddingPanel({ lang }: { lang: 'en' | 'es' }) {
     <section>
       <h2>{es ? 'Espacio de features aprendido (embedding del WDCNN)' : 'Learned feature space (WDCNN embedding)'}</h2>
       <p className="muted small">{es
-        ? `La feature de 100-D de la penúltima capa del WDCNN —la representación que el modelo profundo APRENDIÓ— de cada segmento real comprometido, proyectada a 2-D por PCA (PC1 ${(proj.varExpl[0] * 100).toFixed(0)}% · PC2 ${(proj.varExpl[1] * 100).toFixed(0)}% de varianza). Una sola imagen del porqué: las clases in-distribution se agrupan; los segmentos de 0.014″ no vistos (anillos ◯) derivan hacia el cúmulo equivocado —por eso el WDCNN los confunde (recall ~28%, T4)—, mientras que los de 0.021″ (anillos con punto ⊙) sí caen en el cúmulo correcto (recall ~99%); y los segmentos MFPT (otro banco, rombos ◇) quedan aparte —el domain-shift (T13)—. Alcance ilustrativo: 3 segmentos base por clase, 2 por tamaño no visto, 1 por archivo MFPT; PC1+PC2 capturan ~85% de la varianza (una vista 2-D fiel pero parcial).`
-        : `The WDCNN's 100-D penultimate feature — the representation the deep model LEARNED — of every real committed segment, projected to 2-D by PCA (PC1 ${(proj.varExpl[0] * 100).toFixed(0)}% · PC2 ${(proj.varExpl[1] * 100).toFixed(0)}% of variance). One picture of the why: the in-distribution classes cluster; the unseen 0.014″ segments (rings ◯) drift toward the wrong cluster — which is why the WDCNN misclassifies them (recall ~28%, T4) — while the 0.021″ segments (dotted rings ⊙) do land in the correct cluster (recall ~99%); and the MFPT segments (a different rig, diamonds ◇) sit apart — the domain shift (T13). Illustrative scope: 3 baseline segments per class, 2 per unseen size, 1 per MFPT file; PC1+PC2 capture ~85% of the variance (a faithful but partial 2-D view).`}</p>
+        ? `La feature de 100-D de la penúltima capa del WDCNN , la representación que el modelo profundo APRENDIÓ,  de cada segmento real comprometido, proyectada a 2-D por PCA (PC1 ${(proj.varExpl[0] * 100).toFixed(0)}% · PC2 ${(proj.varExpl[1] * 100).toFixed(0)}% de varianza). Una sola imagen del porqué: las clases in-distribution se agrupan; los segmentos de 0.014″ no vistos (anillos ◯) derivan hacia el cúmulo equivocado , por eso el WDCNN los confunde (recall ~28%, T4), , mientras que los de 0.021″ (anillos con punto ⊙) sí caen en el cúmulo correcto (recall ~99%); y los segmentos MFPT (otro banco, rombos ◇) quedan aparte , el domain-shift (T13), . Alcance ilustrativo: 3 segmentos base por clase, 2 por tamaño no visto, 1 por archivo MFPT; PC1+PC2 capturan ~85% de la varianza (una vista 2-D fiel pero parcial).`
+        : `The WDCNN's 100-D penultimate feature, the representation the deep model LEARNED, of every real committed segment, projected to 2-D by PCA (PC1 ${(proj.varExpl[0] * 100).toFixed(0)}% · PC2 ${(proj.varExpl[1] * 100).toFixed(0)}% of variance). One picture of the why: the in-distribution classes cluster; the unseen 0.014″ segments (rings ◯) drift toward the wrong cluster, which is why the WDCNN misclassifies them (recall ~28%, T4), while the 0.021″ segments (dotted rings ⊙) do land in the correct cluster (recall ~99%); and the MFPT segments (a different rig, diamonds ◇) sit apart, the domain shift (T13). Illustrative scope: 3 baseline segments per class, 2 per unseen size, 1 per MFPT file; PC1+PC2 capture ~85% of the variance (a faithful but partial 2-D view).`}</p>
 
       <div style={{ position: 'relative' }}>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ background: 'var(--color-bg)', borderRadius: 6, border: '1px solid var(--color-border)' }} role="img" aria-label="WDCNN learned feature embedding">

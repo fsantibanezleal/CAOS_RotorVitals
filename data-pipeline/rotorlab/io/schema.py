@@ -1,11 +1,11 @@
-"""Typed objects passed between pipeline stages — the inter-stage contract. Plain dataclasses (no heavy deps), so
+"""Typed objects passed between pipeline stages, the inter-stage contract. Plain dataclasses (no heavy deps), so
 the same types describe a record whether it came from a CWRU .mat, a CSV, or a live bring-your-own recording."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
 # Canonical processing constants (the model input is fixed by the trained WDCNN/AE).
-CANONICAL_FS = 12000   # Hz — every window is brought to this rate (48 kHz is decimated x4)
+CANONICAL_FS = 12000   # Hz, every window is brought to this rate (48 kHz is decimated x4)
 WIN = 2048             # samples per window (WDCNN input length)
 HOP = 1024             # window stride
 N_FEAT = 64            # deep-AE input: a 64-D log-binned magnitude-spectrum summary
@@ -35,7 +35,7 @@ class WindowTable:
     case_id: str
     fs: int
     win: int
-    windows: list           # list[np.ndarray] (float32) — never serialized whole; summarized into the trace
+    windows: list           # list[np.ndarray] (float32), never serialized whole; summarized into the trace
     labels: list[int]       # class index per window
 
 

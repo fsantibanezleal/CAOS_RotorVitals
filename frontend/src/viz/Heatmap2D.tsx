@@ -9,9 +9,9 @@ export function viridis(t: number): [number, number, number] {
 }
 
 export interface VLine { x: number; color: string; label?: string }
-/** A straight line segment in DATA space (x,y in axis units) — e.g. a Campbell order ray. */
+/** A straight line segment in DATA space (x,y in axis units), e.g. a Campbell order ray. */
 export interface Segment { x0: number; y0: number; x1: number; y1: number; color: string; label?: string }
-/** A polyline in DATA space — e.g. a resonance hyperbola on an order map. */
+/** A polyline in DATA space, e.g. a resonance hyperbola on an order map. */
 export interface Curve { pts: [number, number][]; color: string; label?: string }
 
 /** Interactive 2D heatmap (x×y×value). Hover → readout; optional horizontal band overlay, vertical
@@ -46,7 +46,7 @@ export function Heatmap2D({
     for (const c of cols) for (let f = 0; f <= rowMax; f++) { if (c[f] > vmax) vmax = c[f]; if (c[f] < vmin) vmin = c[f]; }
     if (norm === 'db') vmin = vmax - dbFloor;
     const span = vmax - vmin || 1;
-    // render the heatmap to an offscreen canvas (CSS px) then drawImage — putImageData ignores the
+    // render the heatmap to an offscreen canvas (CSS px) then drawImage, putImageData ignores the
     // dpr transform and would paint only a corner on hi-DPI screens.
     const iw = Math.max(1, Math.round(pw)), ih = Math.max(1, Math.round(ph));
     const off = document.createElement('canvas'); off.width = iw; off.height = ih;

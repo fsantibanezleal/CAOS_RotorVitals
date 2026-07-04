@@ -1,4 +1,4 @@
-"""DeepRUL — a 1-D CNN for bearing remaining-useful-life (RUL) regression on raw vibration windows.
+"""DeepRUL, a 1-D CNN for bearing remaining-useful-life (RUL) regression on raw vibration windows.
 
 Architecture follows the WDCNN backbone (wide first-layer kernel, Zhang et al. 2017, Sensors 17(2):425)
 with a regression head replacing the classification head. Input: (N,1,2048) raw vibration window.
@@ -35,7 +35,7 @@ class DeepRUL(nn.Module):
                 nn.Conv1d(ci, co, k, s, p), nn.BatchNorm1d(co), nn.ReLU(), nn.MaxPool1d(2),
             )
 
-        # Same backbone as WDCNN — wide first kernel captures long-period degradation signatures
+        # Same backbone as WDCNN, wide first kernel captures long-period degradation signatures
         self.features = nn.Sequential(
             blk(1, 16, 64, 16, 24),
             blk(16, 32, 3, 1, 1),

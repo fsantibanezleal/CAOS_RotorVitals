@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { VLine } from './Heatmap2D';
 
-// T9 — the Enhanced Envelope Spectrum strip: EES(α) = ⟨|γ(f,α)|⟩ over carriers, the band-integrated 1-D marginal of
+// T9, the Enhanced Envelope Spectrum strip: EES(α) = ⟨|γ(f,α)|⟩ over carriers, the band-integrated 1-D marginal of
 // the Fast-SC plane. Peaks at BPFO/BPFI/2·BSF/FTF + harmonics; the classical SES is its band-restricted special
 // case. A compact canvas line plot that SHARES the heatmap's α x-axis so the defect-frequency vlines align.
 export function EesStrip({ alpha, ees, vlines = [], floor = null, height = 90 }:

@@ -167,7 +167,7 @@ test('parseSignal: flatline is rejected', () => {
 import { fastSpectralCoherence, cohThreshold, overlapCorrectedK } from '../src/dsp/csc.ts';
 
 // a REALISTIC bearing-fault model: impacts at rate alpha0 (with small random jitter → cyclostationary) each
-// ringing a damped broadband resonance — what the App's synth() produces, and what AR prewhitening preserves
+// ringing a damped broadband resonance, what the App's synth() produces, and what AR prewhitening preserves
 // (unlike a pure-sine carrier, which is deterministic and correctly removed).
 function bearingTestSig(alpha0: number, fc = 3400, zeta = 0.04, n = 12000, fs = 12000, noise = 0.08, seed = 7) {
   let s = seed >>> 0; const rng = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296 - 0.5; };
@@ -247,7 +247,7 @@ test('IESFOgram targeted: selects a band whose SES shows the BPFO comb (outer fa
   assert.equal(dx.top, 'outer');                                  // the selected band's SES diagnoses outer
 });
 
-test('IESFOgram targeted: spike-robust — best band UNCHANGED while the kurtogram jumps', () => {
+test('IESFOgram targeted: spike-robust, best band UNCHANGED while the kurtogram jumps', () => {
   const bearing = bearingById('skf6205'), fr = 1772 / 60, f = defectFreqs(bearing, fr);
   const sig = synth({ fs: 12000, dur: 1, rpm: 1772, bearing, fault: 'outer', severity: 1, resonance: 3400, zeta: 0.04, snrDb: 3, seed: 202 });
   const clean = gramGrid(sig.x, 12000, 5, { targetAlpha: f.bpfo, fr });
@@ -283,7 +283,7 @@ import { pca2d } from '../src/dsp/pca.ts';
 test('pca2d: separates two well-separated high-D clusters in the 2-D projection', () => {
   const d = 100, rows: number[][] = [];
   let s = 5 >>> 0; const rng = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296 - 0.5; };
-  // cluster A near +3 on dims 0..4, cluster B near -3 — plus isotropic noise
+  // cluster A near +3 on dims 0..4, cluster B near -3, plus isotropic noise
   for (let i = 0; i < 20; i++) { const r = Array.from({ length: d }, () => 0.3 * rng()); for (let k = 0; k < 5; k++) r[k] += (i < 10 ? 3 : -3); rows.push(r); }
   const { pts, varExpl } = pca2d(rows);
   assert.equal(pts.length, 20);

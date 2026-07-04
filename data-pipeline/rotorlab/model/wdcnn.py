@@ -1,4 +1,4 @@
-"""WDCNN — a 1-D deep CNN with a WIDE first-layer kernel (Zhang et al. 2017, Sensors 17(2):425), supervised
+"""WDCNN, a 1-D deep CNN with a WIDE first-layer kernel (Zhang et al. 2017, Sensors 17(2):425), supervised
 4-class bearing-fault diagnosis (normal / outer / inner / ball) on a raw 2048-sample window. Requires torch
 (the heavy precompute lane only); the deployed live lane runs the EXPORTED ONNX in onnxruntime-web, not this."""
 from __future__ import annotations
@@ -29,7 +29,7 @@ class WDCNN(nn.Module):
         return self.head(self.f(x))
 
     def embed(self, x):
-        """The 100-D penultimate LEARNED feature (after the ReLU, before the final 4-class layer) — the WDCNN's
+        """The 100-D penultimate LEARNED feature (after the ReLU, before the final 4-class layer), the WDCNN's
         learned representation of a window, used for the feature-space embedding (T14). head[:3] = Flatten →
         Linear(256,100) → ReLU."""
         return self.head[:3](self.f(x))

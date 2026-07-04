@@ -1,13 +1,13 @@
 import { fft, nextPow2 } from './fft';
 
 // ============================================================================================================
-// Fast Spectral Correlation (Fast-SC) — T9. A TRUE phase-retaining cyclic spectral coherence, the upgrade over
+// Fast Spectral Correlation (Fast-SC), T9. A TRUE phase-retaining cyclic spectral coherence, the upgrade over
 // the magnitude-only CMS below. Validated numerically against ground-truth planted-AM signals (peaks land at the
 // planted α to <1 Hz) and on the App's own synth() signals (outer→BPFO, inner→BPFI, ball→2·BSF ridges + harmonics;
 // healthy → no ridge). References: Antoni, Xin & Hamzaoui (2017) MSSP 92:248-277 (Fast-SC); Carter, Knapp & Nuttall
 // (1973) (the magnitude-squared-coherence null distribution); Antoni (2007) + the AR-prewhitening preprocessing.
 //
-// Pipeline: (1) AR prewhiten (remove deterministic shaft/gear lines — without it the cross-spectrum leaks them,
+// Pipeline: (1) AR prewhiten (remove deterministic shaft/gear lines, without it the cross-spectrum leaks them,
 // which the magnitude-only CMS was immune to); (2) complex Hann STFT (N=256, hop=16 → frame rate Fr=750 Hz, so the
 // cyclic Nyquist Fr/2=375 Hz covers BPFO/BPFI/2·BSF/FTF + first harmonics with NO bin-lag de-aliasing); (3) per
 // carrier-bin pair (p, q=p−m) average the complex cross-spectrum over frames and FFT it over the frame index → the
@@ -28,7 +28,7 @@ export interface FastScMap {
 }
 
 /** AR prewhitening (Levinson-Durbin, order P): the AR inverse filter removes the predictable (deterministic shaft
- * & gear lines, colored background) part, leaving the random fault modulation — the standard preprocessing before
+ * & gear lines, colored background) part, leaving the random fault modulation, the standard preprocessing before
  * cyclostationary analysis (otherwise the phase-retaining cross-spectrum reports deterministic tones as fake
  * α-ridges). Returns the whitened innovation. */
 export function arPrewhiten(x: Float64Array, P = 64): Float64Array {
@@ -63,7 +63,7 @@ export function overlapCorrectedK(Kraw: number, hop: number, N: number, w: Float
   let denom = 1;
   // variance of the mean of K correlated segments = (1/K)[1 + 2 Σ_m (1 − m/K) ρ²(mR)]; the segments are mR samples
   // apart so the inter-segment correlation is the window autocorrelation ρ(mR), zero once mR ≥ N (no overlap). The
-  // Bartlett taper is (1 − m/K) over the SEGMENT index m (not m·hop/N over the sample lag — that was the FAR bug).
+  // Bartlett taper is (1 − m/K) over the SEGMENT index m (not m·hop/N over the sample lag, that was the FAR bug).
   for (let m = 1; m * hop < N; m++) {
     let c = 0; for (let n = 0; n + m * hop < N; n++) c += w[n] * w[n + m * hop];
     denom += 2 * (1 - m / Kraw) * (c * c) / (s2 * s2);
@@ -85,7 +85,7 @@ export function fastSpectralCoherence(
   const wn = 1 / Math.sqrt(wss);
   for (let i = 0; i < N; i++) win[i] *= wn;
 
-  // complex STFT (keep phase — the change vs CMS)
+  // complex STFT (keep phase, the change vs CMS)
   const re = new Float64Array(N), im = new Float64Array(N);
   const Sre: Float64Array[] = [], Sim: Float64Array[] = [];
   for (let s = 0; s + N <= x.length; s += hop) {
@@ -159,5 +159,5 @@ export function fastSpectralCoherence(
   const eesFloor = egamma + 1.6449 * Math.sqrt(vgamma / Nf);
   return { alpha, carriers, cols, ees, K, Keff, gamma2Thr, gammaThr: Math.sqrt(gamma2Thr), eesFloor, alphaMaxHz: alphaCeil };
 }
-// (The earlier magnitude-only Cyclic Modulation Spectrum (CMS) estimator was removed in T9 — superseded by
+// (The earlier magnitude-only Cyclic Modulation Spectrum (CMS) estimator was removed in T9, superseded by
 // fastSpectralCoherence above, which retains the cross-carrier phase the CMS discarded.)

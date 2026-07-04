@@ -1,5 +1,5 @@
 // Explainable diagnosis. For each candidate fault we measure the *prominence* of its kinematic line
-// and harmonics in the envelope spectrum — each harmonic peak relative to its LOCAL baseline (median of
+// and harmonics in the envelope spectrum, each harmonic peak relative to its LOCAL baseline (median of
 // the surrounding bins), averaged over the first harmonics. The competing faults act as negative
 // controls: a real fault stands far above the others; pure noise lifts all three about equally.
 import { type Spectrum } from './envelope';

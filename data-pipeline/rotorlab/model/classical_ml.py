@@ -1,16 +1,16 @@
-"""Classical-ML supervised diagnosers (T12) — the classical counterpoint to the deep WDCNN.
+"""Classical-ML supervised diagnosers (T12), the classical counterpoint to the deep WDCNN.
 
 Where the WDCNN learns its representation end-to-end from the raw 2048-sample window, these baselines do what
 bearing diagnosis did for decades: a small vector of **physics-informed hand-crafted features** fed to a generic
-classifier. Two are shipped — an **SVM (RBF kernel)** and a **Random Forest** — trained on the IDENTICAL
+classifier. Two are shipped, an **SVM (RBF kernel)** and a **Random Forest**, trained on the IDENTICAL
 leakage-safe split (hold out the entire 3 HP load) so their held-out accuracy is directly comparable to the
 WDCNN's, and to the unsupervised envelope-SES benchmark (`model.classical`). Exported to ONNX (skl2onnx) so they
 run live in the browser on the same committed real CWRU held-out segments.
 
-Features (10), all scale-invariant (the windows are z-scored, so amplitude features are constant — only SHAPE
+Features (10), all scale-invariant (the windows are z-scored, so amplitude features are constant, only SHAPE
 informs), in two families:
   - time-domain condition indicators (the classical ISO/standard set): kurtosis, skewness, crest, impulse, shape,
-    clearance — the impulsiveness/peakedness signature of a localized defect;
+    clearance, the impulsiveness/peakedness signature of a localized defect;
   - frequency-domain physics features: the squared-envelope-spectrum harmonic-comb prominence at the outer (BPFO),
     inner (BPFI with sidebands) and rolling-element (2·BSF) defect frequencies (the same statistic the white-box
     diagnoser thresholds), plus the resonance-band spectral kurtosis.
@@ -25,7 +25,7 @@ from scipy.signal import hilbert
 
 from . import classical as C
 
-# the feature vector order — the SINGLE SOURCE OF TRUTH (the browser builds the same vector before the ONNX call).
+# the feature vector order, the SINGLE SOURCE OF TRUTH (the browser builds the same vector before the ONNX call).
 FEATURE_NAMES = [
     "kurtosis", "skewness", "crest", "impulse", "shape", "clearance",
     "prom_outer", "prom_inner", "prom_ball", "spectral_kurtosis",

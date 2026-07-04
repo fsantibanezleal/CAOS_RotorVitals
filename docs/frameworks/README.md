@@ -1,7 +1,7 @@
 # Frameworks & methods
 
 The research made binding: every engine RotorVitals depends on is pinned (`requirements-precompute.txt` /
-`frontend/package.json`) and documented here — no toy substitute. Engine cards cover what/why/install/use; method
+`frontend/package.json`) and documented here, no toy substitute. Engine cards cover what/why/install/use; method
 cards cover the algorithm + its provenance.
 
 ## Engines
@@ -21,7 +21,7 @@ cards cover the algorithm + its provenance.
 | [Deep-AE health indicator](06_deep-ae/deep-ae.md) | González-Muñiz et al. 2022, RESS 224:108482 |
 | [Classical envelope/SES](07_classical-envelope-ses/classical.md) | Randall & Antoni 2011, MSSP 25:485–520; Antoni 2006/2007 (kurtogram); Smith & Randall 2015 |
 | [Classical-ML baselines (SVM-RBF + RandomForest)](08_classical-ml/classical-ml.md) | Widodo & Yang 2007, MSSP 21(6):2560–2574; ISO 13373 condition indicators; Smith & Randall 2015 split |
-| [Cyclostationary — Fast-SC & enhanced envelope spectrum](09_cyclostationary/cyclostationary.md) | Antoni 2007 (JSV 304); Antoni, Xin & Hamzaoui 2017, MSSP 92:248–277; Carter, Knapp & Nuttall 1973 |
+| [Cyclostationary, Fast-SC & enhanced envelope spectrum](09_cyclostationary/cyclostationary.md) | Antoni 2007 (JSV 304); Antoni, Xin & Hamzaoui 2017, MSSP 92:248–277; Carter, Knapp & Nuttall 1973 |
 | [Band-selection grams (kurtogram · infogram · autogram · IESFOgram)](10_band-selection-grams/band-selection-grams.md) | Antoni 2006/2007/2016; Moshrefzadeh & Fasana 2018; Mauricio et al. 2020, MSSP 144:106891 |
 | [Real cepstrum](11_cepstrum/cepstrum.md) | Randall & Antoni 2011; Borghesani et al. 2013, MSSP 36:370–384 |
 | [STFT spectrogram](12_spectrogram/spectrogram.md) | Randall & Antoni 2011 (time-frequency view) |

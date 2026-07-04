@@ -1,7 +1,7 @@
 import { type Bearing } from '../dsp/bearing';
 
 // Geometries from public catalog data. The 6205/6203 match the Case Western Reserve University
-// (CWRU) Bearing Data Center test rig — the canonical open benchmark this app is calibrated to read.
+// (CWRU) Bearing Data Center test rig, the canonical open benchmark this app is calibrated to read.
 // (Ball/pitch diameters in inches; the d/D ratio is dimensionless so units cancel.)
 export const BEARINGS: Bearing[] = [
   { id: 'skf6205', label: 'SKF 6205-2RS JEM (CWRU drive end)', n: 9, d: 0.3126, D: 1.537, contactDeg: 0 },
