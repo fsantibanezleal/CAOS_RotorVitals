@@ -35,7 +35,7 @@ export function CampbellPanel({ bearing, fault, severity, snr, seed, rpm, lang, 
     return (
       <div className="rv-vizstack">
         <div className="rv-plot">
-          <div className="rv-plot-t">{es ? `Mapa de órdenes, envolvente vs velocidad (Ottawa MEDIDO${realLabel ? `, ${realLabel}` : ''} · order-tracking)` : `Order map, envelope vs shaft speed (Ottawa MEASURED${realLabel ? `, ${realLabel}` : ''} · order tracking)`}</div>
+          <div className="rv-plot-t">{es ? `Mapa de órdenes, envolvente vs velocidad (Ottawa medido${realLabel ? `, ${realLabel}` : ''} · order-tracking)` : `Order map, envelope vs shaft speed (Ottawa MEASURED${realLabel ? `, ${realLabel}` : ''} · order tracking)`}</div>
           <Heatmap2D cols={cols} times={rpms} freqs={orders} fmax={ordMax} norm="lin" unit="" xunit="rpm" xlabel="rpm" ylabel="order (×)" yunit="×" segments={segs} height={300} hoverExtra={(x, y) => `${(y * (x / 60)).toFixed(0)} Hz`} />
         </div>
         <p className="hint">{es

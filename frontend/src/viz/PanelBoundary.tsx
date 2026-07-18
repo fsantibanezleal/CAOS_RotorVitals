@@ -14,7 +14,7 @@ export class PanelBoundary extends Component<{ children: ReactNode; lang?: 'en' 
           <div className="rv-plot-t">{es ? 'Esta herramienta no aplica a esta fuente' : 'This tool does not apply to this source'}</div>
           <p className="hint" style={{ marginTop: '0.4rem' }}>
             {es
-              ? 'No se pudo computar esta vista sobre el dato actual (p. ej. una fuente sin la geometría o el formato que la herramienta requiere). Elige otra pestaña o fuente.'
+              ? 'No se pudo computar esta vista sobre el dato actual (p. ej. una fuente sin la geometría o el formato que la herramienta requiere). Seleccionar otra pestaña o fuente.'
               : 'This view could not be computed on the current datum (e.g. a source lacking the geometry or format the tool needs). Pick another tab or source.'}
           </p>
           <p className="hint" style={{ opacity: 0.6, fontFamily: 'ui-monospace, monospace', fontSize: '0.75rem' }}>{this.state.error.message}</p>

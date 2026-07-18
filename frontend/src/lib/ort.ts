@@ -1,4 +1,4 @@
-// Live in-browser inference of the heavy learned models, trained OFFLINE on the REAL CWRU bearing data
+// Live in-browser inference of the heavy learned models, trained offline on the REAL CWRU bearing data
 // (tools/ml/train_models.py) and exported to ONNX. WDCNN = supervised 4-class fault diagnosis on a raw 2048
 // window; the deep-AE = a healthy-trained autoencoder whose reconstruction error is a novelty / health
 // indicator. These run on the REAL held-out CWRU segments committed in public/rv-cwru-samples.json, this is
