@@ -1,4 +1,4 @@
-// CONTRACT 2 mirror (frontend side). MUST stay in lock-step with the Python schemas in
+// CONTRACT 2 mirror (frontend side). must stay in lock-step with the Python schemas in
 // data-pipeline/rotorlab/core/{trace.py, manifest.py}. A drift here makes `tsc` fail -> the contract is enforced at
 // BUILD time (the web cannot ship reading a shape the pipeline does not produce). This file is also the single
 // source of truth for the learned-tier artifact shapes (rv-cwru-samples.json / rv-learned-metrics.json).
@@ -15,7 +15,7 @@ export interface CwruSample {
   sizeIn?: number; // T4: fault diameter in inches (0.014/0.021), present only for the cross-severity segments
   caseId?: string; // T4/T13: the case this segment belongs to (e.g. dx-inner-014-3hp, mfpt-outer-2)
   dataset?: string; // T13: "MFPT" for the cross-dataset (different-rig) segments; absent for CWRU
-  emb?: number[]; // T14: the WDCNN's 100-D penultimate LEARNED feature, for the feature-space embedding
+  emb?: number[]; // T14: the WDCNN's 100-D penultimate learned feature, for the feature-space embedding
 }
 
 export interface Samples {
@@ -49,7 +49,7 @@ export interface Metrics {
     svm: { accuracy: number; perClass: Record<string, number>; confusion: number[][] };
     rf: { accuracy: number; perClass: Record<string, number>; confusion: number[][] };
   };
-  // T4: cross-severity generalization, WDCNN/SVM/RF/env-SES on UNSEEN 0.014"/0.021" fault sizes (trained only on
+  // T4: cross-severity generalization, WDCNN/SVM/RF/env-SES on unseen 0.014"/0.021" fault sizes (trained only on
   // 0.007"), at the held-out 3 HP load. The honest "is the App a toy?" answer.
   crossSeverity?: {
     trainedOn: string; evaluatedAt: string; sizesIn: number[]; methods: string[]; note: string;
@@ -59,7 +59,7 @@ export interface Metrics {
     }>;
     byMethodBySize: Record<string, Record<string, number>>; // method -> { "007"|"014"|"021" -> accuracy }
   };
-  // T13: cross-DATASET generalization, the CWRU-trained WDCNN vs unsupervised envelope/SES on MFPT (a different
+  // T13: cross-dataset generalization, the CWRU-trained WDCNN vs unsupervised envelope/SES on MFPT (a different
   // rig). The domain-shift test: learned features are rig-specific, physics is rig-agnostic.
   crossDataset?: {
     dataset: string; trainedOn: string; classes: string[]; note: string;
@@ -71,11 +71,11 @@ export interface Metrics {
     classical: { recall: Record<string, number>; overall: number; method: string };
     perFile: Array<{ file: string; class: string; fs: number; rate: number; nWin: number; bpfoHz: number; bpfiHz: number }>;
   };
-  // T15: leakage demonstration, window-overlap leakage quantified TWO ways on ONE frozen pool (the CWRU
+  // T15: leakage demonstration, window-overlap leakage quantified two ways on one frozen pool (the CWRU
   // window-overlap trap, Hendriks et al. 2022). (1) overlapIsolated, the clean number: a purge/embargo control on
-  // the SAME random test set (load + class held constant) where overlapping train neighbours are removed, so the
-  // gain isolates the leak. (2) naiveVsProduction, an UPPER BOUND: the naive random split vs the production grouped
-  // split, which ALSO charges the grouped arm a 3 HP load-generalization penalty, so it is NOT pure leakage. Real
+  // the same random test set (load + class held constant) where overlapping train neighbours are removed, so the
+  // gain isolates the leak. (2) naiveVsProduction, an upper bound: the naive random split vs the production grouped
+  // split, which also charges the grouped arm a 3 HP load-generalization penalty, so it is not pure leakage. Real
   // fitted-model numbers; ships integrity controls.
   leakage?: {
     purpose: string; pool: string; nWindows: number; win: number; hop: number; overlapPct: number;

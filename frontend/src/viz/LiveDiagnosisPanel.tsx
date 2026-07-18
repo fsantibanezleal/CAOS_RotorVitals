@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useShellLang } from '@fasl-work/caos-app-shell';
 import { loadSamples, loadMetrics, diagnoseRaw, aeHealth, classifyClassical, type Samples, type Metrics, type DiagOut, type HealthOut } from '../dsp/learned';
 
-// LIVE diagnosis on REAL held-out CWRU recordings. This is real action capability on real data: the user
+// live diagnosis on real held-out CWRU recordings. This is real action capability on real data: the user
 // picks an actual CWRU 12 kHz drive-end segment (held out from training, load 3 HP), and the heavy WDCNN
-// (trained offline) runs IN THE BROWSER (onnxruntime-web) to diagnose it, alongside the deep-AE health
+// (trained offline) runs in the browser (onnxruntime-web) to diagnose it, alongside the deep-AE health
 // indicator. The true label is shown so the user sees the model is right (or wrong) on real data.
 const CLASS_COLOR: Record<string, string> = { normal: '#3fb950', outer: '#f85149', inner: '#d29922', ball: '#58a6ff' };
 
@@ -49,7 +49,7 @@ export function LiveDiagnosisPanel() {
 
   const cur = samples?.samples[sel];
   const correct = diag && cur ? diag.predClass === cur.cls : null;
-  // group by (dataset, class, fault size): CWRU 0.007" held-out baseline first, then the UNSEEN 0.014"/0.021"
+  // group by (dataset, class, fault size): CWRU 0.007" held-out baseline first, then the unseen 0.014"/0.021"
   // severity groups (T4), then the MFPT cross-dataset groups (T13, a different rig). Stable sort keeps order.
   const groups = useMemo(() => {
     const map = new Map<string, { cls: string; sizeIn?: number; file?: number | string; dataset?: string; idxs: number[] }>();
@@ -68,14 +68,14 @@ export function LiveDiagnosisPanel() {
 
   return (
     <div className="rv-plot">
-      <div className="rv-plot-t">{es ? 'Diagnóstico en vivo (WDCNN) sobre grabaciones REALES de CWRU' : 'Live diagnosis (WDCNN) on REAL CWRU recordings'}</div>
+      <div className="rv-plot-t">{es ? 'Diagnóstico en vivo (WDCNN) sobre grabaciones reales de CWRU' : 'Live diagnosis (WDCNN) on real CWRU recordings'}</div>
       <p className="rv-note">{es
-        ? 'Elegí un segmento real de CWRU (12 kHz, lado motriz, carga 3 HP, held-out del entrenamiento) y el WDCNN entrenado corre EN EL NAVEGADOR (ONNX) para diagnosticarlo. Se muestra la etiqueta real para ver si acierta.'
-        : 'Pick a real CWRU segment (12 kHz drive-end, 3 HP load, held out from training) and the trained WDCNN runs IN THE BROWSER (ONNX) to diagnose it. The true label is shown so you see whether it’s right.'}</p>
+        ? 'Elegir un segmento real de CWRU (12 kHz, lado motriz, carga 3 HP, held-out del entrenamiento) y el WDCNN entrenado se ejecuta en el navegador (ONNX) para diagnosticarlo. Se muestra la etiqueta real para ver si acierta.'
+        : 'Pick a real CWRU segment (12 kHz drive-end, 3 HP load, held out from training) and the trained WDCNN runs in the browser (ONNX) to diagnose it. The true label is shown to reveal whether it is right.'}</p>
 
       <p className="rv-note" style={{ marginTop: 0 }}>{es
         ? 'Las clases base (0.007″) tienen 3 ventanas held-out cada una, de su grabación CWRU de carga 3 HP. A la derecha de cada fila, los botones numerados #1 / #2 / #3 son esas ventanas (cada una un segmento de 2048 muestras @ 12 kHz), clic en uno para diagnosticarlo en vivo. Las filas marcadas "tamaño no visto" son la prueba de generalización por severidad: fallas reales de 0.014″/0.021″ que el modelo nunca vio (entrenó solo con 0.007″), un error ahí es la brecha honesta, no un bug.'
-        : 'The base classes (0.007″) have 3 held-out windows each, from their CWRU 3 HP recording. To the right of each row, the numbered buttons #1 / #2 / #3 are those windows (each a 2048-sample @ 12 kHz segment), click one to diagnose it live. The rows tagged "unseen size" are the severity-generalization test: real 0.014″/0.021″ faults the model NEVER saw (it trained only on 0.007″), a miss there is the honest gap, not a bug.'}</p>
+        : 'The base classes (0.007″) have 3 held-out windows each, from their CWRU 3 HP recording. To the right of each row, the numbered buttons #1 / #2 / #3 are those windows (each a 2048-sample @ 12 kHz segment), click one to diagnose it live. The rows tagged "unseen size" are the severity-generalization test: real 0.014″/0.021″ faults the model never saw (it trained only on 0.007″), a miss there is the honest gap, not a bug.'}</p>
 
       {/* action: choose a real segment, grouped by (dataset, class, size); severity = "unseen size", MFPT = "different rig" */}
       {groups.map((g) => {
@@ -106,11 +106,11 @@ export function LiveDiagnosisPanel() {
         <Spark raw={cur.raw} color={CLASS_COLOR[cur.cls] || '#8b949e'} />
         <div style={{ fontSize: '0.74rem', color: 'var(--color-fg-faint)', fontFamily: 'var(--font-mono)' }}>{es ? 'segmento real' : 'real segment'} · {cur.dataset === 'MFPT' ? `MFPT · ${cur.file ?? '?'}` : `CWRU #${cur.file ?? '?'} · ${es ? 'carga' : 'load'} ${samples.loadHp ?? 3} HP · ${cur.sizeIn != null ? `${cur.sizeIn.toFixed(3)}″` : '0.007″'}`} · {es ? 'ventana' : 'window'} {cur.seg ?? '?'} · 2048 @ 12 kHz · {es ? 'verdad' : 'truth'}: <b style={{ color: CLASS_COLOR[cur.cls] }}>{cur.cls}</b></div>
         {cur.dataset === 'MFPT' && <div className="callout" data-variant="honest" style={{ marginTop: '0.4rem' }}><p style={{ margin: 0, fontSize: '0.78rem' }}>{es
-          ? 'Segmento de OTRO banco (MFPT, rodamiento NICE), el WDCNN se entrenó solo en CWRU y nunca vio MFPT. Si falla, es domain-shift (honesto): las features profundas son específicas del banco. El envolvente/SES físico SÍ transfiere, ver la tabla cross-dataset más abajo.'
-          : 'A segment from ANOTHER rig (MFPT, NICE bearing), the WDCNN trained only on CWRU and never saw MFPT. A miss here is domain-shift (honest): deep features are rig-specific. The physics envelope/SES DOES transfer, see the cross-dataset table below.'}</p></div>}
+          ? 'Segmento de otro banco (MFPT, rodamiento NICE), el WDCNN se entrenó solo en CWRU y nunca vio MFPT. Si falla, es domain-shift (honesto): las features profundas son específicas del banco. El envolvente/SES físico SÍ transfiere, ver la tabla cross-dataset más abajo.'
+          : 'A segment from another rig (MFPT, NICE bearing), the WDCNN trained only on CWRU and never saw MFPT. A miss here is domain-shift (honest): deep features are rig-specific. The physics envelope/SES does transfer, see the cross-dataset table below.'}</p></div>}
         {cur.sizeIn != null && <div className="callout" data-variant="honest" style={{ marginTop: '0.4rem' }}><p style={{ margin: 0, fontSize: '0.78rem' }}>{es
           ? `Tamaño de falla NO visto (${cur.sizeIn.toFixed(3)}″). El WDCNN entrenó solo con 0.007″, si falla aquí, es la brecha de generalización por severidad (honesta), no un bug. La tabla agregada por tamaño está más abajo.`
-          : `UNSEEN fault size (${cur.sizeIn.toFixed(3)}″). The WDCNN trained only on 0.007″, a miss here is the honest severity-generalization gap, not a bug. The aggregate accuracy-by-size table is below.`}</p></div>}
+          : `unseen fault size (${cur.sizeIn.toFixed(3)}″). The WDCNN trained only on 0.007″, a miss here is the honest severity-generalization gap, not a bug. The aggregate accuracy-by-size table is below.`}</p></div>}
       </div>}
 
       {busy && <p className="rv-note">{es ? 'Corriendo WDCNN…' : 'Running WDCNN…'}</p>}
@@ -147,7 +147,7 @@ export function LiveDiagnosisPanel() {
                   <tr key={name}>
                     <td style={{ fontWeight: 600 }}>{name}</td>
                     <td style={{ color: 'var(--color-fg-subtle)', fontSize: '0.78rem' }}>{type}</td>
-                    <td style={{ color: d ? CLASS_COLOR[d.predClass] : undefined, fontWeight: 700 }}>{d?.predClass ?? ', '}</td>
+                    <td style={{ color: d ? CLASS_COLOR[d.predClass] : undefined, fontWeight: 700 }}>{d?.predClass ?? '-'}</td>
                     <td style={{ color: ok ? '#3fb950' : '#f85149', fontWeight: 700 }}>{ok ? '✓' : '✗'}</td>
                   </tr>
                 );
@@ -155,8 +155,8 @@ export function LiveDiagnosisPanel() {
             </tbody>
           </table>
           <p className="rv-note" style={{ marginTop: '0.3rem' }}>{es
-            ? 'Los tres corren EN VIVO sobre el mismo segmento real. El WDCNN aprende de la señal cruda; el SVM/RF clasifican un vector de 10 features físicas (indicadores de forma + prominencias de los peines BPFO/BPFI/2·BSF). En held-out: WDCNN 100% vs SVM/RF ~86%, el ML clásico falsa-alarma en sanos (ver Benchmark).'
-            : 'All three run LIVE on the same real segment. The WDCNN learns from the raw signal; the SVM/RF classify a 10-D physics-feature vector (shape indicators + BPFO/BPFI/2·BSF comb prominences). Held-out: WDCNN 100% vs SVM/RF ~86%, the classical ML false-alarms on healthy (see Benchmark).'}</p>
+            ? 'Los tres se ejecutan en vivo sobre el mismo segmento real. El WDCNN aprende de la señal cruda; el SVM/RF clasifican un vector de 10 features físicas (indicadores de forma + prominencias de los peines BPFO/BPFI/2·BSF). En held-out: WDCNN 100% vs SVM/RF ~86%, el ML clásico falsa-alarma en sanos (ver Benchmark).'
+            : 'All three run live on the same real segment. The WDCNN learns from the raw signal; the SVM/RF classify a 10-D physics-feature vector (shape indicators + BPFO/BPFI/2·BSF comb prominences). Held-out: WDCNN 100% vs SVM/RF ~86%, the classical ML false-alarms on healthy (see Benchmark).'}</p>
         </div>
       )}
 

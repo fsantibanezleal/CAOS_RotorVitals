@@ -19,7 +19,7 @@ ort.env.wasm.numThreads = 1;   // GitHub Pages has no COOP/COEP for threaded WAS
 * `aeReconstruct(feat64)` → the reconstruction (the caller computes the MSE = health indicator).
 
 Runs are **serialized per model** (a per-model promise lock) so concurrent calls don't trip "Session already
-started". The ONNX version (`onnxruntime-web@1.27.0`) and the `wasmPaths` CDN are pinned to the **same** version , 
+started". The ONNX version (`onnxruntime-web@1.27.0`) and the `wasmPaths` CDN are pinned to the **same** version;
 a drift would silently break the WASM/JS contract.
 
 ## DSP (`frontend/src/dsp/`)

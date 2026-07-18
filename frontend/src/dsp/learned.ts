@@ -1,5 +1,5 @@
-// The learned tier: load the REAL held-out CWRU segments + the trained-model metrics, and run the heavy ONNX
-// models (WDCNN diagnosis, deep-AE health indicator) live in the browser. All inputs here are REAL CWRU
+// The learned tier: load the real held-out CWRU segments + the trained-model metrics, and run the heavy ONNX
+// models (WDCNN diagnosis, deep-AE health indicator) live in the browser. All inputs here are real CWRU
 // recordings (public/rv-cwru-samples.json), so the diagnosis the user sees is a real model on real data.
 import { wdcnnLogits, aeReconstruct, svmClassify, rfClassify } from '../lib/ort';
 // The learned-tier artifact shapes are defined once in the CONTRACT-2 mirror; import for local use + re-export for

@@ -27,27 +27,27 @@ const DATASETS: DatasetRow[] = [
   },
   {
     name: 'MFPT', fit: 'diagnosis', faults: 'OR/IR · otro banco', redist: 'link', appStatus: 'crosseval',
-    note: { es: 'Integrado REAL como el test de generalización cross-dataset (domain-shift): el WDCNN entrenado en CWRU se evalúa sobre MFPT en la página Benchmark. Sin falla de bola.', en: 'Integrated REAL as the cross-dataset (domain-shift) test: the CWRU-trained WDCNN is evaluated on MFPT on the Benchmark page. No ball fault.' },
+    note: { es: 'Integrado real como el test de generalización cross-dataset (domain-shift): el WDCNN entrenado en CWRU se evalúa sobre MFPT en la página Benchmark. Sin falla de bola.', en: 'Integrated real as the cross-dataset (domain-shift) test: the CWRU-trained WDCNN is evaluated on MFPT on the Benchmark page. No ball fault.' },
   },
   {
     name: 'MAFAULDA', fit: 'diagnosis', faults: 'rodamiento: OR/bola/jaula', redist: 'link', appStatus: 'diag-real',
-    note: { es: 'Integrado REAL como fuente de segmento (App): 50 kHz, clases pista-externa/bola/jaula; el WDCNN entrenado en CWRU se evalúa cross-domain (outer→outer transfiere; la jaula no tiene contraparte CWRU).', en: 'Integrated REAL as an App segment source: 50 kHz, outer/ball/cage classes; the CWRU-trained WDCNN is evaluated cross-domain (outer→outer transfers; cage has no CWRU counterpart).' },
+    note: { es: 'Integrado real como fuente de segmento (App): 50 kHz, clases pista-externa/bola/jaula; el WDCNN entrenado en CWRU se evalúa cross-domain (outer→outer transfiere; la jaula no tiene contraparte CWRU).', en: 'Integrated real as an App segment source: 50 kHz, outer/ball/cage classes; the CWRU-trained WDCNN is evaluated cross-domain (outer→outer transfers; cage has no CWRU counterpart).' },
   },
   {
     name: 'Ottawa (velocidad variable)', fit: 'diagnosis', faults: 'sano/OR/IR · velocidad variable', redist: 'mirror', appStatus: 'diag-real',
-    note: { es: 'Integrado REAL como fuente de segmento (App) con computed-order-tracking: las frecuencias de falla quedan en órdenes constantes pese a la velocidad variable, y habilita un Campbell/orden real. WDCNN cross-domain. Licencia abierta (CC BY 4.0).', en: 'Integrated REAL as an App segment source with computed-order-tracking: fault frequencies stay constant orders despite the varying speed, enabling a real Campbell/order map. Cross-domain WDCNN. Open license (CC BY 4.0).' },
+    note: { es: 'Integrado real como fuente de segmento (App) con computed-order-tracking: las frecuencias de falla quedan en órdenes constantes pese a la velocidad variable, y habilita un Campbell/orden real. WDCNN cross-domain. Licencia abierta (CC BY 4.0).', en: 'Integrated real as an App segment source with computed-order-tracking: fault frequencies stay constant orders despite the varying speed, enabling a real Campbell/order map. Cross-domain WDCNN. Open license (CC BY 4.0).' },
   },
   {
     name: 'IMS / NASA', fit: 'RUL', faults: 'run-to-failure', redist: 'mirror', appStatus: 'rul-real',
-    note: { es: 'Integrado REAL como fuente de RUL (App): 2 run-to-failure de pista externa con frames crudos de vida; abierto (gobierno EE.UU.).', en: 'Integrated REAL as an App RUL source: 2 outer-race run-to-failures with raw life-frames; open (US-gov).' },
+    note: { es: 'Integrado real como fuente de RUL (App): 2 run-to-failure de pista externa con frames crudos de vida; abierto (gobierno EE.UU.).', en: 'Integrated real as an App RUL source: 2 outer-race run-to-failures with raw life-frames; open (US-gov).' },
   },
   {
     name: 'XJTU-SY', fit: 'RUL', faults: 'run-to-failure · 3 condiciones', redist: 'mirror', appStatus: 'rul-real',
-    note: { es: 'Integrado REAL como fuente de RUL (App): 14 trayectorias de vida completa con frames crudos + órdenes de falla (LDK UER204); benchmark de RUL (investigación con cita).', en: 'Integrated REAL as an App RUL source: 14 full-life trajectories with raw life-frames + fault orders (LDK UER204); RUL benchmark (research-with-citation).' },
+    note: { es: 'Integrado real como fuente de RUL (App): 14 trayectorias de vida completa con frames crudos + órdenes de falla (LDK UER204); benchmark de RUL (investigación con cita).', en: 'Integrated real as an App RUL source: 14 full-life trajectories with raw life-frames + fault orders (LDK UER204); RUL benchmark (research-with-citation).' },
   },
   {
     name: 'FEMTO / PRONOSTIA', fit: 'RUL', faults: 'vida acelerada (PHM 2012)', redist: 'link', appStatus: 'rul-real',
-    note: { es: 'Integrado REAL como fuente de RUL (App): 7 trayectorias del desafío PHM 2012 con frames crudos de vida (sin geometría publicada → sin marcadores de falla).', en: 'Integrated REAL as an App RUL source: 7 PHM-2012-challenge trajectories with raw life-frames (no published geometry → no fault markers).' },
+    note: { es: 'Integrado real como fuente de RUL (App): 7 trayectorias del desafío PHM 2012 con frames crudos de vida (sin geometría publicada → sin marcadores de falla).', en: 'Integrated real as an App RUL source: 7 PHM-2012-challenge trajectories with raw life-frames (no published geometry → no fault markers).' },
   },
 ];
 
@@ -90,7 +90,7 @@ export default function Experiments() {
         {es ? 'Asignación a nivel de archivo' : 'File-level assignment'}
       </text>
       <text x="640" y="44" textAnchor="middle" fontSize="11" fill="var(--color-fg-faint)">
-        {es ? 'un archivo completo va a UN solo lado' : 'a whole file goes to ONE side only'}
+        {es ? 'un archivo completo va a un solo lado' : 'a whole file goes to one side only'}
       </text>
 
       {/* ============ LEFT: four source recordings, colored by fault family ============ */}
@@ -117,7 +117,7 @@ export default function Experiments() {
       ))}
 
       <text x="150" y="356" textAnchor="middle" fontSize="10.5" fill="var(--color-fg-faint)">
-        {es ? 'las ventanas se solapan DENTRO de un archivo (aumentación),' : 'windows are strided WITHIN a file (augmentation),'}
+        {es ? 'las ventanas se solapan DENTRO de un archivo (aumentación),' : 'windows are strided within a file (augmentation),'}
       </text>
       <text x="150" y="370" textAnchor="middle" fontSize="10.5" fill="var(--color-fg-faint)">
         {es ? 'nunca se parten a través de la frontera entrenamiento/prueba' : 'never split across the train/test boundary'}
@@ -145,7 +145,7 @@ export default function Experiments() {
         {es ? 'PRUEBA · carga retenida' : 'TEST · held-out load'}
       </text>
       <text x="486" y="340" fontSize="10.5" fill="var(--color-fg-faint)">
-        {es ? 'carga 3 hp, nunca vista en entrenamiento' : 'load 3 hp, NEVER seen in training'}
+        {es ? 'carga 3 hp, nunca vista en entrenamiento' : 'load 3 hp, never seen in training'}
       </text>
       <rect x="486" y="352" width="100" height="52" rx="5"
         fill="var(--color-warn)" fillOpacity="0.18" stroke="var(--color-warn)" strokeWidth="1.4" />
@@ -304,7 +304,7 @@ export default function Experiments() {
               {DATASETS.map((d) => {
                 const st = d.appStatus ?? 'planned';
                 const chip = st === 'live'
-                  ? { bg: 'color-mix(in oklab,#3fb950 22%,transparent)', fg: '#3fb950', bd: 'transparent', lbl: es ? 'EN VIVO + benchmark' : 'LIVE + benchmarked' }
+                  ? { bg: 'color-mix(in oklab,#3fb950 22%,transparent)', fg: '#3fb950', bd: 'transparent', lbl: es ? 'en vivo + benchmark' : 'live + benchmarked' }
                   : st === 'crosseval'
                     ? { bg: 'color-mix(in oklab,#6e5cff 20%,transparent)', fg: '#6e5cff', bd: 'transparent', lbl: es ? 'cross-dataset (real)' : 'cross-dataset (real)' }
                     : st === 'diag-real'
@@ -325,8 +325,8 @@ export default function Experiments() {
             </tbody>
           </table>
           <p className="muted small">{es
-            ? 'Estado honesto: hoy hay SIETE conjuntos reales integrados. CWRU es el benchmark entrenado, entrena el WDCNN + el deep-AE + los clásicos y corre en vivo (diagnóstico in-domain). MFPT es el test de generalización cross-dataset (el WDCNN CWRU evaluado sobre MFPT, nunca visto). En el App: Ottawa (segmento con order-tracking, Campbell/orden real bajo velocidad variable) y MaFaulDa (segmento 50 kHz, OR/bola/jaula) corren como fuentes de diagnóstico con el WDCNN cross-domain; FEMTO, XJTU e IMS corren como fuentes de RUL con frames crudos de vida (suite de señal + waterfall de degradación real + trayectoria de features + proyección de RUL vs la falla real). Solo Paderborn queda como roadmap (su host fue inalcanzable desde esta red); no se afirma cobertura de engranaje hasta integrarlo.'
-            : 'Honest status: today there are SEVEN real integrated sets. CWRU is the trained benchmark, it trains the WDCNN + deep-AE + the classical models and runs live (in-domain diagnosis). MFPT is the cross-dataset generalization test (the CWRU WDCNN evaluated on never-seen MFPT). In the App: Ottawa (an order-tracked segment source, a real Campbell/order map under varying speed) and MaFaulDa (a 50 kHz segment source, OR/ball/cage) run as diagnosis sources with the cross-domain WDCNN; FEMTO, XJTU and IMS run as RUL sources with raw life-frames (signal suite + real degradation waterfall + feature trajectory + RUL projection vs the real failure). Only Paderborn remains roadmap (its host was unreachable from this network); no gear coverage is claimed until it is integrated.'}</p>
+            ? 'Estado honesto: hoy hay siete conjuntos reales integrados. CWRU es el benchmark entrenado, entrena el WDCNN + el deep-AE + los clásicos y se ejecuta en vivo (diagnóstico in-domain). MFPT es el test de generalización cross-dataset (el WDCNN CWRU evaluado sobre MFPT, nunca visto). En el App: Ottawa (segmento con order-tracking, Campbell/orden real bajo velocidad variable) y MaFaulDa (segmento 50 kHz, OR/bola/jaula) operan como fuentes de diagnóstico con el WDCNN cross-domain; FEMTO, XJTU e IMS operan como fuentes de RUL con frames crudos de vida (suite de señal + waterfall de degradación real + trayectoria de features + proyección de RUL vs la falla real). Solo Paderborn queda como roadmap (su host fue inalcanzable desde esta red); no se afirma cobertura de engranaje hasta integrarlo.'
+            : 'Honest status: today there are seven real integrated sets. CWRU is the trained benchmark, it trains the WDCNN + deep-AE + the classical models and runs live (in-domain diagnosis). MFPT is the cross-dataset generalization test (the CWRU WDCNN evaluated on never-seen MFPT). In the App: Ottawa (an order-tracked segment source, a real Campbell/order map under varying speed) and MaFaulDa (a 50 kHz segment source, OR/ball/cage) run as diagnosis sources with the cross-domain WDCNN; FEMTO, XJTU and IMS run as RUL sources with raw life-frames (signal suite + real degradation waterfall + feature trajectory + RUL projection vs the real failure). Only Paderborn remains roadmap (its host was unreachable from this network); no gear coverage is claimed until it is integrated.'}</p>
 
           <p>{es
             ? 'El generador sintético está fundamentado físicamente, no es cosmético: deposita un tren de impulsos cuasi-periódico en la frecuencia de falla cinemática, cada impulso excitando una resonancia estructural amortiguada (resonancia fₙ y amortiguamiento ζ especificados), añade jitter de deslizamiento por intervalo (~0.5 % de un período) para que el peine quede levemente difuminado en vez de perfectamente periódico, aplica la modulación de amplitud físicamente correcta (las fallas de pista interna modulan a la frecuencia de eje f_r; las de bola a la frecuencia de jaula FTF; las de pista externa, ninguna), superpone armónicos de eje y añade ruido gaussiano para alcanzar un SNR objetivo. Las relaciones de frecuencia de falla que planta son exactas y transferibles a rodamientos reales, eso legitima las celdas sintéticas como conjunto de auto-validación.'
@@ -355,11 +355,11 @@ export default function Experiments() {
             ? '(1) Una matriz de confusión normalizada por fila por método: cada fila es una clase verdadera (sano / externa / interna / bola), cada celda la fracción de los registros de prueba de esa clase asignados a una clase predicha, de modo que la diagonal se lee como recall por clase y los elementos fuera de la diagonal muestran qué falla confunde un método con cuál (la confusión interna↔bola es la clásica, y la matriz la hace visible). Se elige normalización por fila sobre conteos crudos para que un conjunto de prueba desbalanceado no oculte una clase débil.'
             : '(1) A row-normalized confusion matrix per method: each row is a true class (healthy / outer / inner / ball), each cell the fraction of that class’s test recordings assigned to a predicted class, so the diagonal reads as per-class recall and off-diagonals show which fault a method confuses for which (inner↔ball confusion is the classic one, and the matrix makes it visible). Row normalization is chosen over raw counts so an imbalanced test set does not hide a weak class.'}</p>
           <p>{es
-            ? '(2) Tablas método-vs-método sobre la MISMA partición held-out sin fuga: la comparación profundo vs ML clásico vs no-supervisado (exactitud + recall de la clase sana, la lectura honesta) y una tabla clásica clic-para-seleccionar que alimenta la matriz de confusión; la pestaña Generalización agrega las tablas cross-severity y cross-dataset. Cada sección cita el dataset de origen y el paper de dificultad, de modo que un número nunca se desacopla de su procedencia.'
-            : '(2) Method-vs-method tables on the SAME leakage-safe held-out split: the deep vs classical-ML vs unsupervised comparison (accuracy + healthy-class recall, the honest reading) and a click-to-select classical table driving the confusion matrix; the Generalization tab adds the cross-severity and cross-dataset tables. Each section cites the originating dataset and the difficulty paper, so a number is never decoupled from its provenance.'}{' '}<Cite id="smith2015" paren /></p>
+            ? '(2) Tablas método-vs-método sobre la misma partición held-out sin fuga: la comparación profundo vs ML clásico vs no-supervisado (exactitud + recall de la clase sana, la lectura honesta) y una tabla clásica clic-para-seleccionar que alimenta la matriz de confusión; la pestaña Generalización agrega las tablas cross-severity y cross-dataset. Cada sección cita el dataset de origen y el paper de dificultad, de modo que un número nunca se desacopla de su procedencia.'
+            : '(2) Method-vs-method tables on the same leakage-safe held-out split: the deep vs classical-ML vs unsupervised comparison (accuracy + healthy-class recall, the honest reading) and a click-to-select classical table driving the confusion matrix; the Generalization tab adds the cross-severity and cross-dataset tables. Each section cites the originating dataset and the difficulty paper, so a number is never decoupled from its provenance.'}{' '}<Cite id="smith2015" paren /></p>
           <p>{es
-            ? 'Crucialmente, la página no re-hospeda ningún dataset restringido: los conjuntos sin concesión explícita de redistribución son solo-enlace (la tabla enlaza a la fuente y reporta nuestras métricas calculadas contra ella). Solo los conjuntos abiertamente redistribuibles pueden espejarse con atribución. La columna de redistribución en la tabla de datasets lo declara honestamente por cada conjunto.'
-            : 'Crucially, the page does not re-host any restricted dataset: sets carrying no explicit redistribution grant are link-only (the table links to the source and reports our metrics computed against it). Only the openly redistributable sets may be mirrored with attribution. The redistribution column in the datasets table states this honestly per set.'}</p>
+            ? 'La página no re-hospeda ningún dataset restringido: los conjuntos sin concesión explícita de redistribución son solo-enlace (la tabla enlaza a la fuente y reporta nuestras métricas calculadas contra ella). Solo los conjuntos abiertamente redistribuibles pueden espejarse con atribución. La columna de redistribución en la tabla de datasets lo declara honestamente por cada conjunto.'
+            : 'The page does not re-host any restricted dataset: sets carrying no explicit redistribution grant are link-only (the table links to the source and reports our metrics computed against it). Only the openly redistributable sets may be mirrored with attribution. The redistribution column in the datasets table states this honestly per set.'}</p>
           <Refs ids={['smith2015']} label={refsLabel} />
         </div>),
     },
@@ -369,7 +369,7 @@ export default function Experiments() {
       content: (
         <div className="prose">
           <p>{es
-            ? 'El experimento de pronóstico se corre solo sobre trayectorias run-to-failure (más curvas sintéticas con forma realista para cobertura). El procedimiento: formar un indicador de salud escalar (HI, p. ej. RMS) por snapshot; detectar el inicio de degradación como el primer instante en que el HI sostiene una excursión sobre la base + 4σ durante dos puntos consecutivos (la media/σ base tomadas de la porción sana temprana); ajustar un modelo log-lineal (exponencial) solo sobre los puntos post-inicio; proyectar hacia adelante hasta el momento en que el HI cruza el umbral de falla; reportar RUL = tiempo-de-falla-proyectado − tiempo-de-última-observación, con un abanico de incertidumbre hacia adelante a ±2 desviaciones estándar del residuo en escala logarítmica.'
+            ? 'El experimento de pronóstico se ejecuta solo sobre trayectorias run-to-failure (más curvas sintéticas con forma realista para cobertura). El procedimiento: formar un indicador de salud escalar (HI, p. ej. RMS) por snapshot; detectar el inicio de degradación como el primer instante en que el HI sostiene una excursión sobre la base + 4σ durante dos puntos consecutivos (la media/σ base tomadas de la porción sana temprana); ajustar un modelo log-lineal (exponencial) solo sobre los puntos post-inicio; proyectar hacia adelante hasta el momento en que el HI cruza el umbral de falla; reportar RUL = tiempo-de-falla-proyectado − tiempo-de-última-observación, con un abanico de incertidumbre hacia adelante a ±2 desviaciones estándar del residuo en escala logarítmica.'
             : 'The prognosis experiment is run only on run-to-failure trajectories (plus synthetic realistically-shaped curves for coverage). The procedure: form a scalar health indicator (HI, e.g. RMS) per snapshot; detect degradation onset as the first time the HI sustains an excursion above baseline + 4σ for two consecutive points (the baseline mean/σ taken from the early healthy portion); fit a log-linear (exponential) model on the post-onset points only; project forward to the moment the HI crosses the failure threshold; report RUL = projected-fail-time − last-observed-time, with a forward uncertainty fan at ±2 residual standard deviations on the log scale.'}{' '}<Cite id="lei2018" paren /> <Cite id="wang2020xjtu" paren /></p>
           <Equation
             tex={String.raw`\ln \mathrm{HI}(t)=\ln a + b\,t \ \ (t\ge t_{\text{onset}}),\qquad t_{\text{fail}}=\frac{\ln\theta_{\mathrm{HI}}-\ln a}{b},\qquad \widehat{\mathrm{RUL}}=\max(0,\ t_{\text{fail}}-t_{\text{last}})`}

@@ -1,10 +1,10 @@
 // Order map, a synthetic speed sweep (run-up) of the ENVELOPE spectrum. For each RPM we synthesize a
 // stationary frame, band-pass around the structural resonance, take the Hilbert envelope, and its
 // spectrum: the defect frequency (BPFO/BPFI/2·BSF) is a clean line there, and because it is fixed by
-// kinematics it scales LINEARLY with shaft speed, a ray in (rpm, Hz). Because we control every frame's
+// kinematics it scales linearly with shaft speed, a ray in (rpm, Hz). Because we control every frame's
 // speed exactly, order tracking is analytic: resampling each column onto order = f/(rpm/60) straightens
 // the defect line to a constant order, separating speed-dependent fault lines from any fixed line.
-// Labeled synthetic. (Raw-spectrum shaft orders / structural resonance are NOT shown here, the
+// Labeled synthetic. (Raw-spectrum shaft orders / structural resonance are not shown here, the
 // envelope band-pass removes them; this view is the bearing-defect order map.)
 import { synth } from './signal';
 import { envelopeSpectrum } from './envelope';

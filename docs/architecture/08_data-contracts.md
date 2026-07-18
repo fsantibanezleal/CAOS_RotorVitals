@@ -13,7 +13,7 @@ vibration-record descriptor iff it satisfies the schema (`fs ∈ {12000, 48000}`
 `fault_type ∈ {normal, inner, outer, ball}`, …), **rejects** with a reason otherwise (never silently coerced), and
 **flags** plausible-but-suspicious records (48 kHz → decimation, rpm outside [600, 3600], non-standard fault size).
 `validate_signal` guards the raw array: NaN/Inf → reject, length < 2048 → reject, clipping > 1% → reject, flatline
-window → flag + safe-normalize. A committed `data/examples/records.csv` PASSES Contract 1 (a clone-time test
+window → flag + safe-normalize. A committed `data/examples/records.csv` passes Contract 1 (a clone-time test
 asserts it), so the contract is exercised without a CWRU download.
 
 ## Contract 2, artifact (pipeline → web)

@@ -4,7 +4,7 @@
 
 CWRU reuses **one physical bearing per fault type across the four loads**, so a true bearing-independent split is
 impossible with this dataset (stated openly, Smith & Randall 2015). RotorVitals instead holds out an **entire load
-condition** (3 HP) for test and trains on 0/1/2 HP, so no window from a test recording is ever seen in training , 
+condition** (3 HP) for test and trains on 0/1/2 HP, so no window from a test recording is ever seen in training;
 this defeats the adjacent-window leakage that a random-window split would introduce. The split rule is **frozen** in
 `stages/preprocess.py` and documented in every manifest (`split`).
 

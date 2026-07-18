@@ -12,7 +12,7 @@ the App are additional to this registry; the Experiments page coverage table lis
 | Category | Case ids | kind | real / synthetic | Expected reading |
 |---|---|---|---|---|
 | **fault-class diagnosis** (held-out 3 HP, live WDCNN + deep-AE) | `dx-normal-3hp`, `dx-outer-3hp`, `dx-inner-3hp`, `dx-ball-3hp` | diagnosis | **real** (CWRU 100/133/108/121, 3 HP held out) | normal = no comb, AE < p99; outer = BPFO 3.5848× comb; inner = BPFI 5.4152× + 1× sidebands; ball = 2·BSF 4.7136× + FTF sidebands (the hard case) |
-| **cross-severity diagnosis** (UNSEEN fault size, held-out 3 HP, live WDCNN) | `dx-{inner,ball,outer}-{014,021}-3hp` | diagnosis | **real** (CWRU 172/212, 188/225, 200/237) | the WDCNN trained only on 0.007″ faults diagnosing 0.014″/0.021″, a true held-out severity test. Honest result: nails 0.021″ (98.9%) but collapses on 0.014″ (27.8%); the unsupervised envelope/SES struggles on the SAME 0.014″ files → the signatures are weaker/atypical (Smith & Randall 2015), not a model bug |
+| **cross-severity diagnosis** (UNSEEN fault size, held-out 3 HP, live WDCNN) | `dx-{inner,ball,outer}-{014,021}-3hp` | diagnosis | **real** (CWRU 172/212, 188/225, 200/237) | the WDCNN trained only on 0.007″ faults diagnosing 0.014″/0.021″, a true held-out severity test. Honest result: nails 0.021″ (98.9%) but collapses on 0.014″ (27.8%); the unsupervised envelope/SES struggles on the same 0.014″ files → the signatures are weaker/atypical (Smith & Randall 2015), not a model bug |
 | **robustness control** | `robust-snr-sweep` | robustness | **real + synthetic noise** | WDCNN accuracy degrades monotonically (≈100% clean → ~chance at −4 dB) |
 | **classical baseline** (unsupervised envelope/SES) | `classical-envelope-resband`, `classical-kurtogram`, `classical-rawcomb` | classical | **real** | the 2–4 kHz resonance band recovers normal/inner/outer; the kurtogram pick underperforms; the raw comb is near chance |
 | **synthetic self-validation** | `synth-healthy`, `synth-outer`, `synth-inner`, `synth-ball` | synthetic | **synthetic** (labelled) | the engine recovers the planted defect frequency |
@@ -25,7 +25,7 @@ the App are additional to this registry; the Experiments page coverage table lis
   carry a real first-passage failure time).** CWRU is the trained benchmark, the training loads (0/1/2 HP) feed
   the model but only the held-out **3 HP** segments are committed as replayable live cases; MFPT is the held-out
   cross-DATASET domain-shift test (below). The synthetic + prognostics cases in the registry above are **labelled
-  synthetic**, they are NOT presented as real benchmark numbers; the App's Real: RUL mode runs on the measured
+  synthetic**, they are not presented as real benchmark numbers; the App's Real: RUL mode runs on the measured
   FEMTO/XJTU-SY/IMS life-frames.
 * **Ottawa is wired with computed-order-tracking** (fault frequencies as constant orders under varying speed, a
   real Campbell/order map); the variable-speed claim is scoped to that. **Roadmap (still not wired):** Paderborn

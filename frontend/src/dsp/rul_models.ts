@@ -2,10 +2,10 @@
 // (particleFilterRUL), the Gaussian Process (gpRUL), and the deep-RUL CNN (deepRul ONNX), behind one API
 // so the App's RUL tab can switch between prognostic models at runtime.
 //
-//   Classical    , transparent, closed-form, no training needed
-//   Particle Filter, Bayesian state estimation, full posterior distribution
-//   Gaussian Process, non-parametric, calibrated uncertainty bands
-//   Deep-RUL CNN   , SOTA, trained on XJTU-SY + FEMTO, ONNX in-browser
+//   Classical: transparent, closed-form, no training needed
+//   Particle Filter: Bayesian state estimation, full posterior distribution
+//   Gaussian Process: non-parametric, calibrated uncertainty bands
+//   Deep-RUL CNN: SOTA, trained on XJTU-SY + FEMTO, ONNX in-browser
 import { type HIPoint, projectRUL } from './health';
 import { particleFilterRUL } from './pf_rul';
 import { gpRUL } from './gp_rul';

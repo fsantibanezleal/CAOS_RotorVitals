@@ -4,7 +4,7 @@
 
 ![RotorVitals, a condition-monitoring & prognostics workbench: offline engine → committed artifacts → live SPA](../diagrams/01-the-app.svg)
 
-**The lanes**, what runs WEB (live TS engine + in-browser ONNX inference) vs offline/COMPUTE (precompute bake + torch training) vs REPLAY (committed artifacts):
+**The lanes**, what runs web (live TS engine + in-browser ONNX inference) vs offline/compute (precompute bake + torch training) vs replay (committed artifacts):
 
 ![The three lanes, web (live) / offline (precompute + train) / replay (committed artifacts)](../diagrams/02-lanes.svg)
 
@@ -22,7 +22,7 @@ held-out segments (stages/export) ───────────────�
                                                                    │
 per-case replay (pipeline, numpy) ──(Contract 2: core/manifest.py)─► data/derived/<case>/trace.json + manifests/
                                                                    │
-frontend (copy-data.mjs overlays data/derived) ──► onnxruntime-web + TS DSP run LIVE in the browser
+frontend (copy-data.mjs overlays data/derived) ──► onnxruntime-web + TS DSP run live in the browser
 ```
 
 ## Packages

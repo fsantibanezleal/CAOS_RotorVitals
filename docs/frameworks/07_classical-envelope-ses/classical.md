@@ -15,7 +15,7 @@ Hilbert envelope → spectrum) exposes a **comb** at the kinematic defect freque
 2. **Envelope**, `|hilbert(bandpass(x))|`, then the magnitude spectrum.
 3. **Comb prominence**, per-harmonic peak-to-local-median at the kinematic multiplier × shaft rate, taking the
    strongest of the fundamental and its ±sidebands (amplitude-modulated faults: inner = 1× shaft, ball = FTF).
-4. **Decision**, a top score above an **absolute gate (4.5)** AND a top/second ratio above a **relative gate
+4. **Decision**, a top score above an **absolute gate (4.5)** and a top/second ratio above a **relative gate
    (1.7)** → that fault; else normal. The full prominence statistic `P(f₀)`, the two gate constants, and the
    confidence blend are documented in [the diagnosis decision rule](../15_diagnosis-decision/diagnosis-decision.md).
 

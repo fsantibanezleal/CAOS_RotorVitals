@@ -6,7 +6,7 @@ faults from vibration with a real learned tier (a WDCNN classifier + a deep-auto
 on the **real CWRU** data) and a classical envelope/SES tier, and projects remaining useful life, all running
 **live in the browser**.
 
-## What it is / what it is NOT
+## What it is / what it is not
 
 * **Is:** a real application, a first-level source selector drives the whole workbench: pick a held-out real
   CWRU segment (or a real Ottawa/MaFaulDa segment, cross-domain) and the trained WDCNN + deep-AE run live
@@ -14,7 +14,7 @@ on the **real CWRU** data) and a classical envelope/SES tier, and projects remai
   suite runs on measured life-frames; a full classical DSP chain (envelope/SES, kurtogram, cepstrum, Campbell,
   cyclostationary, ISO severity) on real or labelled-synthetic signals; an honest SNR-robustness curve and a
   leakage-safe held-out benchmark.
-* **Is NOT:** a certified protection system. The clean CWRU lab rig makes raw accuracy optimistic (the honest
+* **Is not:** a certified protection system. The clean CWRU lab rig makes raw accuracy optimistic (the honest
   deliverable is the SNR curve); the synthetic generator's scenarios and its run-to-failure trend are **labelled
   synthetic**, while the real tier spans seven measured sets, CWRU (trained benchmark), MFPT (cross-dataset eval),
   Ottawa + MaFaulDa (real diagnosis segments), FEMTO + XJTU-SY + IMS (real run-to-failure trajectories, 23 with a

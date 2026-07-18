@@ -28,7 +28,7 @@ Cepstral analysis deliberately swaps syllables of the spectral vocabulary (spect
 harmonic→rahmonic, filter→lifter) because the cepstrum is a *spectrum of a spectrum*, the independent axis is time
 (seconds), not frequency, and a peak there means *periodic structure in the log-spectrum*.
 
-## What it is NOT
+## What it is not
 
 * **Not a fault-frequency reader on its own.** The cepstrum reports *spacing*, not *location*; a bearing harmonic
   family and a gear-sideband family at the same spacing share a rahmonic. Use it to confirm a regularly spaced family

@@ -28,7 +28,7 @@ apart in the embedding, the accuracy is structural, not luck. It is also where *
 cross-dataset (e.g. MFPT) point cloud that lands *outside* the CWRU-trained clusters explains, geometrically, why the
 deep model collapses off-distribution while the physics baseline transfers (see `docs/architecture/06_model-evaluation.md`).
 
-## What it is NOT
+## What it is not
 
 * **Not the classifier's decision.** PCA is a *linear* shadow of a non-linear representation; two classes can be
   linearly mixed in 2-D yet cleanly separable by the full network. Read separation as suggestive, non-separation as a

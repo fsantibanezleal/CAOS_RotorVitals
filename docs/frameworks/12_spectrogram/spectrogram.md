@@ -28,7 +28,7 @@ shows a horizontal band of energy that flickers at the (slow) fault rate; an ele
 vertical streak; a speed change tilts the harmonic ridges. It is the sanity check behind the cyclostationary
 ridge: "is the impulsive energy actually periodic in time, or a one-off?"
 
-## What it is NOT
+## What it is not
 
 * **Not a demodulator.** The spectrogram *shows* where the resonance is, but reading the fault rate still needs the
   envelope spectrum (or the cyclic plane). Use it to pick/confirm the band, not to score the fault.
@@ -44,7 +44,7 @@ ridge: "is the impulsive energy actually periodic in time, or a one-off?"
 ## Using it on other data
 
 Any non-stationary or burst-like vibration/acoustic signal: run-up/coast-down (ridges sweep), intermittent faults,
-gear transients. Supply `fs`; tune `nperseg` to the burst duration you expect.
+gear transients. Supply `fs`; tune `nperseg` to the expected burst duration.
 
 ## Honest reading
 

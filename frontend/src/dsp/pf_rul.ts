@@ -7,7 +7,7 @@
 //   - a genuine posterior RUL distribution from the particle ensemble.
 //
 // Algorithm: regularised auxiliary SIR with kernel-density jitter (Musso, Oudjane & Le Gland 2001)
-// and a wide uninformed prior (NOT seeded from OLS, the filter must earn its estimate from data).
+// and a wide uninformed prior (not seeded from OLS, the filter must earn its estimate from data).
 //
 // References:
 //   Arulampalam, Maskell, Gordon & Clapp (2002), IEEE TSP 50(2):174–188
@@ -109,7 +109,7 @@ function detectOnset(points: HIPoint[]): number | null {
   return null;
 }
 
-// ── MAIN ────────────────────────────────────────────────────────────────────
+// ── main ────────────────────────────────────────────────────────────────────
 export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulResult {
   const n = points.length;
   const nope: PfRulResult = {
@@ -130,13 +130,13 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
   }
   if (post.length < MIN_POST_ONSET) return { ...nope, onset: tOnset };
 
-  // 3. estimate signal amplitude from the FIRST post-onset points (closest to true lnA)
+  // 3. estimate signal amplitude from the first post-onset points (closest to true lnA)
   const logHis = post.map(p => Math.log(Math.max(1e-9, p.hi)));
   const firstK = Math.min(4, post.length);
   const firstLnHi = logHis.slice(0, firstK).reduce((a, v) => a + v, 0) / firstK;
 
-  // 4. initialise particles from a WIDE uninformed prior (NOT from OLS)
-  //    lnA ~ N(baseline_lnHI, 2.0²) , wide enough to cover the uncertainty
+  // 4. initialise particles from a wide uninformed prior (not from OLS)
+  //    lnA ~ N(baseline_lnHI, 2.0²), wide enough to cover the uncertainty
   //    b   ~ Gamma-like (LogNormal): median ~ 0.05/h, 95% CI [0.001, 0.5]
   //    σ   ~ LogNormal: median 0.15, wide
   const particles: Particle[] = [];
@@ -148,7 +148,7 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
   }
   kernelRegularise(particles);
 
-  // 5. sequential importance resampling, process ALL post-onset observations
+  // 5. sequential importance resampling, process all post-onset observations
   for (const obs of post) {
     const t = obs.t;
     // compute log-weights (in log space for stability, then exponentiate)

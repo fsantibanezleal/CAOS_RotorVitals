@@ -6,7 +6,7 @@ import { type FaultKind } from '../dsp/bearing';
 // a steady healthy baseline, a degradation onset, then exponential growth to failure, with
 // measurement noise). Used to demonstrate the RUL projection honestly, labeled synthetic.
 //
-// The trend REACTS to the planted scenario: higher severity → earlier onset and faster growth →
+// The trend reacts to the planted scenario: higher severity → earlier onset and faster growth →
 // shorter remaining useful life; a healthy bearing shows no onset (no projection). The bearing/fault
 // only re-seed the measurement noise so each case looks distinct.
 export interface RunToFailure {
@@ -47,10 +47,10 @@ export function runToFailure(opts?: { seed?: number; fault?: FaultKind; severity
   return { id: `rtf-${fault}`, label: 'Run-to-failure (synthetic, XJTU-SY-like)', points, threshold, trueFail };
 }
 
-// ---- REAL run-to-failure: FEMTO/PRONOSTIA, XJTU-SY, IMS ------------------------------------------------------------
+// ---- real run-to-failure: FEMTO/PRONOSTIA, XJTU-SY, IMS ------------------------------------------------------------
 // Complete accelerated-life trajectories from three public benchmarks, each reduced offline to HI(t) = per-snapshot
 // RMS of horizontal acceleration with a real first-passage trueFail at the dataset's g RMS alarm. Lets the RUL page run
-// the SAME projectRUL on REAL bearing life, not only the synthetic trend. All three share one compact artifact shape
+// the same projectRUL on real bearing life, not only the synthetic trend. All three share one compact artifact shape
 // (public/rv-{femto,xjtu,ims}-rtf.json, link-only redistribution); a missing file degrades to no trajectories.
 export type RtfSet = 'femto' | 'xjtu' | 'ims';
 export interface FemtoTraj {
@@ -70,16 +70,16 @@ function loadOneRtf(file: string, set: RtfSet): Promise<FemtoTraj[]> {
     .then((d) => ((d.trajectories ?? []) as FemtoTraj[]).map((t) => ({ ...t, set })))
     .catch(() => []);
 }
-// Merge every dataset into one ordered list of REAL trajectories; the sidebar groups them by `set`.
+// Merge every dataset into one ordered list of real trajectories; the sidebar groups them by `set`.
 export function loadRealRtf(): Promise<FemtoTraj[]> {
   return (_rtf ??= Promise.all(RTF_SETS.map((s) => loadOneRtf(s.file, s.set))).then((lists) => lists.flat()));
 }
 // Back-compat: FEMTO-only loader (kept for any caller that still wants a single set).
 export function loadFemtoRtf(): Promise<FemtoTraj[]> { return loadOneRtf('rv-femto-rtf.json', 'femto'); }
 
-// ---- REAL raw life-snapshots (the run-to-failure FRAMES) ----------------------------------------------------------
+// ---- real raw life-snapshots (the run-to-failure frames) ----------------------------------------------------------
 // Each selectable trajectory carries ~8 raw vibration windows sampled along its life (healthy → failure). These let
-// the FULL signal suite + the REAL degradation waterfall + the feature-space trajectory run on measured data in the
+// the full signal suite + the real degradation waterfall + the feature-space trajectory run on measured data in the
 // RUL mode, not only the HI curve. Artifacts: public/rv-{femto,xjtu,ims}-frames.json (link-only). Keyed by `set:id`
 // to match the trajectory selector. XJTU carries real fault-frequency orders; FEMTO/IMS have no published geometry.
 export interface LifeFrame { t: number; frac: number; rms: number; raw: number[] }

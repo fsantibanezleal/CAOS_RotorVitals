@@ -29,7 +29,7 @@ analyse it live, or drive the synthetic signal generator + the classical chain w
     **Ottawa** (time-varying speed, computed-**order-tracked** → defect frequencies are constant orders) or
     **MaFaulDa** (50 kHz; outer/ball/cage). The signal-analysis tools run on the measured window; the **WDCNN (ONNX)**
     runs live, in-domain on CWRU, cross-domain on Ottawa/MaFaulDa (labelled, the honest domain-gap test). Scenario
-    knobs become read-only metadata; the analysis knobs stay live, you really can re-process real data.
+    knobs become read-only metadata; the analysis knobs stay live, so real data really is re-processed.
   - **Real: RUL (prognosis)**, a real run-to-failure trajectory from **FEMTO/PRONOSTIA, XJTU-SY or IMS** (23 total).
     A life-instant slider scrubs ~8 measured raw windows (healthy→failure): the full signal suite runs on each
     instant, the **3D waterfall is the real degradation surface**, the **feature space is the measured degradation

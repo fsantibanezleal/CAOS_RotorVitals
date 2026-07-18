@@ -49,7 +49,7 @@ export function lifeFeatures(spec: {
   const sevEnd = spec.fault === 'healthy' ? 0 : Math.max(0.25, spec.severityEnd);
   // The synthetic acceleration units are arbitrary, and broadband velocity is dominated by the shaft
   // line, so calibrate the as-new (severity 0) reading to mid Zone A (≈0.45 mm/s). This is an
-  // illustrative mapping onto the ISO scale (labeled in the UI); the trend SHAPE and zone behaviour
+  // illustrative mapping onto the ISO scale (labeled in the UI); the trend shape and zone behaviour
   // is the point, and it honestly shows how little a bearing fault moves the broadband velocity.
   const refSig = synth({ fs, dur: 0.5, rpm: spec.rpm, bearing: spec.bearing, fault: 'healthy', severity: 0, resonance: 3400, zeta: 0.04, snrDb: spec.snrDb, seed: 399 });
   const cal = 0.45 / Math.max(1e-9, velocityRmsMmps(refSig.x, fs));
@@ -65,8 +65,8 @@ export function lifeFeatures(spec: {
   return out;
 }
 
-/** Same LifeFeat[] but computed from REAL measured life-snapshots (the run-to-failure frames): per-frame RMS,
- * envelope kurtosis and the SES amplitude at the fault frequency, so the feature-space view shows the MEASURED
+/** Same LifeFeat[] but computed from real measured life-snapshots (the run-to-failure frames): per-frame RMS,
+ * envelope kurtosis and the SES amplitude at the fault frequency, so the feature-space view shows the measured
  * degradation trajectory. `fdef` (Hz) is the fault line for the SES amplitude (0 when geometry is unknown). */
 export function framesToLifeFeats(frames: { t: number; frac: number; raw: number[] }[], fs: number, fdef: number, band: [number, number]): LifeFeat[] {
   const cal = 1; // real acceleration is already in g; the velocity reading stays in its native mm/s mapping

@@ -59,7 +59,7 @@ confidence = clamp₀₁(0.5·sep + 0.5·abs)        if a fault is declared
 
 A marginal, ambiguous spectrum honestly reports **low** confidence rather than false certainty.
 
-## What it is NOT
+## What it is not
 
 * **Not a learned classifier.** This is the explainable physics decision; the WDCNN/AE learned tier
   (`docs/frameworks/05_wdcnn`, `06_deep-ae`) is a separate, measured-against baseline. The two gates make the
