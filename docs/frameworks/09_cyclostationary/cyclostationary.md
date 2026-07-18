@@ -60,7 +60,7 @@ This build computes a **true Fast Spectral Correlation**, not the magnitude-only
 6. **EES marginal** `EES(α) = ⟨|γ(f, α)|⟩_f`, with its own `(1 − p)` significance floor (a carrier-mean, far below
    the per-pixel threshold).
 
-## What it is NOT
+## What it is not
 
 * **Not the full dense `(f, α)` correlation map.** Fast-SC reconstructs `α` finely up to `≈ Fr/2 = 375 Hz`, the
   decisive diagnostic band, not the entire bi-frequency plane to Nyquist. A dense map over the full plane is a

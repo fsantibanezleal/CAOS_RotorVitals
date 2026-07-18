@@ -6,9 +6,9 @@ runtimes**: the live lane is `onnxruntime-web` (the exported WDCNN/deep-AE) + a 
 
 A case is classified **live** iff:
 
-1. it is **client-side** (no server needed), AND
-2. its runtimes ⊆ `{ts-dsp, onnxruntime-web}` (the deployed client set), AND
-3. a single forward pass fits the interaction budget (`run_ms ≤ 1500`), AND
+1. it is **client-side** (no server needed), and
+2. its runtimes ⊆ `{ts-dsp, onnxruntime-web}` (the deployed client set), and
+3. a single forward pass fits the interaction budget (`run_ms ≤ 1500`), and
 4. its replay trace is small (`trace_bytes ≤ 256 KB`).
 
 A single 2048-sample WDCNN forward pass + a 64-D AE pass is **milliseconds**, and the traces reference (not copy)

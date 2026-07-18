@@ -44,7 +44,7 @@ that is the point: the demo shows a small, correctly-measured overlap leak, not 
 * The deep **WDCNN saturates** (1.0) on this clean pool → uninformative here, so the legible story is carried by the
   two classical models (RF, SVM-RBF), whose accuracy moves enough to read.
 
-## What it is NOT
+## What it is not
 
 * **Not a claim that CWRU is unusable**, it is the field benchmark; the demo shows *how to split it honestly*.
 * **Not the bearing-identity leak**, this isolates window-overlap only; the larger identity leak is named but not
@@ -63,5 +63,5 @@ that is the point: the demo shows a small, correctly-measured overlap leak, not 
 This is the suite's anti-self-deception panel: it takes the most common way a bearing classifier lies (overlap
 leakage) and measures it under controls, separating it from the honest load-generalization cost. The accuracies and
 control verdicts are real computed numbers on real CWRU windows; nothing here is illustrative. The lesson it
-encodes, *report the split, decompose the gap, name the residual leak you did not measure*, is the standard every
+encodes, *report the split, decompose the gap, name the residual leak that was not measured*, is the standard every
 Benchmark page in the suite is held to.

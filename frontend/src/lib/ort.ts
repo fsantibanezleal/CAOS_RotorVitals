@@ -1,7 +1,7 @@
-// Live in-browser inference of the heavy learned models, trained offline on the REAL CWRU bearing data
+// Live in-browser inference of the heavy learned models, trained offline on the real CWRU bearing data
 // (tools/ml/train_models.py) and exported to ONNX. WDCNN = supervised 4-class fault diagnosis on a raw 2048
 // window; the deep-AE = a healthy-trained autoencoder whose reconstruction error is a novelty / health
-// indicator. These run on the REAL held-out CWRU segments committed in public/rv-cwru-samples.json, this is
+// indicator. These run on the real held-out CWRU segments committed in public/rv-cwru-samples.json, this is
 // what makes RotorVitals a real application, not a synthetic demo. onnxruntime-web, WASM EP, version-pinned.
 import * as ort from 'onnxruntime-web';
 
@@ -12,7 +12,7 @@ const sessions: Record<string, Promise<ort.InferenceSession>> = {};
 const base = () => (import.meta.env.BASE_URL || '/');
 const get = (name: string) => (sessions[name] ??= ort.InferenceSession.create(`${base()}${name}`, { executionProviders: ['wasm'] }));
 
-// A SINGLE global inference gate across ALL models. The onnxruntime-web WASM EP runs single-threaded
+// A single global inference gate across all models. The onnxruntime-web WASM EP runs single-threaded
 // (numThreads=1), so two session.run() calls overlapping, even on different sessions, throw "Session already
 // started". Per-model locks are not enough (e.g. svm + rf via Promise.all overlap). Serializing every run
 // globally costs nothing (the runtime can only do one at a time) and removes the race entirely.

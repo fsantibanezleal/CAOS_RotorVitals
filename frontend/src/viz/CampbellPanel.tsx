@@ -18,8 +18,8 @@ export function CampbellPanel({ bearing, fault, severity, snr, seed, rpm, lang, 
   const [order, setOrder] = useState(false);
   const cm = useMemo(() => buildCampbell({ bearing, fault, severity, snrDb: snr, seed }), [bearing, fault, severity, snr, seed]);
 
-  // REAL Campbell (Ottawa): the shaft speed sweeps during the 10 s record, so the order-tracked envelope spectrum is
-  // a genuine order-vs-rpm raster. Fault frequencies are CONSTANT orders → horizontal lines. (Order mode only.)
+  // real Campbell (Ottawa): the shaft speed sweeps during the 10 s record, so the order-tracked envelope spectrum is
+  // a genuine order-vs-rpm raster. Fault frequencies are constant orders → horizontal lines. (Order mode only.)
   if (realOrderMap && realOrderMap.mag?.length) {
     const om = realOrderMap;
     const cols = om.mag.map((r) => Float64Array.from(r));
@@ -35,12 +35,12 @@ export function CampbellPanel({ bearing, fault, severity, snr, seed, rpm, lang, 
     return (
       <div className="rv-vizstack">
         <div className="rv-plot">
-          <div className="rv-plot-t">{es ? `Mapa de órdenes, envolvente vs velocidad (Ottawa medido${realLabel ? `, ${realLabel}` : ''} · order-tracking)` : `Order map, envelope vs shaft speed (Ottawa MEASURED${realLabel ? `, ${realLabel}` : ''} · order tracking)`}</div>
+          <div className="rv-plot-t">{es ? `Mapa de órdenes, envolvente vs velocidad (Ottawa medido${realLabel ? `, ${realLabel}` : ''} · order-tracking)` : `Order map, envelope vs shaft speed (Ottawa measured${realLabel ? `, ${realLabel}` : ''} · order tracking)`}</div>
           <Heatmap2D cols={cols} times={rpms} freqs={orders} fmax={ordMax} norm="lin" unit="" xunit="rpm" xlabel="rpm" ylabel="order (×)" yunit="×" segments={segs} height={300} hoverExtra={(x, y) => `${(y * (x / 60)).toFixed(0)} Hz`} />
         </div>
         <p className="hint">{es
-          ? 'Campbell REAL: durante la grabación de 10 s la velocidad del eje barre, así que el espectro de envolvente order-tracked muestra cómo evoluciona el contenido con la rpm instantánea. Las frecuencias de falla del rodamiento son órdenes CONSTANTES (líneas horizontales), la firma que las separa de cualquier línea de frecuencia fija (diagonal). Es la herramienta que la velocidad VARIABLE de Ottawa habilita y un dataset de velocidad fija no. Datos medidos.'
-          : 'REAL Campbell: during the 10 s record the shaft speed sweeps, so the order-tracked envelope spectrum shows how the content evolves with instantaneous rpm. The bearing fault frequencies are CONSTANT orders (horizontal lines), separating them from any fixed-frequency line (diagonal). This is the tool Ottawa\'s VARIABLE speed uniquely enables and a constant-speed dataset cannot. Measured data.'}</p>
+          ? 'Campbell real: durante la grabación de 10 s la velocidad del eje barre, así que el espectro de envolvente order-tracked muestra cómo evoluciona el contenido con la rpm instantánea. Las frecuencias de falla del rodamiento son órdenes constantes (líneas horizontales), la firma que las separa de cualquier línea de frecuencia fija (diagonal). Es la herramienta que la velocidad variable de Ottawa habilita y un dataset de velocidad fija no. Datos medidos.'
+          : 'real Campbell: during the 10 s record the shaft speed sweeps, so the order-tracked envelope spectrum shows how the content evolves with instantaneous rpm. The bearing fault frequencies are constant orders (horizontal lines), separating them from any fixed-frequency line (diagonal). This is the tool Ottawa\'s variable speed uniquely enables and a constant-speed dataset cannot. Measured data.'}</p>
       </div>
     );
   }

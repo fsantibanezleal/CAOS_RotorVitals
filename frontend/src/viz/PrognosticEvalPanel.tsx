@@ -52,8 +52,8 @@ export function PrognosticEvalPanel({ rtf, fault, severity, lang }: {
     if (hov && hov.i < al.ts.length) { g.strokeStyle = fg; g.lineWidth = 1; g.beginPath(); g.arc(sx(al.ts[hov.i]), sy(al.predRUL[hov.i]), 5, 0, 7); g.stroke(); }
     // legend
     g.font = '10px ui-sans-serif, sans-serif';
-    g.fillStyle = dim; g.fillText(es ? ', , RUL verdadero' : ', , true RUL', padL + 4, padT + 10);
-    g.fillStyle = acc; g.fillText(es ? ',  RUL predicho (±α=20% cono)' : ',  predicted RUL (±α=20% cone)', padL + 90, padT + 10);
+    g.fillStyle = dim; g.fillText(es ? '· RUL verdadero' : '· true RUL', padL + 4, padT + 10);
+    g.fillStyle = acc; g.fillText(es ? '· RUL predicho (±α=20% cono)' : '· predicted RUL (±α=20% cone)', padL + 90, padT + 10);
   }, [al, hov, es]);
 
   // calibration chart
@@ -88,7 +88,7 @@ export function PrognosticEvalPanel({ rtf, fault, severity, lang }: {
   };
 
   if (healthy) {
-    return <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{es ? 'Evaluación prognóstica (α-λ + calibración)' : 'Prognostic evaluation (α-λ + calibration)'}</div><p className="hint">{es ? 'Un caso sano no tiene degradación ni fin de vida, así que no hay RUL que evaluar. Selecciona una falla (externa/interna/bola) para ver la exactitud α-λ y el diagrama de calibración.' : 'A healthy case has no degradation or end-of-life, so there is no RUL to evaluate. Select a fault (outer/inner/ball) to see the α-λ accuracy and the calibration diagram.'}</p></div></div>;
+    return <div className="rv-vizstack"><div className="rv-plot"><div className="rv-plot-t">{es ? 'Evaluación prognóstica (α-λ + calibración)' : 'Prognostic evaluation (α-λ + calibration)'}</div><p className="hint">{es ? 'Un caso sano no tiene degradación ni fin de vida, así que no hay RUL que evaluar. Seleccionar una falla (externa/interna/bola) para ver la exactitud α-λ y el diagrama de calibración.' : 'A healthy case has no degradation or end-of-life, so there is no RUL to evaluate. Select a fault (outer/inner/ball) to see the α-λ accuracy and the calibration diagram.'}</p></div></div>;
   }
 
   const note = es

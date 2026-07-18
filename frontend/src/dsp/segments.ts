@@ -1,9 +1,9 @@
-// Unified REAL diagnosis-segment sources for the App's segment mode. Three measured datasets with different native
+// Unified real diagnosis-segment sources for the App's segment mode. Three measured datasets with different native
 // schemas are adapted to one shape so the same signal-analysis tools + the WDCNN run on any of them:
-//   - CWRU   : 12 kHz drive-end, classes normal/inner/outer/ball, the WDCNN's NATIVE domain (in-domain inference).
-//   - Ottawa : time-VARYING speed, computed-ORDER-TRACKED (orders domain); classes healthy/inner/outer. The WDCNN
-//              runs CROSS-DOMAIN on a 12 kHz time window (rawWdcnn).
-//   - MaFaulDa: 50 kHz constant-speed; classes outer/ball/cage. WDCNN runs CROSS-DOMAIN on a 12.5 kHz window; the
+//   - CWRU   : 12 kHz drive-end, classes normal/inner/outer/ball, the WDCNN's native domain (in-domain inference).
+//   - Ottawa : time-varying speed, computed-ORDER-tracked (orders domain); classes healthy/inner/outer. The WDCNN
+//              runs cross-domain on a 12 kHz time window (rawWdcnn).
+//   - MaFaulDa: 50 kHz constant-speed; classes outer/ball/cage. WDCNN runs cross-domain on a 12.5 kHz window; the
 //              cage class has no CWRU counterpart (WDCNN truth-check skipped).
 // Raw archives stay offline; only the compact public/rv-*-samples.json artifacts are fetched.
 import { type Bearing } from './bearing';
@@ -16,7 +16,7 @@ export interface SegSample {
   rawWdcnn?: number[];  // a 12–12.5 kHz time window for the WDCNN (in/cross-domain); falls back to raw for CWRU
   rpm?: number;
   meta?: string;        // a short metadata line for the sidebar
-  orderMap?: { rpmBins: number[]; orderBins: number[]; mag: number[][] }; // Ottawa: a REAL order-vs-rpm Campbell raster
+  orderMap?: { rpmBins: number[]; orderBins: number[]; mag: number[][] }; // Ottawa: a real order-vs-rpm Campbell raster
 }
 
 export interface SegDataset {
