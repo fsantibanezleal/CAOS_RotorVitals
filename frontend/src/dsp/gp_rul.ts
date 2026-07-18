@@ -141,7 +141,7 @@ export function gpRUL(points: HIPoint[], threshold: number): GpRulResult {
   // Linear mean function: the GP adds uncertainty around the exponential trend.
   // Without it the RBF GP cannot extrapolate. With it the bands are honest: tight near
   // training data, widening with extrapolation distance. The minimum sigmaN ensures
-  // the bands are VISIBLE (not collapsed to 1%).
+  // the bands are visible (not collapsed to 1%).
   let sx = 0, sy = 0, sxx = 0, sxy = 0;
   for (let i = 0; i < X.length; i++) { sx += X[i]; sy += yRaw[i]; sxx += X[i] * X[i]; sxy += X[i] * yRaw[i]; }
   const mN = X.length, bMean = (mN * sxy - sx * sy) / (mN * sxx - sx * sx), lnAMean = (sy - bMean * sx) / mN;

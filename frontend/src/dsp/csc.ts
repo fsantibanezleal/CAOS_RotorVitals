@@ -1,7 +1,7 @@
 import { fft, nextPow2 } from './fft';
 
 // ============================================================================================================
-// Fast Spectral Correlation (Fast-SC), T9. A TRUE phase-retaining cyclic spectral coherence, the upgrade over
+// Fast Spectral Correlation (Fast-SC), T9. A true phase-retaining cyclic spectral coherence, the upgrade over
 // the magnitude-only CMS below. Validated numerically against ground-truth planted-AM signals (peaks land at the
 // planted α to <1 Hz) and on the App's own synth() signals (outer→BPFO, inner→BPFI, ball→2·BSF ridges + harmonics;
 // healthy → no ridge). References: Antoni, Xin & Hamzaoui (2017) MSSP 92:248-277 (Fast-SC); Carter, Knapp & Nuttall
@@ -23,7 +23,7 @@ export interface FastScMap {
   Keff: number;              // overlap-corrected independent averages
   gamma2Thr: number;         // CKN |γ|² threshold at level p (per-pixel heatmap mask)
   gammaThr: number;          // sqrt(gamma2Thr) → the maskBelow value on the |γ| heatmap
-  eesFloor: number;          // (1−p) significance floor for the EES (a carrier-MEAN, far below the per-pixel thr)
+  eesFloor: number;          // (1−p) significance floor for the EES (a carrier-mean, far below the per-pixel thr)
   alphaMaxHz: number;        // the cyclic-frequency ceiling actually resolved (≈ Fr/2)
 }
 
@@ -56,14 +56,14 @@ export function cohThreshold(Keff: number, p = 0.05): number {
   return 1 - Math.pow(p, 1 / (k - 1));
 }
 
-/** Overlap-corrected number of independent averages, from the ACTUAL window autocorrelation (Welch/Nuttall): the
+/** Overlap-corrected number of independent averages, from the actual window autocorrelation (Welch/Nuttall): the
  * raw frame count K divided by 1 + 2 Σ_m (1 − mR/N) ρ²(mR), ρ = normalized window autocorrelation at lag mR. */
 export function overlapCorrectedK(Kraw: number, hop: number, N: number, w: Float64Array): number {
   let s2 = 0; for (let n = 0; n < N; n++) s2 += w[n] * w[n];
   let denom = 1;
   // variance of the mean of K correlated segments = (1/K)[1 + 2 Σ_m (1 − m/K) ρ²(mR)]; the segments are mR samples
   // apart so the inter-segment correlation is the window autocorrelation ρ(mR), zero once mR ≥ N (no overlap). The
-  // Bartlett taper is (1 − m/K) over the SEGMENT index m (not m·hop/N over the sample lag, that was the FAR bug).
+  // Bartlett taper is (1 − m/K) over the segment index m (not m·hop/N over the sample lag, that was the far bug).
   for (let m = 1; m * hop < N; m++) {
     let c = 0; for (let n = 0; n + m * hop < N; n++) c += w[n] * w[n + m * hop];
     denom += 2 * (1 - m / Kraw) * (c * c) / (s2 * s2);
@@ -150,7 +150,7 @@ export function fastSpectralCoherence(
 
   const Keff = overlapCorrectedK(K, hop, N, win);
   const gamma2Thr = cohThreshold(Keff, p);
-  // EES significance floor: the EES is a MEAN of |γ| over N_f carriers, so its null is far below the per-pixel
+  // EES significance floor: the EES is a mean of |γ| over N_f carriers, so its null is far below the per-pixel
   // threshold. Under H0, |γ|²~Beta(1,Keff−1) ⇒ E[|γ|]=Γ(1.5)·Γ(Keff)/Γ(Keff+½)≈0.886/√(Keff+¼), E[|γ|²]=1/Keff;
   // the EES (mean of N_f≈half such values) has that mean and std √(Var[|γ|]/N_f). One-sided (1−p) ≈ mean+1.645·std.
   const Nf = half;

@@ -82,7 +82,7 @@ export function RecommendationPanel({ bearing, bearingLabel, fault, severity, rp
         </div>
 
         {rec.disagreement && <div className="callout" data-variant="honest"><p style={{ margin: 0 }}>{es
-          ? 'Honesto: la pantalla ISO de banda ancha (10–1000 Hz) parece tranquila, pero la envolvente confirma una falla de rodamiento real, su energía está en la resonancia de alta frecuencia, FUERA de la banda ISO. La decisión confía en la envolvente, no en la velocidad de banda ancha.'
+          ? 'Honesto: la pantalla ISO de banda ancha (10–1000 Hz) parece tranquila, pero la envolvente confirma una falla de rodamiento real, su energía está en la resonancia de alta frecuencia, fuera de la banda ISO. La decisión confía en la envolvente, no en la velocidad de banda ancha.'
           : 'Honest: the broadband ISO screen (10–1000 Hz) looks calm, but the envelope confirms a real bearing fault, its energy is in the high-frequency resonance, OUTSIDE the ISO band. The decision trusts the envelope, not the broadband velocity.'}</p></div>}
 
         {/* the evidence / rationale table */}

@@ -1,6 +1,6 @@
 // T6, parse a user-supplied vibration signal (bring-your-own-data) into a numeric array. Accepts the universal
-// text formats: one number per line, CSV, or whitespace/semicolon-separated. Per row it takes the LAST numeric
-// token, which transparently handles a single acceleration column AND a `time,accel` (or `index,accel`) pair , 
+// text formats: one number per line, CSV, or whitespace/semicolon-separated. Per row it takes the last numeric
+// token, which transparently handles a single acceleration column AND a `time,accel` (or `index,accel`) pair, 
 // the accel is conventionally the last column. Non-numeric header rows are skipped. Pure + testable; no .mat
 // binary parsing (fragile in-browser, the UI tells the user to export .mat to CSV first).
 
@@ -23,7 +23,7 @@ export function parseSignal(text: string): ParsedSignal {
     const t = row.trim();
     if (!t) continue;
     const tokens = t.split(/[\s,;]+/).filter(Boolean);
-    // take the LAST finite numeric token on the row (the acceleration column in time,accel layouts)
+    // take the last finite numeric token on the row (the acceleration column in time,accel layouts)
     let v = NaN;
     for (let i = tokens.length - 1; i >= 0; i--) {
       const p = Number(tokens[i]);

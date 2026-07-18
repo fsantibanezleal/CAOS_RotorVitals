@@ -3,7 +3,7 @@ import { lifeFeatures, type LifeFeat } from '../dsp/iso';
 import { type FaultKind, type Bearing } from '../dsp/bearing';
 import { viridis } from './Heatmap2D';
 
-// When realFeats is supplied (the measured run-to-failure frames) the panel plots the MEASURED degradation
+// When realFeats is supplied (the measured run-to-failure frames) the panel plots the measured degradation
 // trajectory instead of the synthetic ramp, same view, real data.
 
 function css(name: string, fb: string) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb; }
@@ -37,7 +37,7 @@ function ellipse(xs: number[], ys: number[]) {
 export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, lang, realFeats, realLabel, classPts, classColor, selIdx, classList }: {
   bearing: Bearing; fault: FaultKind; severity: number; snr: number; rpm: number; lifeH: number; lang: 'en' | 'es';
   realFeats?: LifeFeat[]; realLabel?: string;
-  // class-scatter mode (a measured DIAGNOSIS segment): points colored by CLASS, the selected sample ringed , 
+  // class-scatter mode (a measured DIAGNOSIS segment): points colored by CLASS, the selected sample ringed, 
   // instead of the by-life degradation trajectory. classPts runs parallel to realFeats.
   classPts?: { cls: string }[]; classColor?: (c: string) => string; selIdx?: number; classList?: string[];
 }) {
@@ -75,7 +75,7 @@ export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, l
     g.fillText(ax.label(es), padL + pw / 2 - 24, padT + ph + 26);
     g.save(); g.translate(12, padT + ph / 2 + 30); g.rotate(-Math.PI / 2); g.fillText(ay.label(es), 0, 0); g.restore();
     if (classMode) {
-      // class-scatter: each measured segment is a point colored by its TRUE class; the selected one is ringed.
+      // class-scatter: each measured segment is a point colored by its true class; the selected one is ringed.
       feats.forEach((_, i) => { g.fillStyle = cColor(classPts![i].cls); g.globalAlpha = (selIdx === i) ? 1 : 0.7; g.beginPath(); g.arc(sx(xs[i]), sy(ys[i]), selIdx === i ? 5 : 3.5, 0, 7); g.fill(); });
       g.globalAlpha = 1;
       if (selIdx != null && selIdx >= 0 && selIdx < feats.length) { g.strokeStyle = fg; g.lineWidth = 2; g.beginPath(); g.arc(sx(xs[selIdx]), sy(ys[selIdx]), 8, 0, 7); g.stroke(); g.fillStyle = fg; g.font = '9px ui-sans-serif, sans-serif'; g.fillText(es ? 'sel' : 'sel', sx(xs[selIdx]) + 10, sy(ys[selIdx]) - 6); }
@@ -119,15 +119,15 @@ export function FeatureSpacePanel({ bearing, fault, severity, snr, rpm, lifeH, l
   const toggles: [AxisKey, AxisKey][] = [['kurt', 'ses'], ['rms', 'ses'], ['rms', 'kurt']];
   const isReal = !!(realFeats && realFeats.length >= 2);
   const title = classMode
-    ? (es ? `Espacio de features, segmentos por clase · medido${realLabel ? ` (${realLabel})` : ''}` : `Feature space, segments by class · MEASURED${realLabel ? ` (${realLabel})` : ''}`)
-    : (es ? 'Espacio de features de salud, trayectoria de degradación' : 'Health-feature space, degradation trajectory') + (isReal ? (es ? ` · medido${realLabel ? ` (${realLabel})` : ''}` : ` · MEASURED${realLabel ? ` (${realLabel})` : ''}`) : '');
+    ? (es ? `Espacio de features, segmentos por clase · medido${realLabel ? ` (${realLabel})` : ''}` : `Feature space, segments by class · measured${realLabel ? ` (${realLabel})` : ''}`)
+    : (es ? 'Espacio de features de salud, trayectoria de degradación' : 'Health-feature space, degradation trajectory') + (isReal ? (es ? ` · medido${realLabel ? ` (${realLabel})` : ''}` : ` · measured${realLabel ? ` (${realLabel})` : ''}`) : '');
   const note = classMode
     ? (es
       ? 'Cada punto es un segmento medido ubicado por sus features (RMS, curtosis, amplitud de defecto SES), coloreado por su clase verdadera; el segmento seleccionado está resaltado. Las clases sanas se agrupan a baja energía/curtosis y las de falla se separan, la misma separabilidad que un autoencoder profundo aprende en un espacio latente no lineal (González-Muñiz et al. 2022, RESS 224:108482). Datos medidos; las features son el caso lineal honesto.'
-      : 'Each point is a MEASURED segment placed by its features (RMS, kurtosis, SES defect amplitude), colored by its true class; the selected segment is ringed. Healthy classes cluster at low energy/kurtosis and fault classes separate, the same separability a deep autoencoder learns in a nonlinear latent space (González-Muñiz et al. 2022, RESS 224:108482). Measured data; the features are the honest linear case.')
+      : 'Each point is a measured segment placed by its features (RMS, kurtosis, SES defect amplitude), colored by its true class; the selected segment is ringed. Healthy classes cluster at low energy/kurtosis and fault classes separate, the same separability a deep autoencoder learns in a nonlinear latent space (González-Muñiz et al. 2022, RESS 224:108482). Measured data; the features are the honest linear case.')
     : es
-    ? 'Cada punto es una instantánea de vida (color = vida). La elipse es la novedad 95% (Mahalanobis) del cúmulo sano; el caso con falla se aleja de ella tras el onset, mientras un caso sano permanece dentro. Estas features hechas a mano (RMS, curtosis, amplitud de defecto SES) y la distancia de Mahalanobis al cúmulo sano son el caso LINEAL de la construcción de indicador de salud en el espacio latente de un autoencoder profundo de González-Muñiz et al. (2022, Reliability Engineering & System Safety 224:108482, DOI 10.1016/j.ress.2022.108482), que calcula la MISMA novedad de Mahalanobis (RaPP "NAP") en un espacio latente NO LINEAL aprendido sólo de datos sanos, la generalización SOTA, entrenada offline. (Nota honesta: a SNR bajo las features estadísticas crudas separan débilmente; por eso el análisis de envolvente/SES sigue siendo el caballo de batalla.)'
-    : 'Each point is a life snapshot (color = life). The ellipse is the 95% Mahalanobis novelty of the healthy cluster; the fault case departs it after onset while a healthy case stays inside. These hand-crafted features (RMS, kurtosis, SES defect amplitude) and the Mahalanobis distance to the healthy cluster are the LINEAR case of building a health indicator in the latent space of a deep autoencoder, González-Muñiz et al. (2022, Reliability Engineering & System Safety 224:108482, DOI 10.1016/j.ress.2022.108482) compute the SAME Mahalanobis novelty (RaPP "NAP") in a LEARNED nonlinear latent space trained on healthy data only, the SOTA generalization, trained offline. (Honest note: at low SNR raw statistical features separate weakly, which is why envelope/SES analysis stays the workhorse.)';
+    ? 'Cada punto es una instantánea de vida (color = vida). La elipse es la novedad 95% (Mahalanobis) del cúmulo sano; el caso con falla se aleja de ella tras el onset, mientras un caso sano permanece dentro. Estas features hechas a mano (RMS, curtosis, amplitud de defecto SES) y la distancia de Mahalanobis al cúmulo sano son el caso LINEAL de la construcción de indicador de salud en el espacio latente de un autoencoder profundo de González-Muñiz et al. (2022, Reliability Engineering & System Safety 224:108482, DOI 10.1016/j.ress.2022.108482), que calcula la misma novedad de Mahalanobis (RaPP "NAP") en un espacio latente no lineal aprendido sólo de datos sanos, la generalización SOTA, entrenada offline. (Nota honesta: a SNR bajo las features estadísticas crudas separan débilmente; por eso el análisis de envolvente/SES sigue siendo el caballo de batalla.)'
+    : 'Each point is a life snapshot (color = life). The ellipse is the 95% Mahalanobis novelty of the healthy cluster; the fault case departs it after onset while a healthy case stays inside. These hand-crafted features (RMS, kurtosis, SES defect amplitude) and the Mahalanobis distance to the healthy cluster are the LINEAR case of building a health indicator in the latent space of a deep autoencoder, González-Muñiz et al. (2022, Reliability Engineering & System Safety 224:108482, DOI 10.1016/j.ress.2022.108482) compute the same Mahalanobis novelty (RaPP "NAP") in a learned nonlinear latent space trained on healthy data only, the SOTA generalization, trained offline. (Honest note: at low SNR raw statistical features separate weakly, which is why envelope/SES analysis stays the workhorse.)';
 
   return (
     <div className="rv-vizstack">

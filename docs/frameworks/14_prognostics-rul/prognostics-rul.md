@@ -60,13 +60,13 @@ A/B/C/D framework is identical across machine classes; only the numeric limits m
 
 The CWRU-class rig behind the synthetic signal is ~1.5 kW (sub-15 kW), so **Class I** is the correct scale; ISO
 20816-3 applies to the ≥15 kW mining machines the suite ultimately targets. Operationally the **B/C** boundary is the
-ALERT setpoint and **C/D** the DANGER / trip setpoint.
+alert setpoint and **C/D** the danger / trip setpoint.
 
 ## The decision layer (`recommend.ts`, App `rec` tab)
 
 Diagnosis, ISO severity, and RUL are three pieces of evidence; a technician acts on **one** decision. The
 recommendation maps each piece onto a five-step priority ladder **`ok → watch → plan → alarm → trip`** and takes the
-**WORST of the three** (`recommend.ts:111`). The three mappings are explicit constants, not vibes:
+**worst of the three** (`recommend.ts:111`). The three mappings are explicit constants, not vibes:
 
 | Evidence | → ok | → watch | → plan | → alarm |
 |---|---|---|---|---|
@@ -74,14 +74,14 @@ recommendation maps each piece onto a five-step priority ladder **`ok → watch 
 | **Fault severity state** (`faultStateOf`, lines 51-55, aligned with the App gauge zones **3/6/9** of the 0–12 scale) | sev < 3 (healthy) | sev < 6 (incipient) | sev < 9 (developed) | sev ≥ 9 (severe) |
 | **RUL fraction** `frac = RUL / life` (`rulPriority`, line 108) | frac ≥ 0.5 | frac < 0.5 | frac < 0.2 | frac < 0.05 |
 
-**Escalation to `trip`** happens only when the three worst indicators agree: `state = severe` **AND** `zone = D`
-**AND** `rulPriority = alarm` (`recommend.ts:113`). The **honest disagreement** flag fires when the broadband ISO
+**Escalation to `trip`** happens only when the three worst indicators agree: `state = severe` and `zone = D`
+and `rulPriority = alarm` (`recommend.ts:113`). The **honest disagreement** flag fires when the broadband ISO
 screen looks calm (Zone A or B) but the envelope confirms a real fault with `sev ≥ 6` (`recommend.ts:116`), the fault
 energy lives in the high-frequency resonance, **outside** the 10–1000 Hz ISO band, so the engine surfaces the
 mismatch and trusts the envelope, which is exactly why envelope analysis exists. The decision exports as structured
 JSON, a Markdown report, or a printable PDF (the deliverable attached to the work order).
 
-## What it is NOT
+## What it is not
 
 * **Not a unit mix-up.** The ISO layer is **velocity RMS in mm/s**; the prognostic HI is an **acceleration-RMS-style**
   indicator with its own demonstration threshold, two scales answering two questions; the build keeps them distinct.
@@ -110,8 +110,8 @@ production (the α-λ/calibration tools are there for exactly that).
 
 ## Model 2, Particle Filter (Bayesian state estimation)
 
-**LIVE (browser):** `frontend/src/dsp/pf_rul.ts`, pure TypeScript, no training.
-**PIPELINE (offline):** `data-pipeline/rotorlab/model/pf_rul.py`, numpy, vectorised SIR.
+**Live (browser):** `frontend/src/dsp/pf_rul.ts`, pure TypeScript, no training.
+**Pipeline (offline):** `data-pipeline/rotorlab/model/pf_rul.py`, numpy, vectorised SIR.
 
 A sequential-importance-resampling (SIR) particle filter over the exponential degradation model `HI(t)=a·exp(b·t)`.
 Each of 500 particles carries a pair `(ln a, b)`; as each new HI observation arrives, particles are reweighted by
@@ -125,8 +125,8 @@ doi:10.1177/0142331208093993; Arulampalam et al. (2002), doi:10.1109/78.978374.
 
 ## Model 3, Gaussian Process (non-parametric Bayesian regression)
 
-**LIVE (browser):** `frontend/src/dsp/gp_rul.ts`, pure TypeScript, RBF kernel, Cholesky decomposition, grid-search.
-**PIPELINE (offline):** `data-pipeline/rotorlab/model/gp_rul.py`, scikit-learn `GaussianProcessRegressor`,
+**Live (browser):** `frontend/src/dsp/gp_rul.ts`, pure TypeScript, RBF kernel, Cholesky decomposition, grid-search.
+**Pipeline (offline):** `data-pipeline/rotorlab/model/gp_rul.py`, scikit-learn `GaussianProcessRegressor`,
 composite RBF+Matern(ν=2.5)+WhiteKernel, L-BFGS-B hyper-parameter optimisation with 5 restarts.
 
 A GP is placed on `log(HI) ~ GP(0, k(t, t'))` and the posterior predictive distribution is projected forward.
@@ -144,10 +144,10 @@ Pedregosa et al. (2011), JMLR 12:2825–2830.
 
 ## Model 4, Deep-RUL CNN (learned, offline training → ONNX → live inference)
 
-**PIPELINE (offline):** `data-pipeline/rotorlab/model/deep_rul.py`, PyTorch, WDCNN backbone, regression head.
+**Pipeline (offline):** `data-pipeline/rotorlab/model/deep_rul.py`, PyTorch, WDCNN backbone, regression head.
 Training stage: `data-pipeline/rotorlab/stages/train_rul.py`, reads XJTU-SY + FEMTO life-snapshot frames,
 trains on life-fraction regression, exports `deep_rul.onnx`.
-**LIVE (browser):** `frontend/src/lib/ort.ts::deepRul()`, `onnxruntime-web`, WASM EP, single-threaded.
+**Live (browser):** `frontend/src/lib/ort.ts::deepRul()`, `onnxruntime-web`, WASM EP, single-threaded.
 
 A 1-D convolutional neural network with the same backbone as the WDCNN diagnosis model (Zhang et al. 2017): five
 Conv1d→BatchNorm→ReLU→MaxPool blocks, the first with a wide kernel (64 samples at stride 16) to capture

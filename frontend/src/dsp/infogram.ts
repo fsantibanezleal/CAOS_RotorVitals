@@ -1,6 +1,6 @@
 // The Infogram (Antoni 2016, MSSP 74:73–94, DOI 10.1016/j.ymssp.2015.04.034): a band-selection map
-// like the kurtogram, but scored by the NEGENTROPY of the squared envelope (SE) and of the squared-
-// envelope spectrum (SES) instead of kurtosis. Negentropy responds to REPETITIVE transients rather
+// like the kurtogram, but scored by the negentropy of the squared envelope (SE) and of the squared-
+// envelope spectrum (SES) instead of kurtosis. Negentropy responds to repetitive transients rather
 // than to any single impulse, so it is robust where the kurtogram is fooled (a lone non-Gaussian
 // spike, electrical noise). Computed over the same dyadic band grid as the kurtogram.
 import { bandpass, hilbertEnvelope } from './envelope';
@@ -30,12 +30,12 @@ export function sesPower(se: Float64Array): Float64Array {
 }
 
 // The IESFOgram (Mauricio, Smith, Randall, Antoni & Gryllias 2020, MSSP 144:106891) scores each band not by a
-// GENERAL impulsiveness/repetitiveness (kurtogram/infogram) but by how strongly its squared-envelope spectrum (SES)
-// shows the harmonic comb of the TARGETED bearing-fault frequency (BPFO/BPFI/2·BSF). So it ignores impulsive content
-// NOT at the fault period, a non-fault spike makes the kurtogram jump but leaves the targeted IESFOgram unmoved.
-// HONEST substitutions (documented in Methodology): the paper optimises a targeted Improved-Envelope-Spectrum
-// feature (a fault-harmonic-to-background ratio of the cyclic spectral COHERENCE integrated over each band of a
-// filterbank tree); this build computes the analogous fault-comb prominence on the plain per-band SES (NOT the
+// general impulsiveness/repetitiveness (kurtogram/infogram) but by how strongly its squared-envelope spectrum (SES)
+// shows the harmonic comb of the targeted bearing-fault frequency (BPFO/BPFI/2·BSF). So it ignores impulsive content
+// not at the fault period, a non-fault spike makes the kurtogram jump but leaves the targeted IESFOgram unmoved.
+// honest substitutions (documented in Methodology): the paper optimises a targeted Improved-Envelope-Spectrum
+// feature (a fault-harmonic-to-background ratio of the cyclic spectral coherence integrated over each band of a
+// filterbank tree); this build computes the analogous fault-comb prominence on the plain per-band SES (not the
 // Fast-SC/CSCoh map), via a spike-robust median-normalised comb at comb granularity, over the pragmatic dyadic
 // gramGrid paving rather than the paper's constant-relative-bandwidth filterbank.
 export type GramMetric = 'kurt' | 'iE' | 'iSES' | 'iAVE' | 'iesfo' | 'iesfoBlind';
@@ -71,8 +71,8 @@ function combProminence(p: Float64Array, dAlpha: number, f0: number, K = 5): num
     for (let i = bLo; i <= bHi; i++) if (i < cLo || i > cHi) around.push(p[i]);
     around.sort((a, b) => a - b);
     const med = around[around.length >> 1] || 1e-12;
-    // p is the SES POWER; sqrt(peak/med) = peak_mag/median_mag → the per-harmonic comb prominence on the SES
-    // AMPLITUDE scale, i.e. the same scale as the diagnosis line-prominence (~1 noise, ≫1 a clear comb). This is the
+    // p is the SES power; sqrt(peak/med) = peak_mag/median_mag → the per-harmonic comb prominence on the SES
+    // amplitude scale, i.e. the same scale as the diagnosis line-prominence (~1 noise, ≫1 a clear comb). This is the
     // intended feature (amplitude SES is what a comb is read on); the sqrt is taken per harmonic before averaging.
     total += Math.sqrt(peak / med); used++;
   }
@@ -114,7 +114,7 @@ export function gramGrid(x: Float64Array, fs: number, maxLevel = 5, opts: GramOp
       else {
         const env = hilbertEnvelope(bandpass(x, fs, lo, f2));
         const se = new Float64Array(env.length); for (let i = 0; i < env.length; i++) se[i] = env[i] * env[i];
-        const p = sesPower(se);                          // computed ONCE, shared by iSES + IESFO
+        const p = sesPower(se);                          // computed once, shared by iSES + IESFO
         const dAlpha = fs / nextPow2(se.length);
         const iE = negentropy(se), iSES = negentropy(p);
         const iesfo = opts.targetAlpha ? combProminence(p, dAlpha, opts.targetAlpha, K) : 0;

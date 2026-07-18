@@ -64,7 +64,7 @@ median baseline, so the targeted selector is insensitive to it, when a spike mak
 IESFOgram does not move. A **blind** variant drops the prior by sweeping shaft orders (`≥ 1.5×fr`, excluding shaft
 and cage) and choosing the strongest comb; it is weaker because it can latch onto gear-mesh lines.
 
-## What it is NOT
+## What it is not
 
 * **Kurtosis ≠ periodicity.** The kurtogram measures impulsiveness only; it cannot tell a periodic fault train from a
   single transient. That is the motivation for the infogram/autogram/IESFOgram successors, and for the downstream

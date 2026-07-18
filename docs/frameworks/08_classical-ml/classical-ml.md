@@ -8,20 +8,20 @@ ISO-13373 machine-condition set; the envelope-comb features are Randall & Antoni
 
 **What:** the *supervised* classical counterpoint to the deep WDCNN, the thing bearing diagnosis did for decades:
 a small vector of **physics-informed hand-crafted features** fed to a generic classifier. Two are shipped (an
-**RBF-kernel SVM** and a **Random Forest**), trained on the IDENTICAL leakage-safe split (hold out the entire 3 HP
+**RBF-kernel SVM** and a **Random Forest**), trained on the identical leakage-safe split (hold out the entire 3 HP
 load) so their held-out accuracy is directly comparable to the WDCNN's and to the unsupervised envelope-SES
 benchmark. Exported to ONNX (skl2onnx) and run **live in the browser** on the same committed real CWRU held-out
 segments, the deep-vs-classical comparison is real, not rhetorical.
 
 ## The feature vector (`model/classical_ml.py`, 10-D, the single source of truth)
 
-The browser builds the SAME vector before the ONNX call (`FEATURE_NAMES` is mirrored in the frontend). All features
-are **scale-invariant**: the windows are z-scored, so amplitude features are constant, only SHAPE informs.
+The browser builds the same vector before the ONNX call (`FEATURE_NAMES` is mirrored in the frontend). All features
+are **scale-invariant**: the windows are z-scored, so amplitude features are constant, only shape informs.
 
 1. **Time-domain condition indicators (6):** kurtosis, skewness, crest, impulse, shape, clearance, the
    impulsiveness / peakedness signature of a localized defect.
 2. **Frequency-domain physics features (4):** the squared-envelope-spectrum harmonic-comb prominence `P(f₀)` at the
-   outer (BPFO), inner (BPFI + sidebands) and rolling-element (2·BSF) defect frequencies, the SAME statistic the
+   outer (BPFO), inner (BPFI + sidebands) and rolling-element (2·BSF) defect frequencies, the same statistic the
    white-box diagnoser thresholds, plus the resonance-band spectral kurtosis.
 
 ```
@@ -42,7 +42,7 @@ v = [κ, γ, crest, impulse, shape, clearance, P(BPFO), P(BPFI), P(2·BSF), κ_r
 - **Evaluate** (`evaluate`): held-out accuracy + 4×4 confusion + per-class recall, same split as the WDCNN.
 - **Export** (`export_onnx`): `to_onnx(pipeline, target_opset=17, options={zipmap:False})` → `rv-svm.onnx`,
   `rv-rf.onnx`. The ML ops (`SVMClassifier` / `TreeEnsembleClassifier`, **ai.onnx.ml** domain) run on the
-  onnxruntime-web WASM EP; input is the RAW 10-D vector (the StandardScaler is inside the graph).
+  onnxruntime-web WASM EP; input is the raw 10-D vector (the StandardScaler is inside the graph).
 
 ## Honest reading (held-out, 3 HP load out)
 

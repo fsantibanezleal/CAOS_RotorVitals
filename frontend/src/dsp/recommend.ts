@@ -1,8 +1,8 @@
-// T5, the condition-based-maintenance DECISION layer. The App diagnoses and trends; this turns that evidence into
-// a prioritised, EXPLAINABLE maintenance recommendation, the way a reliability engineer would: fuse the ISO 20816
+// T5, the condition-based-maintenance decision layer. The App diagnoses and trends; this turns that evidence into
+// a prioritised, explainable maintenance recommendation, the way a reliability engineer would: fuse the ISO 20816
 // broadband-velocity severity zone, the envelope-diagnosis fault severity, and the RUL projection, then act on the
 // most severe of them. Honesty is built in, when the coarse broadband ISO screen disagrees with the envelope
-// (which it does for an early bearing fault, whose energy sits in the HF resonance OUTSIDE the 10–1000 Hz band),
+// (which it does for an early bearing fault, whose energy sits in the HF resonance outside the 10–1000 Hz band),
 // the engine surfaces the disagreement and trusts the envelope rather than hiding it.
 import { ISO_CLASS_I, type IsoBounds } from './iso';
 import { type Diagnosis } from './diagnose';
