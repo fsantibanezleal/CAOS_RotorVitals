@@ -145,7 +145,7 @@ export default function Experiments() {
         {es ? 'PRUEBA · carga retenida' : 'TEST · held-out load'}
       </text>
       <text x="486" y="340" fontSize="10.5" fill="var(--color-fg-faint)">
-        {es ? 'carga 3 hp, NUNCA vista en entrenamiento' : 'load 3 hp, NEVER seen in training'}
+        {es ? 'carga 3 hp, nunca vista en entrenamiento' : 'load 3 hp, NEVER seen in training'}
       </text>
       <rect x="486" y="352" width="100" height="52" rx="5"
         fill="var(--color-warn)" fillOpacity="0.18" stroke="var(--color-warn)" strokeWidth="1.4" />

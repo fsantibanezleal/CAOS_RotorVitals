@@ -257,7 +257,7 @@ function CrossSeverityBlock({ xs, es }: { xs: CrossSeverity; es: boolean }) {
     <section>
       <h2>{es ? 'Generalización entre severidades, ¿reconoce tamaños de falla NO vistos? (held-out real)' : 'Cross-severity generalization, does it recognize UNSEEN fault sizes? (real held-out)'}</h2>
       <p className="muted small">{es
-        ? 'Todos los modelos se entrenan SOLO con fallas de 0.007 in (cargas 0/1/2 HP). Aquí diagnostican fallas reales de pista interna / bola / externa a 0.007 / 0.014 / 0.021 in, en la carga 3 HP held-out. Los tamaños 0.014 in y 0.021 in NUNCA se ven en entrenamiento, es una prueba real de generalización por severidad. Exactitud = recall de la falla (cada archivo es un solo tipo de falla).'
+        ? 'Todos los modelos se entrenan SOLO con fallas de 0.007 in (cargas 0/1/2 HP). Aquí diagnostican fallas reales de pista interna / bola / externa a 0.007 / 0.014 / 0.021 in, en la carga 3 HP held-out. Los tamaños 0.014 in y 0.021 in nunca se ven en entrenamiento, es una prueba real de generalización por severidad. Exactitud = recall de la falla (cada archivo es un solo tipo de falla).'
         : 'Every model is trained ONLY on 0.007 in faults (0/1/2 HP loads). Here they diagnose real inner / ball / outer faults at 0.007 / 0.014 / 0.021 in, at the held-out 3 HP load. The 0.014 in and 0.021 in sizes are NEVER seen in training, a true severity-generalization test. Accuracy = fault recall (each file is one fault type).'}</p>
       <table className="cmp-table">
         <thead><tr>
@@ -321,7 +321,7 @@ function CrossDatasetBlock({ xs, es }: { xs: CrossDataset; es: boolean }) {
     <section>
       <h2>{es ? 'Generalización entre DATASETS, ¿funciona en otro banco? (MFPT, real)' : 'Cross-DATASET generalization, does it work on another rig? (MFPT, real)'}</h2>
       <p className="muted small">{es
-        ? `El WDCNN fue entrenado en CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) y NUNCA vio MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz), otro banco, otra geometría, otra tasa de muestreo. Es la prueba clásica de domain-shift. Multiplicadores de defecto distintos: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT), el envolvente/SES usa los de MFPT (física correcta); el WDCNN solo conoce los patrones de CWRU.`
+        ? `El WDCNN fue entrenado en CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) y nunca vio MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz), otro banco, otra geometría, otra tasa de muestreo. Es la prueba clásica de domain-shift. Multiplicadores de defecto distintos: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT), el envolvente/SES usa los de MFPT (física correcta); el WDCNN solo conoce los patrones de CWRU.`
         : `The WDCNN was trained on CWRU (${k.cwru.bearing}, ${k.cwru.fsHz} Hz) and NEVER saw MFPT (${k.mfpt.bearing}, ${k.mfpt.fsHz} Hz), a different rig, geometry and sample rate. The classic domain-shift test. Different defect multipliers: BPFO ${k.cwru.BPFO}× / BPFI ${k.cwru.BPFI}× (CWRU) vs BPFO ${k.mfpt.BPFO}× / BPFI ${k.mfpt.BPFI}× (MFPT), the envelope/SES uses MFPT's (correct physics); the WDCNN only knows CWRU's learned patterns.`}</p>
       <table className="cmp-table">
         <thead><tr>
