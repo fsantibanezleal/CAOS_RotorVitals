@@ -127,8 +127,8 @@ export function IngestPanel({ lang }: { lang: 'en' | 'es' }) {
           <p className="small" style={{ margin: '0.3rem 0 0' }}>{rec.detail}.</p>
         </div>
         <p className="muted small" style={{ marginTop: '0.4rem' }}>{es
-          ? 'Nota honesta: aquí se ejecuta la física no-supervisada (rig-agnóstica). El WDCNN profundo NO se aplica a datos arbitrarios, fue entrenado en CWRU (12 kHz / 2048 / SKF 6205) y aplicarlo a otra geometría/tasa es justamente el domain-shift que falla (ver la sección cross-dataset MFPT). La velocidad ISO asume aceleración en g.'
-          : 'Honest note: this runs the unsupervised physics (rig-agnostic). The deep WDCNN is NOT applied to arbitrary data, it was trained on CWRU (12 kHz / 2048 / SKF 6205) and applying it to a different geometry/rate is exactly the domain-shift that fails (see the MFPT cross-dataset section). The ISO velocity assumes acceleration in g.'}</p>
+          ? 'Nota honesta: aquí se ejecuta la física no-supervisada (rig-agnóstica). El WDCNN profundo no se aplica a datos arbitrarios, fue entrenado en CWRU (12 kHz / 2048 / SKF 6205) y aplicarlo a otra geometría/tasa es justamente el domain-shift que falla (ver la sección cross-dataset MFPT). La velocidad ISO asume aceleración en g.'
+          : 'Honest note: this runs the unsupervised physics (rig-agnostic). The deep WDCNN is not applied to arbitrary data, it was trained on CWRU (12 kHz / 2048 / SKF 6205) and applying it to a different geometry/rate is exactly the domain-shift that fails (see the MFPT cross-dataset section). The ISO velocity assumes acceleration in g.'}</p>
       </div>}
     </section>
   );

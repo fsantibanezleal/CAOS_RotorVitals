@@ -18,7 +18,7 @@ are z-scored), accuracy measured at SNR ∈ {clean, 10, 6, 2, 0, −2, −4} dB.
 ## The deep-AE health indicator (one-class novelty)
 
 The AE trains on the **all-load healthy baseline** (every load's normal windows), a novelty detector's baseline is
-all known-healthy operation, and the FAULTS are the held-out unknown it must flag. The threshold is the **p99** over
+all known-healthy operation, and the faults are the held-out unknown it must flag. The threshold is the **p99** over
 that healthy baseline. Reported: fault-vs-healthy **AUC** (the real task) and the held-out **healthy false-flag
 rate**. Training the AE on a single load would spuriously flag a healthy-but-load-shifted window, hence the
 all-load baseline (distinct from the WDCNN's strict per-load held-out split).
