@@ -106,10 +106,10 @@ export function LiveDiagnosisPanel() {
         <Spark raw={cur.raw} color={CLASS_COLOR[cur.cls] || '#8b949e'} />
         <div style={{ fontSize: '0.74rem', color: 'var(--color-fg-faint)', fontFamily: 'var(--font-mono)' }}>{es ? 'segmento real' : 'real segment'} · {cur.dataset === 'MFPT' ? `MFPT · ${cur.file ?? '?'}` : `CWRU #${cur.file ?? '?'} · ${es ? 'carga' : 'load'} ${samples.loadHp ?? 3} HP · ${cur.sizeIn != null ? `${cur.sizeIn.toFixed(3)}″` : '0.007″'}`} · {es ? 'ventana' : 'window'} {cur.seg ?? '?'} · 2048 @ 12 kHz · {es ? 'verdad' : 'truth'}: <b style={{ color: CLASS_COLOR[cur.cls] }}>{cur.cls}</b></div>
         {cur.dataset === 'MFPT' && <div className="callout" data-variant="honest" style={{ marginTop: '0.4rem' }}><p style={{ margin: 0, fontSize: '0.78rem' }}>{es
-          ? 'Segmento de otro banco (MFPT, rodamiento NICE), el WDCNN se entrenó solo en CWRU y nunca vio MFPT. Si falla, es domain-shift (honesto): las features profundas son específicas del banco. El envolvente/SES físico SÍ transfiere, ver la tabla cross-dataset más abajo.'
+          ? 'Segmento de otro banco (MFPT, rodamiento NICE), el WDCNN se entrenó solo en CWRU y nunca vio MFPT. Si falla, es domain-shift (honesto): las features profundas son específicas del banco. El envolvente/SES físico sí transfiere, ver la tabla cross-dataset más abajo.'
           : 'A segment from another rig (MFPT, NICE bearing), the WDCNN trained only on CWRU and never saw MFPT. A miss here is domain-shift (honest): deep features are rig-specific. The physics envelope/SES does transfer, see the cross-dataset table below.'}</p></div>}
         {cur.sizeIn != null && <div className="callout" data-variant="honest" style={{ marginTop: '0.4rem' }}><p style={{ margin: 0, fontSize: '0.78rem' }}>{es
-          ? `Tamaño de falla NO visto (${cur.sizeIn.toFixed(3)}″). El WDCNN entrenó solo con 0.007″, si falla aquí, es la brecha de generalización por severidad (honesta), no un bug. La tabla agregada por tamaño está más abajo.`
+          ? `Tamaño de falla no visto (${cur.sizeIn.toFixed(3)}″). El WDCNN entrenó solo con 0.007″, si falla aquí, es la brecha de generalización por severidad (honesta), no un bug. La tabla agregada por tamaño está más abajo.`
           : `unseen fault size (${cur.sizeIn.toFixed(3)}″). The WDCNN trained only on 0.007″, a miss here is the honest severity-generalization gap, not a bug. The aggregate accuracy-by-size table is below.`}</p></div>}
       </div>}
 
