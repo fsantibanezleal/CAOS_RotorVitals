@@ -4,6 +4,14 @@
 [![License](https://img.shields.io/github/license/fsantibanezleal/CAOS_RotorVitals)](LICENSE)
 [![Version](https://img.shields.io/github/v/tag/fsantibanezleal/CAOS_RotorVitals?label=version&sort=semver)](https://github.com/fsantibanezleal/CAOS_RotorVitals/tags)
 [![Live demo](https://img.shields.io/badge/demo-live-2ea44f)](https://rotorvitals.fasl-work.com)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21512482-blue)](https://doi.org/10.5281/zenodo.21512482)
+
+Technical report (CC-BY-4.0): *"Diagnostics is Largely Solved, Prognostics is Not: A Leakage-Immune Benchmark for
+Rolling-Element Bearings over CWRU, XJTU-SY, FEMTO and IMS"*, concept DOI
+[10.5281/zenodo.21512482](https://doi.org/10.5281/zenodo.21512482) (source in
+[`manuscripts/prognostics-benchmark/`](manuscripts/prognostics-benchmark/)). It reports the honest, leakage-immune
+result: bearing diagnostics is largely solved on CWRU (WDCNN 1.00 held-out-load; envelope's honest ball-fault gap),
+while RUL on real run-to-failure bearings is hard (best alpha-lambda accuracy 0.048 under the Saxena protocol).
 
 > A real, in-browser bearing/rotating-machinery diagnosis & prognostics workbench: pick a real held-out CWRU
 > recording and a trained **WDCNN** + **deep-autoencoder** run **live** to diagnose it, alongside the full
