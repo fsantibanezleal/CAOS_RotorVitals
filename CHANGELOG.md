@@ -3,6 +3,31 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.47.001] · 2026-08-01
+
+### Fixed - five of six routes hid content with no way to reach it
+
+The ADR-0071 UI floor put `height: 100dvh; overflow: hidden` on the WHOLE shell with no inner scroll for
+the prose routes. RotorVitals was the worst affected product on the line. Measured on production at
+1600x900, with real gestures (wheel, then End): `scrollY` stayed 0.
+
+| Route | Hidden |
+|---|---|
+| /introduction | 2660px |
+| /methodology | 1872px |
+| /benchmark | 1406px |
+| /implementation | 297px |
+| / (the App) | 231px, with 4 unreachable elements |
+
+`/benchmark` is where the RUL model comparison lives, so the α-λ accuracy and CRA table that v0.47.000 made
+honest was itself largely unreachable. That release verified the table by querying the DOM, which sees
+clipped content perfectly well; it did not verify a user could reach it. Reading the DOM is not reading the
+page.
+
+`main.page:has(> .page-body:not(.rv-layout)) { overflow-y: auto; min-height: 0 }` gives the prose routes
+their own scroll while the workbench route stays locked. Fixed at source in
+`tools/ui-floor/apply_ui_floor.py` (v2) and now applied here as well.
+
 ## [0.47.000] · 2026-07-31
 
 ### Fixed - two asymmetries in how the RUL models are reported
