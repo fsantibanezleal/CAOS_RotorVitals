@@ -74,7 +74,7 @@ part that was wrong.
 
 ### Fixed
 - **Version coherence.** `conventions/versioning.md` requires `VERSION`, the manifests, the CHANGELOG and
-  the git tag to move together on every release; they had drifted apart here (VERSION and frontend 0.46.001 against rotorlab 0.45.11). A line-wide sweep on
+  the git tag to move together on every release; they had drifted apart here (VERSION and frontend 0.46.001 against pipeline 0.45.11). A line-wide sweep on
   2026-07-30 found 79 tags across 9 CAOS repos pointing at commits that declare a different version, the
   result of releases being tagged and deployed without a bump. The user-visible cost is that the app footer
   reads its version from a manifest, so a deployed app reported a version older than the release it was
@@ -102,7 +102,7 @@ part that was wrong.
   degenerate: it compared the last-instant predicted RUL against the ABSOLUTE failure time,
   so a constant-zero predictor scored 1.0 (the GP hit that in 21/23 trajectories and the page
   claimed a false "63% error reduction"), and it zip-misaligned the filtered ground truth.
-- `data-pipeline/rotorlab/stages/evaluate_rul.py` now predicts at life-fraction checkpoints
+- `data-pipeline/pipeline/stages/evaluate_rul.py` now predicts at life-fraction checkpoints
   (50/70/90%), feeding each model ONLY the data up to the checkpoint and comparing against the
   true remaining life r*(λ) = (1−λ)·trueFail. Metrics: α-λ accuracy (±20% cone), per-λ and
   cumulative Relative Accuracy (CRA), and prognostic horizon. 23 evaluable trajectories (those
@@ -117,7 +117,7 @@ part that was wrong.
 ## [0.45.011] · 2026-07-03
 
 ### Fixed
-- Version reconciliation. `VERSION` (0.45.006), `pyproject` (0.45.006) and the `rotorlab` engine
+- Version reconciliation. `VERSION` (0.45.006), `pyproject` (0.45.006) and the `pipeline` engine
   (`__version__` 0.30.000) all lagged the shipped frontend + git tag `0.45.010`; every surface is synced to
   `0.45.011`. Backfilled the CHANGELOG for `0.43.001`–`0.45.010` below (the RUL-prognostics series) from the
   release history: those versions were tagged but never written up.
@@ -290,9 +290,9 @@ part that was wrong.
 ## [0.43.000], 2026-06-27
 
 ### Added, Prognostic model ladder
-- **Particle Filter** (`dsp/pf_rul.ts`, `rotorlab/model/pf_rul.py`): 500-particle Bayesian SIR with systematic resampling + jitter. Full posterior RUL distribution (median, P10/P90, particle cloud). Pipeline: numpy vectorised. Ref: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.
-- **Gaussian Process** (`dsp/gp_rul.ts`, `rotorlab/model/gp_rul.py`): non-parametric regression on log(HI). Pipeline: scikit-learn GaussianProcessRegressor, composite RBF+Matérn(5/2)+WhiteKernel, L-BFGS-B with 5 restarts. Frontend: RBF kernel + Cholesky in TypeScript. Ref: Rasmussen & Williams (2006), Liu et al. (2020).
-- **Deep-RUL CNN** (`rotorlab/model/deep_rul.py` + `stages/train_rul.py`, `lib/ort.ts::deepRul()`): WDCNN backbone with regression head, trained on XJTU-SY+FEMTO life-fraction snapshots, exported to ONNX (opset 16) and inferred live via onnxruntime-web. Ref: Li, Ding & Sun (2018), Zhu, Chen & Peng (2019).
+- **Particle Filter** (`dsp/pf_rul.ts`, `pipeline/model/pf_rul.py`): 500-particle Bayesian SIR with systematic resampling + jitter. Full posterior RUL distribution (median, P10/P90, particle cloud). Pipeline: numpy vectorised. Ref: An, Kim & Choi (2013), DOI 10.1016/j.ress.2012.09.011.
+- **Gaussian Process** (`dsp/gp_rul.ts`, `pipeline/model/gp_rul.py`): non-parametric regression on log(HI). Pipeline: scikit-learn GaussianProcessRegressor, composite RBF+Matérn(5/2)+WhiteKernel, L-BFGS-B with 5 restarts. Frontend: RBF kernel + Cholesky in TypeScript. Ref: Rasmussen & Williams (2006), Liu et al. (2020).
+- **Deep-RUL CNN** (`pipeline/model/deep_rul.py` + `stages/train_rul.py`, `lib/ort.ts::deepRul()`): WDCNN backbone with regression head, trained on XJTU-SY+FEMTO life-fraction snapshots, exported to ONNX (opset 16) and inferred live via onnxruntime-web. Ref: Li, Ding & Sun (2018), Zhu, Chen & Peng (2019).
 - **Unified RUL interface** (`dsp/rul_models.ts::predictRUL`): single entry point for all four models (exponential/pf/gp/deep).
 - **RUL benchmark stage** (`stages/evaluate_rul.py`): compares all models on FEMTO/XJTU-SY/IMS, writes `rv-rul-benchmark.json`.
 - **Docs**: extended `docs/frameworks/14_prognostics-rul/prognostics-rul.md` with full PF/GP/Deep-RUL sections + model ladder summary table.
@@ -403,7 +403,7 @@ reacts to the **kind** of data:
   HI(t) curve against the experiment's real failure time. Only the RUL projection is shown (the one tool that
   applies to a pure HI curve).
 
-Adds the **XJTU-SY** (`rotorlab/io/xjtu.py`) and **IMS/NASA** (`rotorlab/io/ims.py`) parsers, each reduces the
+Adds the **XJTU-SY** (`pipeline/io/xjtu.py`) and **IMS/NASA** (`pipeline/io/ims.py`) parsers, each reduces the
 complete run-to-failure set offline to a compact HI(t) artifact (`public/rv-{xjtu,ims}-rtf.json`, link-only
 redistribution; raw archives gitignored) with a real first-passage failure marker (XJTU 2 g; IMS adaptive
 per-trajectory, with real elapsed time parsed from snapshot timestamps). Drops the in-tab RUL parche. All three
@@ -414,7 +414,7 @@ tracking / cross-domain treatment) and lands as a Benchmark transfer experiment,
 
 Feature, **REAL run-to-failure data integrated** (the RUL page was previously driven only by a synthetic forward
 model). Downloaded the FEMTO / PRONOSTIA (IEEE PHM 2012) dataset, processed its **17 complete trajectories** into
-health-indicator curves HI(t) = per-snapshot RMS of horizontal acceleration (`rotorlab/io/femto.py`, link-only
+health-indicator curves HI(t) = per-snapshot RMS of horizontal acceleration (`pipeline/io/femto.py`, link-only
 redistribution, the raw archive is gitignored), and emit a compact `public/rv-femto-rtf.json` with a real
 first-passage trueFail at the 2 g RMS alarm. The **Prognostics · RUL** tab now has a **Synthetic | FEMTO-real**
 selector (the 7 trajectories that reach the alarm): the SAME `projectRUL` (onset → exponential fit → first-passage
@@ -457,13 +457,13 @@ autoencoder as ONNX models"). Matches the ChargeCascade modal-prose standard; no
 
 Honesty fix (patch), removed the only two internal-path references in a user-facing string (ADR-0017 §3 "zero
 internal references in any visible string"): the Methodology ML tab said the models are trained "(offline, in
-data-pipeline/rotorlab)" → "(offline, in the precompute pipeline)" in both EN and ES. Surfaced while auditing
+data-pipeline/pipeline)" → "(offline, in the precompute pipeline)" in both EN and ES. Surfaced while auditing
 CutoffGrade against the same rule; the 0.37.000 audit's internal-refs check was not exhaustive over visible strings.
 
 ## [0.37.001], 2026-06-23
 
 Honesty fix (patch), the Experiments datasets table and `docs/cases/README.md` claimed "only CWRU is integrated"
-and marked **MFPT as `planned`**, but MFPT is in fact wired as a REAL dataset: `data-pipeline/rotorlab/io/fetch_mfpt.py`
+and marked **MFPT as `planned`**, but MFPT is in fact wired as a REAL dataset: `data-pipeline/pipeline/io/fetch_mfpt.py`
 downloads the MFPT Society set and `stages/cross_dataset.py` evaluates the CWRU-trained WDCNN on it (the Benchmark page
 already shows it as "MFPT, real"). The Experiments page contradicted the Benchmark page + the code.
 
@@ -515,7 +515,7 @@ behaviour change to the engine; this release closes the documentation/citation d
 
 Window-overlap leakage demonstration (T15), an honesty feature that quantifies the documented CWRU window-overlap
 trap (Hendriks, Dumond & Knox 2022) **two ways, deliberately kept apart so it does not overclaim**. Engine
-`rotorlab 0.30.000` (new `stages/leakage.py`). The first build conflated overlap leakage with a load shift; an
+`pipeline 0.30.000` (new `stages/leakage.py`). The first build conflated overlap leakage with a load shift; an
 adversarial review caught it and the demo was reworked into an honest decomposition before ship.
 
 ### Added
@@ -557,7 +557,7 @@ adversarial review caught it and the demo was reworked into an honest decomposit
 
 ## [0.35.000], 2026-06-23
 
-Learned-feature embedding (T14), one picture that ties the whole learned story together. Engine `rotorlab
+Learned-feature embedding (T14), one picture that ties the whole learned story together. Engine `pipeline
 0.29.000` (the committed segments now carry the WDCNN embedding).
 
 ### Added
@@ -581,7 +581,7 @@ Learned-feature embedding (T14), one picture that ties the whole learned story t
 
 ## [0.34.000], 2026-06-23
 
-IESFOgram (T10), a defect-frequency-TARGETED band selector. Frontend only (engine `rotorlab 0.28.000`).
+IESFOgram (T10), a defect-frequency-TARGETED band selector. Frontend only (engine `pipeline 0.28.000`).
 
 ### Added
 - **The IESFOgram** (Mauricio, Smith, Randall, Antoni & Gryllias 2020) as a 6th band-selection metric in
@@ -606,7 +606,7 @@ IESFOgram (T10), a defect-frequency-TARGETED band selector. Frontend only (engin
 ## [0.33.000], 2026-06-22
 
 Fast Spectral Correlation (T9), a true phase-retaining cyclic coherence, replacing the magnitude-only CMS.
-Frontend only (engine `rotorlab 0.28.000`).
+Frontend only (engine `pipeline 0.28.000`).
 
 ### Added / Changed
 - **`dsp/csc.ts` `fastSpectralCoherence`**, a genuine **Fast-SC** (Antoni, Xin & Hamzaoui 2017): AR prewhitening
@@ -633,7 +633,7 @@ Frontend only (engine `rotorlab 0.28.000`).
 ## [0.32.000], 2026-06-22
 
 Configurable analysis parameters (T7), the analysis is now parametrised, not fixed. Frontend only (engine
-`rotorlab 0.28.000`).
+`pipeline 0.28.000`).
 
 ### Added
 - **An "Analysis" control group in the App sidebar** (drives the always-visible diagnosis + the Envelope·SES / ISO
@@ -653,7 +653,7 @@ Configurable analysis parameters (T7), the analysis is now parametrised, not fix
 
 ## [0.31.000], 2026-06-22
 
-Bring-your-own-data ingest (T6), run the real pipeline on YOUR signal. Frontend only (engine `rotorlab 0.28.000`).
+Bring-your-own-data ingest (T6), run the real pipeline on YOUR signal. Frontend only (engine `pipeline 0.28.000`).
 
 ### Added
 - **A "Bring your own data" section on the Benchmark page** (`viz/IngestPanel.tsx`): paste or upload a vibration
@@ -673,7 +673,7 @@ Bring-your-own-data ingest (T6), run the real pipeline on YOUR signal. Frontend 
 ## [0.30.000], 2026-06-22
 
 Recommendation / decision engine + exportable report (T5), the "what do I do about it?" surface. Frontend only
-(engine unchanged at `rotorlab 0.28.000`).
+(engine unchanged at `pipeline 0.28.000`).
 
 ### Added
 - **A real condition-based-maintenance decision engine** (`dsp/recommend.ts`): fuses the envelope diagnosis, the
@@ -697,7 +697,7 @@ Recommendation / decision engine + exportable report (T5), the "what do I do abo
 ## [0.29.000], 2026-06-22
 
 Cross-DATASET generalization (T13), a second real rig (MFPT). The domain-shift test that completes the
-deep-vs-classical arc. Engine `rotorlab 0.28.000`.
+deep-vs-classical arc. Engine `pipeline 0.28.000`.
 
 ### Added
 - **MFPT as a real second dataset** (`io/fetch_mfpt.py`, `stages/cross_dataset.py`): the CWRU-trained WDCNN, which
@@ -719,7 +719,7 @@ deep-vs-classical arc. Engine `rotorlab 0.28.000`.
 
 ## [0.28.000], 2026-06-22
 
-Cross-severity generalization (T4), real held-out fault sizes, kills the "toy 4". Engine `rotorlab 0.27.000`.
+Cross-severity generalization (T4), real held-out fault sizes, kills the "toy 4". Engine `pipeline 0.27.000`.
 
 ### Added
 - **Six REAL cross-severity cases** (`dx-{inner,ball,outer}-{014,021}-3hp`): the WDCNN / deep-AE / SVM-RBF /
@@ -749,7 +749,7 @@ Cross-severity generalization (T4), real held-out fault sizes, kills the "toy 4"
 ## [0.27.000], 2026-06-22
 
 Classical-ML supervised baselines (T12), the deep-vs-classical comparison made real, not rhetorical. Engine
-bumped to `rotorlab 0.26.000`.
+bumped to `pipeline 0.26.000`.
 
 ### Added
 - **Two classical-ML diagnosers trained on real CWRU and run LIVE in the browser** alongside the deep WDCNN: an
@@ -802,7 +802,7 @@ App-page design fixes from review (content unchanged elsewhere; the offline pipe
   waterfall, Prognostics·RUL) instead of a global top bar, it no longer appears above tabs it does not affect.
   Shared state is preserved, so the scrubber position persists across those three tabs.
 - Cross-references updated (Experiments, Methodology) to point at Benchmark for the live diagnosis; stale
-  `tools/ml` reference fixed to `data-pipeline/rotorlab`; app version display fixed (was a stale 0.24.000).
+  `tools/ml` reference fixed to `data-pipeline/pipeline`; app version display fixed (was a stale 0.24.000).
 
 ## [0.25.000], 2026-06-21
 
@@ -810,12 +810,12 @@ Refactor onto the CAOS product-repo archetype (ADR-0057), the science core is un
 real, contract-bounded, staged offline pipeline + a frontend SPA.
 
 ### Changed
-- **`tools/ml` + `tools/cwru-benchmark` → `data-pipeline/rotorlab/`**, the WDCNN, deep-AE, the 64-D spectral
+- **`tools/ml` + `tools/cwru-benchmark` → `data-pipeline/pipeline/`**, the WDCNN, deep-AE, the 64-D spectral
   feature, and the unsupervised classical envelope/SES chain are split into `model/` + the six named stages
   (`preprocess → feature_extraction → train → infer → evaluate → export`). Bodies unchanged.
 - **`src/` → `frontend/src/`**; `public/*.onnx` + metrics → **`data/derived/`** (the canonical artifact home).
   `frontend/copy-data.mjs` overlays them back into `public/` at build (the SPA's fetch paths are unchanged).
-- The default pipeline is **numpy-only**: `python -m rotorlab.pipeline all` rebuilds every per-case replay trace +
+- The default pipeline is **numpy-only**: `python data-pipeline/run.py all` rebuilds every per-case replay trace +
   manifest from the committed artifacts (no torch, no CWRU download). `--retrain` regenerates the ONNX/metrics.
 
 ### Added

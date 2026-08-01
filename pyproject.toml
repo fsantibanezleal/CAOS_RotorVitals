@@ -1,24 +1,9 @@
+# Repo-local tool configuration ONLY. This product declares NO package: per
+# conventions/no-internal-packages.md, a package means a separate repo with a valid PyPI
+# project, consumed as a dependency. The data-pipeline/ folder is scripts, invoked by path.
 # RotorVitals, the offline engine package (instantiated from the CAOS product-repo archetype, ADR-0057).
 # The DEFAULT pipeline is numpy-only (builds the replay layer from committed artifacts); the heavy SOTA engines
 # (torch/scipy/onnx) live in requirements-precompute.txt and are documented in docs/frameworks/.
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "rotorlab"
-# PEP 440 form of the display version X.XX.XXX (see CHANGELOG.md + rotorlab.__version__ = "0.45.011").
-version = "0.48.0"
-description = "RotorVitals, bearing-fault diagnosis (WDCNN + deep-AE on real CWRU) + classical envelope/SES, as a staged offline pipeline with two data contracts (ADR-0057)."
-readme = "README.md"
-requires-python = ">=3.11"
-license = { text = "MIT" }
-authors = [{ name = "Felipe Santibáñez-Leal" }]
-dependencies = ["numpy>=1.26"]
-
-[tool.setuptools.packages.find]
-where = ["data-pipeline"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

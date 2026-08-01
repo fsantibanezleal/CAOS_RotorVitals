@@ -269,7 +269,7 @@ def main() -> None:
     import argparse
 
     repo = Path(__file__).resolve().parents[3]
-    ap = argparse.ArgumentParser(prog="rotorlab.io.ottawa")
+    ap = argparse.ArgumentParser(prog="pipeline.io.ottawa")
     ap.add_argument("--raw", default=str(repo / "data-pipeline" / "_raw" / "ottawa"))
     ap.add_argument("--out", default=str(repo / "frontend" / "public" / "rv-ottawa-samples.json"))
     args = ap.parse_args()

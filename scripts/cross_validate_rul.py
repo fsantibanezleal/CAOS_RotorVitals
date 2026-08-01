@@ -32,8 +32,8 @@ def generate(sc: dict) -> dict:
 
 
 def run_python(data: dict) -> dict:
-    from rotorlab.model.pf_rul import pf_rul
-    from rotorlab.model.gp_rul import gp_rul
+    from pipeline.model.pf_rul import pf_rul
+    from pipeline.model.gp_rul import gp_rul
     t = np.array(data["t"])
     hi = np.array(data["hi"])
     thr = data["threshold"]

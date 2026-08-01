@@ -20,7 +20,7 @@ A record needs: `fs ∈ {12000, 48000}` Hz, `channel ∈ {DE, FE, BA}`, `rpm`, `
 inner, outer, ball}`, optional `fault_size_in`. See `data/examples/records.csv` for a passing sample.
 
 ```python
-from rotorlab.io.contract import validate_records, validate_signal
+from pipeline.io.contract import validate_records, validate_signal
 rep = validate_records([{ "case_id": "mine", "fs": 48000, "channel": "DE",
                           "rpm": 1797, "load_hp": 0, "fault_type": "outer" }])
 print(rep.summary())                       # accepted / rejected (with reason) / flagged

@@ -1,6 +1,6 @@
 # Cases, taxonomy & coverage matrix
 
-`data-pipeline/rotorlab/cases/cwru_cases.py` defines 21 cases across 6 categories. The App is a source-selected
+`data-pipeline/pipeline/cases/cwru_cases.py` defines 21 cases across 6 categories. The App is a source-selected
 workbench, a first-level selector switches between the synthetic generator, real diagnosis segments (CWRU held-out
 3 HP, Ottawa order-tracked, MaFaulDa) and real run-to-failure trajectories (FEMTO / XJTU-SY / IMS); Benchmark hosts
 the live learned tier (the WDCNN on committed CWRU segments + the cross-case summaries). The matrix below is the

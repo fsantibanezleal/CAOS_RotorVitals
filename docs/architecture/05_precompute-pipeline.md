@@ -4,7 +4,7 @@
 
 ![The science flow, raw CWRU → contract gate → classical SES + WDCNN + deep-AE training → held-out eval → ONNX export](../diagrams/04-the-science.svg)
 
-`data-pipeline/rotorlab/stages/`, six named, seeded, typed stages with an explicit input→output contract. Frozen
+`data-pipeline/pipeline/stages/`, six named, seeded, typed stages with an explicit input→output contract. Frozen
 names; the bodies are the real CWRU science (split out of the original `train_models.py` + `cwru-benchmark/run.py`).
 
 | Stage | What it does | Deps | Skippable? |

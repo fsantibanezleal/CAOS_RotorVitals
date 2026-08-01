@@ -70,7 +70,7 @@ def download(dst: str | Path) -> Path:
 def main() -> None:
     import argparse
 
-    ap = argparse.ArgumentParser(prog="rotorlab.io.fetch_mfpt")
+    ap = argparse.ArgumentParser(prog="pipeline.io.fetch_mfpt")
     ap.add_argument("--dst", default="data/raw/mfpt")
     args = ap.parse_args()
     root = download(args.dst)

@@ -19,7 +19,7 @@ if (-not (Test-Path ".venv-pipeline")) { & $py -m venv .venv-pipeline }
 $vp = Get-VenvPy ".venv-pipeline"
 & $vp -m pip install --upgrade pip -q
 & $vp -m pip install -q -r requirements.txt -r requirements-dev.txt
-& $vp -m pip install -q -e .
+& $vp -m pip install -q
 if ($Precompute) {
   Write-Host "[setup] + heavy precompute engines (torch/scipy/onnx) -- for --retrain..."
   & $vp -m pip install -q torch==2.12.1 --index-url https://download.pytorch.org/whl/cpu

@@ -1,10 +1,10 @@
-# data-pipeline/, the offline engine (`rotorlab`)
+# data-pipeline/, the offline engine (`pipeline`)
 
 The staged, seeded, contract-bounded offline pipeline for RotorVitals (ADR-0057). Install editable from the repo
-root (`pip install -e .`); run with `python -m rotorlab.pipeline`.
+root (`pip install -e .`); run with `python data-pipeline/run.py`.
 
 ```
-rotorlab/
+pipeline/
 ├─ __init__.py            # __version__ = "0.25.000"
 ├─ pipeline.py            # orchestrator + CLI (light replay by default; --retrain runs the heavy lane)
 ├─ registry.py            # cases grouped by CATEGORY
@@ -30,7 +30,7 @@ rotorlab/
 
 **Two lanes:**
 
-* **Default (light, numpy-only)**, `python -m rotorlab.pipeline all` rebuilds every per-case replay trace +
+* **Default (light, numpy-only)**, `python data-pipeline/run.py all` rebuilds every per-case replay trace +
   manifest from the committed real artifacts in `data/derived/`. No torch, no CWRU download, a clone replays.
 * **Heavy (`--retrain`)**, `pipeline all --retrain` regenerates `wdcnn.onnx`, `rv-ae.onnx`,
   `rv-cwru-samples.json`, `rv-learned-metrics.json`, and `cwru-benchmark.json` from `data/raw/cwru/` (needs the
