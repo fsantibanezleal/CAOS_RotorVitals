@@ -12,7 +12,7 @@ pytest.importorskip("sklearn")
 pytest.importorskip("skl2onnx")
 ort = pytest.importorskip("onnxruntime")
 
-from rotorlab.model import classical_ml as cml  # noqa: E402
+from pipeline.model import classical_ml as cml  # noqa: E402
 
 FS = 12000
 WIN = 2048

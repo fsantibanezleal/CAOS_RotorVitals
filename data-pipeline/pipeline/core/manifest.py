@@ -61,7 +61,7 @@ def build_case_manifest(
         "real_or_synthetic": case.real_or_synthetic,
         "expected_band": case.expected_band,
         "validation_anchor": case.validation_anchor,
-        "engine": {"package": "rotorlab", "version": __version__,
+        "engine": {"package": "pipeline", "version": __version__,
                    "model": "WDCNN (Zhang 2017) + deep-AE HI (González-Muñiz 2022) + classical envelope/SES + "
                             "classical-ML SVM-RBF/RandomForest (Widodo & Yang 2007)"},
         "dataset": DATASET,

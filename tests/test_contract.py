@@ -1,7 +1,7 @@
 """CONTRACT 1 (ingestion) tests: good vibration records validate; bad records are rejected with a reason;
 suspicious-but-plausible records are flagged; the raw-signal guard rejects NaN/Inf/short and flags flatlines."""
-from rotorlab.io.contract import validate_records, validate_signal
-from rotorlab.io.schema import WIN
+from pipeline.io.contract import validate_records, validate_signal
+from pipeline.io.schema import WIN
 
 
 def test_good_records_accepted():
@@ -38,7 +38,7 @@ def test_outlier_flagged_but_accepted():
 def test_committed_example_passes_contract():
     from pathlib import Path
 
-    from rotorlab.io.formats import read_csv_rows
+    from pipeline.io.formats import read_csv_rows
 
     csv = Path(__file__).resolve().parents[1] / "data" / "examples" / "records.csv"
     rep = validate_records(read_csv_rows(csv))

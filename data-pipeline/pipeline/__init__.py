@@ -1,4 +1,4 @@
-"""rotorlab, the offline+live engine for RotorVitals (instantiated from the CAOS product-repo archetype, ADR-0057).
+"""pipeline, the offline+live engine for RotorVitals (instantiated from the CAOS product-repo archetype, ADR-0057).
 
 The CORE is real and SOTA-pinned: a WDCNN (Zhang et al. 2017) 4-class fault diagnoser + a deep autoencoder
 health indicator (González-Muñiz et al. 2022), both trained OFFLINE on the real CWRU 12 kHz drive-end bearing

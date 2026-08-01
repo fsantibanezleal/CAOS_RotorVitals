@@ -5,7 +5,7 @@ frames already produced by the io layer (rv-xjtu-frames.json, rv-femto-frames.js
 PyTorch DataLoader mapping each raw 2048-sample window to its ground-truth life fraction [0,1],
 trains the DeepRUL model, and exports the ONNX to frontend/public/deep_rul.onnx.
 
-The model follows the DeepRUL class in rotorlab.model.deep_rul. The WDCNN backbone is shared so
+The model follows the DeepRUL class in pipeline.model.deep_rul. The WDCNN backbone is shared so
 the model architecture is type-consistent with the diagnosis tier.
 """
 

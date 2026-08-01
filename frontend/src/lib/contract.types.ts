@@ -1,5 +1,5 @@
 // CONTRACT 2 mirror (frontend side). must stay in lock-step with the Python schemas in
-// data-pipeline/rotorlab/core/{trace.py, manifest.py}. A drift here makes `tsc` fail -> the contract is enforced at
+// data-pipeline/pipeline/core/{trace.py, manifest.py}. A drift here makes `tsc` fail -> the contract is enforced at
 // BUILD time (the web cannot ship reading a shape the pipeline does not produce). This file is also the single
 // source of truth for the learned-tier artifact shapes (rv-cwru-samples.json / rv-learned-metrics.json).
 

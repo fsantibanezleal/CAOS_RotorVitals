@@ -87,7 +87,7 @@ def test_leakage_citation_is_verified():
 
 def test_overlap_bookkeeping_pure():
     # the overlap counter is pure numpy, verify it on a tiny synthetic (no scipy/torch)
-    from rotorlab.stages.leakage import _overlap_shared, _test_class_frac
+    from pipeline.stages.leakage import _overlap_shared, _test_class_frac
     rec = np.array([1, 1, 1, 2, 2])
     order = np.array([0, 1, 2, 0, 1])
     tr, te = np.array([0, 2, 3]), np.array([1, 4])
@@ -102,6 +102,6 @@ def test_overlap_bookkeeping_pure():
 def test_leakage_run_smoke_guarded():
     pytest.importorskip("scipy")
     pytest.importorskip("sklearn")
-    from rotorlab.stages import leakage
+    from pipeline.stages import leakage
     assert leakage.HONEST_TEST_REC == (100, 108, 121, 133)
     assert leakage.SEED_SPLIT == 15 and leakage.LEAKY_TEST_SIZE == 0.259

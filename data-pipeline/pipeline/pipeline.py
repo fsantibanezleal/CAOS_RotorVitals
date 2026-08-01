@@ -4,9 +4,9 @@ trace from the REAL committed learned-tier artifacts, runs the lane gate, and wr
 (numpy/stdlib, no torch) and deterministic. `--retrain` first regenerates those artifacts from the raw CWRU data
 (torch + scipy) and then rebuilds the replay layer.
 
-    python -m rotorlab.pipeline                 # rebuild all replay traces + manifests from committed artifacts
-    python -m rotorlab.pipeline dx-inner-3hp    # one case
-    python -m rotorlab.pipeline all --retrain   # regenerate the ONNX/metrics from raw CWRU, then rebuild
+    python data-pipeline/run.py                 # rebuild all replay traces + manifests from committed artifacts
+    python data-pipeline/run.py dx-inner-3hp    # one case
+    python data-pipeline/run.py all --retrain   # regenerate the ONNX/metrics from raw CWRU, then rebuild
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from .io.fetch_cwru import FILES
 from .io.formats import read_json, write_json
 from .stages import export
 
-# data-pipeline/rotorlab/pipeline.py -> parents[2] = repo root (works under `pip install -e .` too)
+# data-pipeline/pipeline/pipeline.py -> parents[2] = repo root (works under `pip install -e .` too)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DERIVED = REPO_ROOT / "data" / "derived"
 MANIFESTS = DERIVED / "manifests"
@@ -36,7 +36,7 @@ def _load_artifacts() -> tuple[dict, dict, dict]:
     if missing:
         raise SystemExit(
             f"missing committed artifacts in {DERIVED}: {missing}. "
-            f"These are the heavy lane's outputs, run `python -m rotorlab.pipeline all --retrain` "
+            f"These are the heavy lane's outputs, run `python data-pipeline/run.py all --retrain` "
             f"(after scripts/fetch-data) to regenerate them, or restore the committed copies."
         )
     return (read_json(DERIVED / "rv-cwru-samples.json"),
@@ -138,7 +138,7 @@ def run_all(seed: int = 42) -> list[dict]:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(prog="rotorlab.pipeline")
+    ap = argparse.ArgumentParser(prog="pipeline.pipeline")
     ap.add_argument("case", nargs="?", default="all", help="a case id, or 'all'")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--retrain", action="store_true",

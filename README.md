@@ -57,7 +57,7 @@ Instantiated from the CAOS product-repo archetype (ADR-0057): a heavy **offline 
 by two data contracts. See [`STRUCTURE.md`](STRUCTURE.md) and the [`docs/`](docs/README.md) wiki.
 
 ```
-OFFLINE  data-pipeline/rotorlab/ (torch+scipy)     LIVE  frontend/src/ (browser, TypeScript)
+OFFLINE  data-pipeline/pipeline/ (torch+scipy)     LIVE  frontend/src/ (browser, TypeScript)
   stages/  preprocess→…→export                        dsp/      classical chain (FFT/envelope/kurtogram/CMS/…)
   model/   WDCNN + deep-AE + classical                lib/ort.ts onnxruntime-web → WDCNN + deep-AE inference
         │  --retrain regenerates the artifacts         viz/      uPlot / three.js visualization
@@ -76,7 +76,7 @@ committed artifacts or runs live in the browser on one bounded signal segment. T
 
 ```bash
 ./scripts/setup.sh            # venvs + light deps + editable pkg (numpy+ruff+pytest)   [.ps1 on Windows]
-./scripts/precompute.sh       # python -m rotorlab.pipeline all  (rebuild the replay layer, numpy-only)
+./scripts/precompute.sh       # python data-pipeline/run.py all  (rebuild the replay layer, numpy-only)
 .venv-pipeline/bin/python -m pytest    # 10 passed     ·     ./scripts/smoke.sh   # CONTRACT 2 OK
 ./scripts/dev.sh              # cd frontend && npm install && npm run dev (vite + live ONNX)
 cd frontend && npm run build  # tsc --noEmit && vite build (+ copy-data overlay + SPA 404.html)

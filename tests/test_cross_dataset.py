@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from rotorlab.io.fetch_mfpt import MFPT_FILES
+from pipeline.io.fetch_mfpt import MFPT_FILES
 
 DERIVED = Path(__file__).resolve().parents[1] / "data" / "derived"
 MFPT_CLASSES = {"normal", "outer", "inner"}
@@ -55,6 +55,6 @@ def test_shipped_mfpt_samples():
 
 def test_cross_dataset_helpers():
     pytest.importorskip("scipy")   # cross_dataset -> model.classical -> scipy (heavy lane only)
-    from rotorlab.stages import cross_dataset
+    from pipeline.stages import cross_dataset
     assert cross_dataset.MFPT_CLASSES == ["normal", "outer", "inner"]
     assert cross_dataset.TARGET_FS == 12000
