@@ -1,6 +1,6 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type uPlot from 'uplot';
-import { Tabs, useShellLang } from '@fasl-work/caos-app-shell';
+import { useShellLang } from '@fasl-work/caos-app-shell';
 import { synth, type SignalSpec, type Signal } from '../dsp/signal';
 import { magSpectrum, envelopeSpectrum } from '../dsp/envelope';
 import { kurtogram } from '../dsp/kurtogram';
@@ -73,6 +73,19 @@ const T = {
     anlys: 'Análisis', aBand: 'Banda demod', aEnv: 'Envolvente', aHarm: 'Armónicos (peine)', aIso: 'Escala ISO',
     bAuto: 'Auto (kurtograma)', bFixed: 'Fija 2–4 kHz', bManual: 'Manual (clic/pincel)', bIesfo: 'Auto (IESFOgrama)', eSq: 'Cuadrática (SES)', eMag: 'Magnitud' },
 };
+
+
+/** ADR-0071 rules 4+5. Fourteen flat sibling tabs is a list, not an architecture: measured, the App route
+ *  hid 231px with four elements out of reach. Grouped by the question being asked; the sub-views are
+ *  revealed from the same tab. Declared over the union of both lanes and filtered to whatever the active
+ *  lane provides, because real mode ships a reduced tab set. */
+const TAB_GROUPS: { id: string; en: string; es: string; members: string[] }[] = [
+  { id: 'signal',  en: 'Signal',     es: 'Senal',       members: ['sig', 'spec', 'env'] },
+  { id: 'diag',    en: 'Diagnosis',  es: 'Diagnostico', members: ['csc', 'kur', 'gram', 'wat'] },
+  { id: 'prog',    en: 'Prognosis',  es: 'Pronostico',  members: ['rul', 'eval'] },
+  { id: 'learned', en: 'Learned',    es: 'Aprendido',   members: ['cam', 'iso', 'feat'] },
+  { id: 'advice',  en: 'Advice',     es: 'Consejo',     members: ['rec'] },
+];
 
 export default function Tool() {
   const lang = useShellLang();
@@ -542,6 +555,9 @@ export default function Tool() {
     : trajMode ? tabs.filter((tb) => TRAJ_TABS.includes(tb.id))
     : tabs;
   // wrap each panel so a crash in one tool renders an inline message instead of blanking the whole page
+  const [activeTab, setActiveTab] = useState('sig');
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabsShown = tabsShownRaw.map((tb) => ({ ...tb, content: <PanelBoundary key={`${source}-${tb.id}`} lang={lang}>{tb.content}</PanelBoundary> }));
 
   return (
@@ -637,7 +653,42 @@ export default function Tool() {
         </>)}
       </aside>
       <div className="rv-main">
-        <Tabs key={source} tabs={tabsShown} ariaLabel="analysis" />
+        <div className="rv-tabrow" role="tablist" aria-label="analysis">
+          {TAB_GROUPS.filter((g) => tabsShown.some((x) => g.members.includes(x.id))).map((g) => {
+            const mine = tabsShown.filter((x) => g.members.includes(x.id));
+            const activeHere = mine.some((x) => x.id === activeTab);
+            const shown = activeHere ? mine.find((x) => x.id === activeTab)! : mine[0];
+            const multi = mine.length > 1;
+            return (
+              <div key={g.id} className="rv-tabwrap"
+                   onPointerEnter={() => { if (multi) { if (closeTimer.current) clearTimeout(closeTimer.current); setOpenMenu(g.id); } }}
+                   onPointerLeave={() => {
+                     if (closeTimer.current) clearTimeout(closeTimer.current);
+                     closeTimer.current = setTimeout(() => setOpenMenu((mm) => (mm === g.id ? null : mm)), 240);
+                   }}>
+                <button role="tab" aria-selected={activeHere} className={`rv-tab ${activeHere ? 'on' : ''}`}
+                        onClick={() => {
+                          if (!multi) { setActiveTab(mine[0].id); setOpenMenu(null); return; }
+                          setOpenMenu(openMenu === g.id ? null : g.id);
+                          if (!activeHere) setActiveTab(shown.id);
+                        }}>
+                  {activeHere ? shown.label : (lang === 'es' ? g.es : g.en)}{multi ? <span className="rv-caret">v</span> : null}
+                </button>
+                {multi && openMenu === g.id && (
+                  <div className="rv-tabmenu" role="menu">
+                    {mine.map((x) => (
+                      <button key={x.id} role="menuitem" className={x.id === activeTab ? 'on' : ''}
+                              onClick={() => { setActiveTab(x.id); setOpenMenu(null); }}>{x.label}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="rv-tabpanel">
+          {(tabsShown.find((x) => x.id === activeTab) ?? tabsShown[0])?.content}
+        </div>
       </div>
     </div>
   );
