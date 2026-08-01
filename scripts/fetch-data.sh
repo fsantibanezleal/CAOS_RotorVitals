@@ -5,4 +5,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 VP=".venv-pipeline/bin/python"; [ -x "$VP" ] || VP=".venv-pipeline/Scripts/python.exe"
 [ -x "$VP" ] || VP="${PYTHON:-python}"
-"$VP" -m rotorlab.io.fetch_cwru --dst data/raw/cwru
+"$VP" -m pipeline.io.fetch_cwru --dst data/raw/cwru
