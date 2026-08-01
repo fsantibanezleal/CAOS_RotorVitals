@@ -195,3 +195,27 @@ main.page:has(> .page-body:not(.rv-layout)) { overflow-y: auto; min-height: 0; }
       `auto` and the row clips its own menu. Group the tabs instead (ADR-0071 rule 5). */
 .tablist { flex-wrap: nowrap !important; }
 .tablist .tab, .tablist button { flex: 0 0 auto; white-space: nowrap; }
+
+/* ADR-0071 rules 4+5: ONE row of tabs. Measured before this: the App route hid 231px with four elements
+   out of reach, because fourteen flat sibling tabs wrapped and pushed the panel past the shell. */
+.page-body.rv-layout { grid-template-rows: minmax(0, 1fr); align-items: stretch; overflow: hidden; }
+.page-body.rv-layout > * { min-height: 0; }
+.page-body.rv-layout > .rv-side { min-height: 0; max-height: 100%; overflow-y: auto; overflow-x: hidden; padding-right: 6px; }
+.rv-main { min-height: 0; display: flex; flex-direction: column; }
+.rv-tabrow { display: flex; flex-wrap: nowrap; gap: 0.3rem; align-items: center; min-width: 0; max-width: 100%;
+  overflow: visible; flex: 0 0 auto; border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.45rem; margin-bottom: 0.7rem; }
+.rv-tabwrap { position: relative; flex: 0 0 auto; }
+.rv-tab { white-space: nowrap; cursor: pointer; font-size: 0.88rem; font-weight: 600; padding: 0.42rem 0.85rem;
+  border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--color-fg-subtle); }
+.rv-tab:hover { color: var(--color-accent); }
+.rv-tab.on { color: var(--color-bg); background: var(--color-accent); border-color: var(--color-accent); }
+.rv-caret { margin-left: 0.4rem; font-size: 0.62rem; opacity: 0.75; }
+.rv-tabmenu { position: absolute; top: 100%; left: 0; z-index: 60; min-width: 210px; display: flex;
+  flex-direction: column; gap: 0.15rem; padding: 0.5rem 0.3rem 0.3rem; margin: 0; background: var(--color-surface);
+  border: 1px solid var(--color-border); border-radius: 0 9px 9px 9px; box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
+.rv-tabmenu button { text-align: left; white-space: nowrap; cursor: pointer; font-size: 0.82rem;
+  padding: 0.34rem 0.55rem; border-radius: 6px; border: none; background: transparent; color: var(--color-fg-subtle); }
+.rv-tabmenu button:hover { background: color-mix(in srgb, var(--color-accent) 14%, transparent); color: var(--color-accent); }
+.rv-tabmenu button.on { color: var(--color-accent); font-weight: 700; }
+.rv-tabpanel { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 4px; }

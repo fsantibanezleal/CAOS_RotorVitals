@@ -3,6 +3,24 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.48.000] · 2026-08-01
+
+### Fixed - four controls on the App route were out of reach
+
+Fourteen flat sibling tabs wrapped and pushed the panel past the shell: the App route hid 231px with four
+elements unreachable and nothing able to scroll. They are now FIVE groups on one 45px row (Signal,
+Diagnosis, Prognosis, Learned, Advice), with sub-views revealed on hover from the same tab. The groups are
+declared over the union of both lanes and filtered to whatever the active lane provides, because real mode
+ships a reduced tab set and a selected view would otherwise vanish on a lane switch.
+
+Measured after: every route 0 hidden pixels, 0 unreachable elements.
+
+### Not in this release
+
+The ADR-0070 focus view. The rail entry was written and then REMOVED before shipping, because the route
+behind it did not exist yet: a visible control that leads nowhere is worse than no control, and shipping one
+would have been the exact orphan-route failure ADR-0070 clause 8 exists to prevent.
+
 ## [0.47.001] · 2026-08-01
 
 ### Fixed - five of six routes hid content with no way to reach it
