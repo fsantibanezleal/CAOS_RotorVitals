@@ -96,13 +96,29 @@ def _load_trajectories(frontend_pub: Path) -> list[dict]:
     return trajs
 
 
+# Below this many checkpoint predictions an aggregate score is not a measurement, it is an artefact of
+# whichever one or two trajectories happened to be evaluable. GP scored alpha-lambda 0.0 and CRA 0.000
+# from a SINGLE prediction and was rendered identically to a model scored over 21, which reads as
+# "evaluated and worst" when the truth is "essentially unevaluated".
+MIN_PREDICTIONS = 5
+
+
 def evaluate_rul_models(data_root: str = "", output_path: str = "") -> dict:
     """Run the RUL models under the Saxena checkpoint protocol and write the benchmark artifact."""
     root = Path(data_root) if data_root else REPO_ROOT
     frontend_pub = root / "frontend" / "public"
     out = Path(output_path) if output_path else DERIVED / "rv-rul-benchmark.json"
 
+    # The docstring above says the deep-RUL CNN is "skipped unless its ONNX exists". It was not: the list
+    # was hardcoded to the three classical models, so the ONE model that actually ships trained weights
+    # (deep_rul.onnx, XJTU-SY + FEMTO) was the only one never measured, while remaining selectable in the
+    # App. An unmeasured model sitting beside measured ones is the asymmetry this fixes; whether it scores
+    # well is a separate question and the protocol is identical either way.
     models = ["exponential", "pf", "gp"]
+    if (frontend_pub / "data" / "deep_rul.onnx").exists():
+        models.append("deep")
+    else:
+        print("[evaluate_rul] deep_rul.onnx absent; the deep lane stays unevaluated (reported as such)")
     trajs = _load_trajectories(frontend_pub)
 
     per_traj: list[dict] = []
@@ -188,6 +204,11 @@ def evaluate_rul_models(data_root: str = "", output_path: str = "") -> dict:
             "cra": _mean([v for lam in LIFE_FRACTIONS for v in ra[m][lam]]),
             "prognostic_horizon_h": _mean(ph_lead[m]),
             "n_predictions": len(all_hits),
+            # Marks a score that is not a measurement. The consumer must render this as "insufficient"
+            # rather than as a number: a 0.000 from one prediction and a 0.000 from twenty-one are not
+            # the same claim, and rendering them identically overstates what was tested.
+            "insufficient": len(all_hits) < MIN_PREDICTIONS,
+            "min_predictions": MIN_PREDICTIONS,
         }
 
     payload = {"summary": summary, "trajectories": per_traj}
