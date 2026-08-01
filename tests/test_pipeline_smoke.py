@@ -2,7 +2,7 @@
 synthetic prognostics control runs, and run_all writes the flat index covering every category."""
 import json
 
-from rotorlab import pipeline, registry
+from pipeline import pipeline, registry
 
 
 def test_case_deterministic_same_seed():

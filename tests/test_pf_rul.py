@@ -1,6 +1,6 @@
 """Validation of the particle-filter RUL (Python pipeline)."""
 import numpy as np
-from rotorlab.model.pf_rul import pf_rul
+from pipeline.model.pf_rul import pf_rul
 
 
 def _synth(a: float, b: float, t_max: float, n: int, noise: float = 0.02, seed: int = 0):

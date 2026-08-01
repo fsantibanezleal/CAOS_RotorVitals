@@ -3,11 +3,11 @@
 ```
 CAOS_RotorVitals/
 ├─ README.md · CHANGELOG.md (X.XX.XXX) · LICENSE · LICENSES.md · ATTRIBUTION.md · STRUCTURE.md
-├─ pyproject.toml (rotorlab) · .env.example · .gitignore · .gitattributes · .vscode/
+├─ pyproject.toml (pipeline) · .env.example · .gitignore · .gitattributes · .vscode/
 ├─ requirements.txt (live-thin numpy) · -dev · -precompute (torch/scipy/onnx) · -gpu (dormant) · -api (dormant)
 ├─ data-pipeline/
 │  ├─ README.md
-│  └─ rotorlab/                     # the offline engine + staged pipeline
+│  └─ pipeline/                     # the offline engine + staged pipeline
 │     ├─ __init__.py (version) · pipeline.py (orchestrator+CLI) · registry.py (cases by CATEGORY) · live.py (dormant)
 │     ├─ io/      contract.py (CONTRACT 1) · schema.py · formats.py · fetch_cwru.py (link-only downloader)
 │     ├─ core/    rng.py · trace.py (CONTRACT 2 trace) · manifest.py (CONTRACT 2) · gate.py (lane gate)

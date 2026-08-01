@@ -17,12 +17,12 @@ domain.
 | `derived/manifests/` | per-case `<case>.json` (Contract 2) + the flat `index.json` inventory | committed |
 
 The committed `derived/` artifacts ARE the real outputs of the heavy precompute lane, the DEFAULT pipeline
-(`python -m rotorlab.pipeline all`, numpy-only) rebuilds the per-case traces + manifests from them, so a clone
+(`python data-pipeline/run.py all`, numpy-only) rebuilds the per-case traces + manifests from them, so a clone
 replays without torch or a CWRU download. `pipeline all --retrain` regenerates the ONNX/metrics from `raw/cwru/`.
 
 ## CONTRACT 1, ingestion (raw vibration → pipeline), the *bring-your-own-vibration* gate
 
-Defined in `data-pipeline/rotorlab/io/contract.py`. A vibration-record descriptor is **accepted** iff it satisfies
+Defined in `data-pipeline/pipeline/io/contract.py`. A vibration-record descriptor is **accepted** iff it satisfies
 the schema; **rejected** with a reason otherwise (never silently coerced); plausible-but-suspicious records are
 **flagged** (accepted; the flag travels into the manifest). A separate `validate_signal` guards the raw array.
 

@@ -3,7 +3,7 @@
 The default deploy for this archetype (ADR-0055 Pages-first): the SPA + the committed artifacts are served
 statically; there is **no backend** at request time. The workflow `.github/workflows/deploy-pages.yml`:
 
-1. regenerates the replay layer deterministically (`python -m rotorlab.pipeline all`, numpy-only, the committed
+1. regenerates the replay layer deterministically (`python data-pipeline/run.py all`, numpy-only, the committed
    ONNX/metrics in `data/derived/` are the heavy lane's real outputs; CI does NOT retrain) so the site replays
    fresh, audited per-case traces + manifests;
 2. builds the frontend (`cd frontend && npm ci && npm run build`, `copy-data.mjs` overlays `data/derived` into

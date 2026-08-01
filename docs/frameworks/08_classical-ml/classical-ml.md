@@ -62,7 +62,7 @@ supervised baseline the learned tier is measured against (the unsupervised envel
 ## Reproduce
 
 ```
-python -m rotorlab.pipeline --retrain   # regenerates rv-svm.onnx / rv-rf.onnx + the classicalML block in
+python data-pipeline/run.py --retrain   # regenerates rv-svm.onnx / rv-rf.onnx + the classicalML block in
                                          # rv-learned-metrics.json + clsFeat per committed sample
 pytest tests/test_classical_ml.py        # train→evaluate→export→onnxruntime round-trip (ONNX ↔ sklearn agree)
 ```

@@ -14,5 +14,5 @@ prognostics trend all run on numpy. This is what lets a clone rebuild the entire
 
 ## Usage
 
-`python -m rotorlab.pipeline all` (numpy-only) rebuilds every per-case trace + manifest. `core/rng.py::make_rng`
+`python data-pipeline/run.py all` (numpy-only) rebuilds every per-case trace + manifest. `core/rng.py::make_rng`
 is the single RNG factory, determinism flows from seeding it.

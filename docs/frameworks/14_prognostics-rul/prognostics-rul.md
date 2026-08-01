@@ -111,7 +111,7 @@ production (the α-λ/calibration tools are there for exactly that).
 ## Model 2, Particle Filter (Bayesian state estimation)
 
 **Live (browser):** `frontend/src/dsp/pf_rul.ts`, pure TypeScript, no training.
-**Pipeline (offline):** `data-pipeline/rotorlab/model/pf_rul.py`, numpy, vectorised SIR.
+**Pipeline (offline):** `data-pipeline/pipeline/model/pf_rul.py`, numpy, vectorised SIR.
 
 A sequential-importance-resampling (SIR) particle filter over the exponential degradation model `HI(t)=a·exp(b·t)`.
 Each of 500 particles carries a pair `(ln a, b)`; as each new HI observation arrives, particles are reweighted by
@@ -126,7 +126,7 @@ doi:10.1177/0142331208093993; Arulampalam et al. (2002), doi:10.1109/78.978374.
 ## Model 3, Gaussian Process (non-parametric Bayesian regression)
 
 **Live (browser):** `frontend/src/dsp/gp_rul.ts`, pure TypeScript, RBF kernel, Cholesky decomposition, grid-search.
-**Pipeline (offline):** `data-pipeline/rotorlab/model/gp_rul.py`, scikit-learn `GaussianProcessRegressor`,
+**Pipeline (offline):** `data-pipeline/pipeline/model/gp_rul.py`, scikit-learn `GaussianProcessRegressor`,
 composite RBF+Matern(ν=2.5)+WhiteKernel, L-BFGS-B hyper-parameter optimisation with 5 restarts.
 
 A GP is placed on `log(HI) ~ GP(0, k(t, t'))` and the posterior predictive distribution is projected forward.
@@ -144,8 +144,8 @@ Pedregosa et al. (2011), JMLR 12:2825–2830.
 
 ## Model 4, Deep-RUL CNN (learned, offline training → ONNX → live inference)
 
-**Pipeline (offline):** `data-pipeline/rotorlab/model/deep_rul.py`, PyTorch, WDCNN backbone, regression head.
-Training stage: `data-pipeline/rotorlab/stages/train_rul.py`, reads XJTU-SY + FEMTO life-snapshot frames,
+**Pipeline (offline):** `data-pipeline/pipeline/model/deep_rul.py`, PyTorch, WDCNN backbone, regression head.
+Training stage: `data-pipeline/pipeline/stages/train_rul.py`, reads XJTU-SY + FEMTO life-snapshot frames,
 trains on life-fraction regression, exports `deep_rul.onnx`.
 **Live (browser):** `frontend/src/lib/ort.ts::deepRul()`, `onnxruntime-web`, WASM EP, single-threaded.
 

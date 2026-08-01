@@ -4,8 +4,8 @@ degradation regimes. The synthetic generator is deterministic (seeded)."""
 
 import numpy as np
 
-from rotorlab.model.pf_rul import pf_rul as pf_py
-from rotorlab.model.gp_rul import gp_rul as gp_py
+from pipeline.model.pf_rul import pf_rul as pf_py
+from pipeline.model.gp_rul import gp_rul as gp_py
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 def _exp_degradation(t: np.ndarray, a: float, b: float, noise: float = 0.02, seed: int = 0):

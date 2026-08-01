@@ -8,7 +8,7 @@
 
 ![The three lanes, web (live) / offline (precompute + train) / replay (committed artifacts)](../diagrams/02-lanes.svg)
 
-RotorVitals is split into a heavy **offline engine** (`data-pipeline/rotorlab/`) and a **frontend SPA**
+RotorVitals is split into a heavy **offline engine** (`data-pipeline/pipeline/`) and a **frontend SPA**
 (`frontend/`), bound by two data contracts. The committed compact artifacts under `data/derived/` are the offline
 engine's real outputs and the SPA's replay payload.
 
@@ -27,7 +27,7 @@ frontend (copy-data.mjs overlays data/derived) ──► onnxruntime-web + TS DS
 
 ## Packages
 
-* **`data-pipeline/rotorlab/`**, the offline engine: `io/` (contracts, formats, CWRU fetch), `core/` (rng, trace,
+* **`data-pipeline/pipeline/`**, the offline engine: `io/` (contracts, formats, CWRU fetch), `core/` (rng, trace,
   manifest, gate), `model/` (WDCNN, deep-AE, spectral features, classical chain), `stages/` (the named pipeline),
   `cases/` + `registry.py` (cases by category), `pipeline.py` (orchestrator + CLI), `live.py` (dormant Pyodide).
 * **`frontend/`**, the React/Vite SPA: `src/dsp/` (the TS DSP chain), `src/lib/ort.ts` (onnxruntime-web), `src/viz/`
@@ -36,7 +36,7 @@ frontend (copy-data.mjs overlays data/derived) ──► onnxruntime-web + TS DS
 
 ## The two lanes of the pipeline
 
-* **Default (numpy-only):** `python -m rotorlab.pipeline all` rebuilds every per-case replay trace + manifest from
+* **Default (numpy-only):** `python data-pipeline/run.py all` rebuilds every per-case replay trace + manifest from
   the committed artifacts, no torch, no CWRU download. A clone replays immediately; this is what CI + Pages run.
 * **Heavy (`--retrain`):** regenerates `wdcnn.onnx`, `rv-ae.onnx`, `rv-cwru-samples.json`, `rv-learned-metrics.json`,
   and `cwru-benchmark.json` from `data/raw/cwru/` (torch + scipy). Local-only; reproducible from a fixed seed.

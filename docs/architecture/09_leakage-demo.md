@@ -4,7 +4,7 @@
 MSSP 169:108732 (DOI 10.1016/j.ymssp.2021.108732); Smith & Randall (2015), the CWRU benchmark study (DOI
 10.1016/j.ymssp.2015.04.021).
 
-**Code:** `data-pipeline/rotorlab/stages/leakage.py` (offline) → metrics in `rv-learned-metrics.json` → rendered by
+**Code:** `data-pipeline/pipeline/stages/leakage.py` (offline) → metrics in `rv-learned-metrics.json` → rendered by
 the `LeakageBlock` in `frontend/src/pages/Benchmark.tsx`. Shipped in **v0.36.000**.
 
 ## What this demo proves

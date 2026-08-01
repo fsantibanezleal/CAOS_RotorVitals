@@ -72,7 +72,7 @@ def download(dst: str | Path) -> Path:
 def main() -> None:
     import argparse
 
-    ap = argparse.ArgumentParser(prog="rotorlab.io.fetch_cwru")
+    ap = argparse.ArgumentParser(prog="pipeline.io.fetch_cwru")
     ap.add_argument("--dst", default="data/raw/cwru")
     args = ap.parse_args()
     out = download(args.dst)
