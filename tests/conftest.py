@@ -28,12 +28,12 @@ TWO JOBS.
 import os
 import pathlib
 import shutil
+import sys
 import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 # 1. import path
-import sys
 sys.path.insert(0, str(ROOT / "data-pipeline"))
 
 # 2. sandbox, seeded from the committed artifacts
