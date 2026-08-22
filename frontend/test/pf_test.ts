@@ -22,35 +22,35 @@ function median(v: number[]): number { const s = [...v].sort((a, b) => a - b); r
 // ── UNIT: onset detection ───────────────────────────────────────────────────
 test('PF: detects onset on strong degradation', () => {
   const pts = synth(0.3, 0.15, 18, 20, 0.005);
-  const r = particleFilterRUL(pts, 15);
+  const r = particleFilterRUL(pts, 15, 7);
   assert.ok(r.onset !== null && r.onset > 0, 'should detect onset');
 });
 
 test('PF: no onset on flat data', () => {
   const pts: HIPoint[] = [];
   for (let i = 0; i < 20; i++) pts.push({ t: i * 2, hi: 0.15 + Math.random() * 0.005 });
-  const r = particleFilterRUL(pts, 3);
+  const r = particleFilterRUL(pts, 3, 7);
   assert.equal(r.onset, null);
   assert.equal(r.rulMedian, null);
 });
 
 test('PF: short data rejected gracefully', () => {
   const pts = synth(0.3, 0.15, 5, 6, 0.01);
-  const r = particleFilterRUL(pts, 10);
+  const r = particleFilterRUL(pts, 10, 7);
   assert.equal(r.onset, null);
 });
 
 // ── UNIT: particle count and convergence ────────────────────────────────────
 test('PF: produces 500 particles after filtering', () => {
   const pts = synth(0.3, 0.15, 25, 26, 0.01);
-  const r = particleFilterRUL(pts, 30);
+  const r = particleFilterRUL(pts, 30, 7);
   assert.equal(r.particles.length, 500);
   assert.equal(r.rulEnsemble.length >= 50, true, 'should have at least 50 RUL samples');
 });
 
 test('PF: posterior narrower than prior (convergence)', () => {
   const pts = synth(0.3, 0.15, 25, 26, 0.01);
-  const r = particleFilterRUL(pts, 30);
+  const r = particleFilterRUL(pts, 30, 7);
   // With enough data, the posterior sd of lnA should shrink from the prior's ~2.0
   const lnAs = r.particles.map(p => p.lnA);
   const mu = lnAs.reduce((a, v) => a + v, 0) / lnAs.length;
@@ -62,7 +62,7 @@ test('PF: posterior narrower than prior (convergence)', () => {
 // ── INTEGRATION: parameter recovery ─────────────────────────────────────────
 test('PF: recovers true (ln a, b) on clean data', () => {
   const pts = synth(0.3, 0.15, 20, 30, 0.003);
-  const r = particleFilterRUL(pts, 12);
+  const r = particleFilterRUL(pts, 12, 7);
   const lnAs = r.particles.map(p => p.lnA);
   const bs = r.particles.map(p => p.b);
   const estLnA = median(lnAs);
@@ -78,7 +78,7 @@ test('PF: differs from classical on noisy data (adds value)', () => {
   // High noise, PF should give a DIFFERENT (better) estimate than OLS
   const pts = synth(0.3, 0.12, 22, 25, 0.06);
   const classical = projectRUL(pts, 8);
-  const pf = particleFilterRUL(pts, 8);
+  const pf = particleFilterRUL(pts, 8, 7);
   if (classical.rul !== null && pf.rulMedian !== null) {
     // PF should not be identical to classical on noisy data
     const diff = Math.abs(classical.rul - pf.rulMedian);
@@ -106,7 +106,7 @@ test('PF: handles all valid FEMTO trajectories', () => {
 // ── EDGE CASE: RUL should be non-negative and physically bounded ────────────
 test('PF: RUL is within physical bounds', () => {
   const pts = synth(0.3, 0.15, 18, 20, 0.01);
-  const r = particleFilterRUL(pts, 30);
+  const r = particleFilterRUL(pts, 30, 7);
   if (r.rulMedian !== null) {
     assert.ok(r.rulMedian >= 0, 'RUL must be non-negative');
     assert.ok(r.rulMedian < 200, `RUL should be physically bounded, got ${r.rulMedian?.toFixed(0)}h`);

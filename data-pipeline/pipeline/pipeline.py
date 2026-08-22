@@ -11,6 +11,7 @@ trace from the REAL committed learned-tier artifacts, runs the lane gate, and wr
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 from . import registry
@@ -22,7 +23,19 @@ from .stages import export
 
 # data-pipeline/pipeline/pipeline.py -> parents[2] = repo root (works under `pip install -e .` too)
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DERIVED = REPO_ROOT / "data" / "derived"
+
+# WHERE THE PIPELINE WRITES, AND WHY IT IS OVERRIDABLE.
+#
+# This used to be a fixed path into the repo, which meant `pytest tests/` rewrote the artifacts the
+# product ships. MEASURED from a clean tree: a full test run left 22 files under data/derived/
+# modified, the whole diff being an engine_version stamp moving 0.30.000 -> 0.45.011. That reads as
+# harmless and is not - what gets committed then depends on whether someone ran the tests first, and a
+# test run is not a bake.
+#
+# RV_DERIVED_DIR lets a caller redirect the output. Unset - which is every production path, the CLI and
+# CI included - it resolves exactly as before, so nothing about a real bake changes. The tests set it to
+# pytest's tmp_path so they exercise the real write path without touching what ships.
+DERIVED = Path(os.environ.get("RV_DERIVED_DIR") or (REPO_ROOT / "data" / "derived"))
 MANIFESTS = DERIVED / "manifests"
 RAW_CWRU = REPO_ROOT / "data" / "raw" / "cwru"
 RAW_MFPT = REPO_ROOT / "data" / "raw" / "mfpt"
