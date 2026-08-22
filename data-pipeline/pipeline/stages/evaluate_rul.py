@@ -23,6 +23,7 @@ per-model aggregate metrics. The deep-RUL CNN is skipped unless its ONNX exists 
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -31,7 +32,9 @@ from ..model.gp_rul import gp_rul
 from ..model.pf_rul import pf_rul
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DERIVED = REPO_ROOT / "data" / "derived"
+# Same override as pipeline.DERIVED, so a redirected run redirects here too rather
+# than writing half its output into the repo. See pipeline.py for why.
+DERIVED = Path(os.environ.get("RV_DERIVED_DIR") or (REPO_ROOT / "data" / "derived"))
 
 LIFE_FRACTIONS = (0.5, 0.7, 0.9)  # λ checkpoints (Saxena protocol)
 ALPHA = 0.2  # α-cone half-width (±20 %)

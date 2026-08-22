@@ -321,8 +321,21 @@ test('projectRUL: clean exponential gives RUL near truth', () => {
   const r = projectRUL(pts, 30);
   assert.ok(r.onset !== null, 'should detect onset');
   assert.ok(r.rul !== null && r.rul > 0, `expected positive RUL, got ${r.rul}`);
-  // true fail at ~23h, last obs at 18h => RUL ~5h
-  assert.ok(r.rul! > 2 && r.rul! < 12, `RUL ~5h expected, got ${r.rul?.toFixed(1)}`);
+  // The ground truth here is analytic, so state it rather than estimating it. The series is
+  // hi(t) = 0.3 * exp(0.15 t) and the threshold is 30, so failure is at
+  //     t* = ln(30 / 0.3) / 0.15 = ln(100) / 0.15 = 30.70 h
+  // and with the last observation at 18 h the true RUL is 12.70 h.
+  //
+  // This assertion used to read `> 2 && < 12` with the comment "true fail at ~23h => RUL ~5h". That
+  // derivation was wrong: hi(23) = 0.3 * exp(3.45) = 9.45, nowhere near the threshold of 30. The
+  // engine was returning 12.7 - correct to two decimals - and failing a test that encoded a mistaken
+  // ground truth. The band below is centred on the real answer, wide enough for the 0.5 percent
+  // observation noise and for the fit starting at the detected onset rather than at t=0.
+  const trueRul = Math.log(30 / 0.3) / 0.15 - 18;   // 12.70 h
+  assert.ok(
+    Math.abs(r.rul! - trueRul) < 2,
+    `RUL should be within 2h of the analytic ${trueRul.toFixed(2)}h, got ${r.rul?.toFixed(1)}`,
+  );
 });
 
 test('particleFilterRUL: agrees with classical on clean data', () => {

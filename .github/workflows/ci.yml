@@ -21,6 +21,19 @@ jobs:
         run: ruff check data-pipeline tests scripts
       - name: Tests
         run: pytest
+      - name: The test suite must not rewrite the artifacts the product ships
+        # A test run is not a bake. Before tests/conftest.py sandboxed the pipeline's output root,
+        # `pytest tests/` left 22 committed files under data/derived/ modified - the whole diff an
+        # engine_version stamp - so what got committed depended on whether someone had run the tests
+        # first. This asserts the tree is untouched by the step above; the deliberate rebuild happens
+        # in the next step, which is what SHOULD write.
+        run: |
+          if [ -n "$(git status --porcelain data/derived)" ]; then
+            echo "::error::the test suite modified committed artifacts under data/derived/"
+            git --no-pager diff --stat data/derived
+            exit 1
+          fi
+          echo "tests left data/derived/ untouched"
       - name: Pipeline smoke (rebuild the replay layer from the committed artifacts)
         run: python data-pipeline/run.py all
       - name: CONTRACT 2, manifests <-> traces consistent (no drift)

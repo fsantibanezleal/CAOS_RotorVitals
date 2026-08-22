@@ -34,7 +34,7 @@ const MIN_POST_ONSET = 6;     // minimum post-onset observations needed
 const ESS_THRESHOLD = 0.60;   // resample when ESS/N drops below this
 
 // ── kernel-density regularisation (Musso et al. 2001) ──────────────────────
-function kernelRegularise(p: Particle[]): void {
+function kernelRegularise(p: Particle[], rng: Rng): void {
   const n = p.length;
   // Silverman bandwidth for each dimension (using weighted samples)
   const wSum = p.reduce((a, v) => a + v.w, 0) || 1;
@@ -51,20 +51,20 @@ function kernelRegularise(p: Particle[]): void {
   const hB = Math.sqrt(Math.max(1e-16, varB)) * 1.06 * Math.pow(n, -0.2) * 0.5;
   const hS = Math.sqrt(Math.max(1e-12, varS)) * 1.06 * Math.pow(n, -0.2) * 0.5;
   for (const x of p) {
-    x.lnA += randn() * hL;
-    x.b = Math.max(1e-12, x.b + randn() * hB);
-    x.sigmaObs = Math.max(1e-6, x.sigmaObs + randn() * hS);
+    x.lnA += randn(rng) * hL;
+    x.b = Math.max(1e-12, x.b + randn(rng) * hB);
+    x.sigmaObs = Math.max(1e-6, x.sigmaObs + randn(rng) * hS);
   }
 }
 
 // ── systematic resampling ───────────────────────────────────────────────────
-function resample(p: Particle[]): void {
+function resample(p: Particle[], rng: Rng): void {
   const n = p.length;
   const ws = p.map(x => x.w);
   const sum = ws.reduce((a, v) => a + v, 0) || 1;
   for (let i = 0; i < n; i++) ws[i] /= sum;
   const invN = 1 / n;
-  const u0 = Math.random() * invN;
+  const u0 = rng() * invN;
   const out: Particle[] = new Array(n);
   let c = ws[0], j = 0;
   for (let i = 0; i < n; i++) {
@@ -76,11 +76,35 @@ function resample(p: Particle[]): void {
   p.length = 0; p.push(...out);
 }
 
+// ── the random source ───────────────────────────────────────────────────────
+//
+// This filter used to draw from Math.random directly, in three places: the prior particles, the
+// kernel-regularisation jitter and the systematic-resampling offset. Nothing could pin it, so every
+// assertion about the posterior was a coin flip. MEASURED on frontend/test/pf_test.ts before this
+// change: 4 failures in 20 runs (posterior sd 0.81, 0.83, 0.83 and 1.27 against a `< 0.8` bound).
+//
+// `Rng` is just `() => number` in [0,1). The default is Math.random, so the browser behaves exactly as
+// it did and nothing already baked changes; passing a seed makes a run reproducible. The Python twin
+// in data-pipeline/pipeline/model/pf_rul.py takes the same optional seed, which is what keeps the
+// cross-validation between the two lanes meaningful.
+type Rng = () => number;
+
+/** mulberry32: small, fast, and good enough for a particle filter's proposal noise. */
+function mulberry32(seed: number): Rng {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let x = Math.imul(a ^ (a >>> 15), 1 | a);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 // ── Box-Muller ──────────────────────────────────────────────────────────────
-function randn(): number {
+function randn(rng: Rng): number {
   let u = 0, v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
+  while (u === 0) u = rng();
+  while (v === 0) v = rng();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
@@ -110,7 +134,9 @@ function detectOnset(points: HIPoint[]): number | null {
 }
 
 // ── main ────────────────────────────────────────────────────────────────────
-export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulResult {
+export function particleFilterRUL(points: HIPoint[], threshold: number, seed?: number): PfRulResult {
+  // undefined seed keeps the previous behaviour exactly; a seed makes the posterior reproducible.
+  const rng: Rng = seed === undefined ? Math.random : mulberry32(seed);
   const n = points.length;
   const nope: PfRulResult = {
     onset: null, rulMedian: null, rulP10: null, rulP90: null,
@@ -141,12 +167,12 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
   //    σ   ~ LogNormal: median 0.15, wide
   const particles: Particle[] = [];
   for (let i = 0; i < N; i++) {
-    const lnA = firstLnHi + randn() * 2.0;
-    const b = Math.exp(Math.log(0.05) + randn() * 1.0);
-    const sigmaObs = Math.exp(Math.log(0.15) + randn() * 0.6);
+    const lnA = firstLnHi + randn(rng) * 2.0;
+    const b = Math.exp(Math.log(0.05) + randn(rng) * 1.0);
+    const sigmaObs = Math.exp(Math.log(0.15) + randn(rng) * 0.6);
     particles.push({ lnA, b: Math.max(1e-12, b), sigmaObs: Math.max(1e-6, sigmaObs), w: 1 / N });
   }
-  kernelRegularise(particles);
+  kernelRegularise(particles, rng);
 
   // 5. sequential importance resampling, process all post-onset observations
   for (const obs of post) {
@@ -168,12 +194,12 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
     if (wSum < 1e-60) {
       // total collapse, reinitialise from prior
       for (let i = 0; i < N; i++) {
-        particles[i].lnA = firstLnHi + randn() * 2.0;
-        particles[i].b = Math.max(1e-12, Math.exp(Math.log(0.05) + randn() * 1.0));
-        particles[i].sigmaObs = Math.max(1e-6, Math.exp(Math.log(0.15) + randn() * 0.6));
+        particles[i].lnA = firstLnHi + randn(rng) * 2.0;
+        particles[i].b = Math.max(1e-12, Math.exp(Math.log(0.05) + randn(rng) * 1.0));
+        particles[i].sigmaObs = Math.max(1e-6, Math.exp(Math.log(0.15) + randn(rng) * 0.6));
         particles[i].w = 1 / N;
       }
-      kernelRegularise(particles);
+      kernelRegularise(particles, rng);
       continue;
     }
     // normalise
@@ -181,8 +207,8 @@ export function particleFilterRUL(points: HIPoint[], threshold: number): PfRulRe
     // effective sample size
     const ess = 1 / particles.reduce((a, p) => a + p.w * p.w, 0);
     if (ess < N * ESS_THRESHOLD) {
-      resample(particles);
-      kernelRegularise(particles);
+      resample(particles, rng);
+      kernelRegularise(particles, rng);
       for (const part of particles) part.w = 1 / N;
     }
   }
