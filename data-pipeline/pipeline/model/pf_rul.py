@@ -34,7 +34,7 @@ def _onset_idx(hi: np.ndarray) -> int | None:
     return None
 
 
-def _kernel_regularise(particles: np.ndarray, weights: np.ndarray) -> np.ndarray:
+def _kernel_regularise(particles: np.ndarray, weights: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     """Silverman bandwidth, shrink by 0.5 (regularisation, not full kernel)."""
     n = len(particles)
     w_sum = weights.sum() or 1.0
@@ -42,17 +42,17 @@ def _kernel_regularise(particles: np.ndarray, weights: np.ndarray) -> np.ndarray
     diffs = particles - means[None, :]
     var = (diffs ** 2 * weights[:, None]).sum(axis=0) / w_sum
     h = 1.06 * np.sqrt(np.maximum(var, 1e-12)) * n ** (-0.2) * 0.5
-    jitter = np.random.randn(n, 3) * h[None, :]
+    jitter = rng.standard_normal((n, 3)) * h[None, :]
     particles += jitter
     particles[:, 1] = np.maximum(1e-12, particles[:, 1])     # b > 0
     particles[:, 2] = np.maximum(1e-6, particles[:, 2])       # σ > 0
     return particles
 
 
-def _resample(particles: np.ndarray, weights: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def _resample(particles: np.ndarray, weights: np.ndarray, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
     n = len(weights)
     inv_n = 1.0 / n
-    u0 = np.random.uniform(0, inv_n)
+    u0 = rng.uniform(0, inv_n)
     indices = np.zeros(n, dtype=int)
     cdf = np.cumsum(weights)
     j = 0
@@ -64,7 +64,11 @@ def _resample(particles: np.ndarray, weights: np.ndarray) -> tuple[np.ndarray, n
     return particles[indices], np.full(n, inv_n)
 
 
-def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> dict:
+def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float, seed: int | None = None) -> dict:
+    # `seed=None` keeps the previous behaviour exactly (fresh entropy per call), so nothing that
+    # has already been baked changes. Pass a seed when you need the posterior to be reproducible -
+    # which every assertion about the posterior does, and which the tests did not have.
+    rng = np.random.default_rng(seed)
     n = len(t)
     if n < 10:
         return _empty()
@@ -87,12 +91,12 @@ def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> dict:
 
     # Weakly informed prior centered near the true lnA
     particles = np.column_stack([
-        first_ln + np.random.randn(N) * 1.5,                                  # lnA
-        np.maximum(1e-12, np.exp(np.log(0.05) + np.random.randn(N) * 1.0)),   # b
-        np.maximum(1e-6, np.exp(np.log(0.15) + np.random.randn(N) * 0.6)),    # σ_obs
+        first_ln + rng.standard_normal(N) * 1.5,                                  # lnA
+        np.maximum(1e-12, np.exp(np.log(0.05) + rng.standard_normal(N) * 1.0)),   # b
+        np.maximum(1e-6, np.exp(np.log(0.15) + rng.standard_normal(N) * 0.6)),    # σ_obs
     ])
     weights = np.full(N, 1.0 / N)
-    particles = _kernel_regularise(particles, weights)
+    particles = _kernel_regularise(particles, weights, rng)
 
     # SIR over post-onset observations
     for i in range(len(post_t)):
@@ -106,18 +110,18 @@ def pf_rul(t: np.ndarray, hi: np.ndarray, threshold: float) -> dict:
         w_sum = float(w.sum())
         if w_sum < 1e-60:
             particles = np.column_stack([
-                first_ln + np.random.randn(N) * 1.5,
-                np.maximum(1e-12, np.exp(np.log(0.05) + np.random.randn(N) * 1.0)),
-                np.maximum(1e-6, np.exp(np.log(0.15) + np.random.randn(N) * 0.6)),
+                first_ln + rng.standard_normal(N) * 1.5,
+                np.maximum(1e-12, np.exp(np.log(0.05) + rng.standard_normal(N) * 1.0)),
+                np.maximum(1e-6, np.exp(np.log(0.15) + rng.standard_normal(N) * 0.6)),
             ])
             weights = np.full(N, 1.0 / N)
-            particles = _kernel_regularise(particles, weights)
+            particles = _kernel_regularise(particles, weights, rng)
             continue
         weights = w / w_sum
         ess = 1.0 / (weights @ weights)
         if ess < N * ESS_THRESHOLD:
-            particles, weights = _resample(particles, weights)
-            particles = _kernel_regularise(particles, weights)
+            particles, weights = _resample(particles, weights, rng)
+            particles = _kernel_regularise(particles, weights, rng)
             weights = np.full(N, 1.0 / N)
 
     # RUL ensemble
