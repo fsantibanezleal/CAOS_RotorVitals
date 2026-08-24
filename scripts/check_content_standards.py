@@ -28,6 +28,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SELF = "scripts/check_content_standards.py"
 
 BANNED_DASHES = {0x2014, 0x2015}  # em dash, horizontal bar
+# The same characters as a JSON/JS escape. A baked artifact writes them this way, and the app
+# renders them as em-dashes, so they are the same violation in a form the character walk cannot see.
+ESCAPED_DASHES = {r'\u2014': 0x2014, r'\u2015': 0x2015, r'\U00002014': 0x2014}
 EMOJI_SELECTOR = 0xFE0F
 
 
@@ -58,6 +61,20 @@ def main() -> int:
         except (OSError, UnicodeDecodeError):
             continue
         for lineno, line in enumerate(lines, 1):
+            # ESCAPED FORMS COUNT. The character walk below sees U+2014 written literally and is blind
+            # to the same character written `\\u2014` inside a JSON string, which the app renders as an
+            # em-dash the moment it parses the file. MEASURED: rv-learned-metrics.json carried 10 of
+            # them in prose the App displays, while every generator that writes those notes had already
+            # been cleaned - the rule was enforced on the source and silently unenforced on the artifact
+            # the source produces, so the artifact went stale and nothing said so.
+            for esc, cp in ESCAPED_DASHES.items():
+                start = 0
+                while True:
+                    idx = line.find(esc, start)
+                    if idx < 0:
+                        break
+                    hits.append(f"  {rel}:{lineno}:{idx + 1}  em-dash, escaped as {esc} (U+{cp:04X})")
+                    start = idx + len(esc)
             for col, ch in enumerate(line, 1):
                 cp = ord(ch)
                 if cp in BANNED_DASHES:
