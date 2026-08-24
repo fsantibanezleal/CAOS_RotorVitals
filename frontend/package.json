@@ -3,7 +3,7 @@
   "version": "0.48.000",
   "private": true,
   "type": "module",
-  "description": "RotorVitals — rotating-machinery condition-monitoring & prognostics suite (envelope/SES, spectral kurtosis & kurtogram, diagnosis, ISO severity, RUL).",
+  "description": "RotorVitals: rotating-machinery condition-monitoring & prognostics suite (envelope/SES, spectral kurtosis & kurtogram, diagnosis, ISO severity, RUL).",
   "scripts": {
     "predev": "node copy-data.mjs",
     "dev": "vite",
