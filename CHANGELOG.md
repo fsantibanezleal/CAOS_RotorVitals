@@ -3,6 +3,18 @@
 All notable changes to CAOS RotorVitals are documented here. Versions follow `X.XX.XXX`
 (major.minor.patch); the project stays in `0.x` while the showcase suite is being built out.
 
+## [0.48.001] · 2026-08-25
+
+### Fixed
+
+- Fix the em-dashes the ADR-0067 guard could not see, and teach it to see them
+- Give the content routes real files, so a shared link answers 200
+- Cap the App-route notes and the caption blocks the paragraph rule could not reach
+- Cap the reading measure on the content routes
+- Make the particle filter reproducible, and stop the tests rewriting what ships
+- fix: remove the last lab-name residue from scripts and docs
+- refactor: a product declares no package of its own
+
 ## [0.48.000] · 2026-08-01
 
 ### Fixed - four controls on the App route were out of reach
