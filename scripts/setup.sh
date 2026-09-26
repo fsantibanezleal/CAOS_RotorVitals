@@ -20,7 +20,7 @@ VP="$(venvpy .venv-pipeline)"
 "$VP" -m pip install -q -r requirements.txt -r requirements-dev.txt
 "$VP" -m pip install -q
 if [ "$PRECOMPUTE" -eq 1 ]; then
-  echo "[setup] + heavy precompute engines (torch/scipy/onnx) — for --retrain…"
+  echo "[setup] + heavy precompute engines (torch/scipy/onnx), for --retrain…"
   "$VP" -m pip install -q torch==2.12.1 --index-url https://download.pytorch.org/whl/cpu
   "$VP" -m pip install -q -r requirements-precompute.txt
 fi
